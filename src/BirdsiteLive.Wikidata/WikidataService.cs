@@ -21,6 +21,8 @@ public class WikidataService
                                          OPTIONAL {?item wdt:P4265 ?handleReddit}
                                          OPTIONAL {?item wdt:P7171 ?handleHN}
                                          OPTIONAL {?item wdt:P7085 ?handleTT}
+                                         OPTIONAL {?item wdt:P2003 ?handleIG }
+                                         OPTIONAL {?item wdt:P2002 ?handleTwitter }
                                        
                                           SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
                                        } # LIMIT 10  
