@@ -27,7 +27,10 @@ public class InstagramUserPostgresDal : SocialMediaUserPostgresDal, IInstagramUs
         public override async Task<SyncUser[]> GetNextUsersToCrawlAsync(int nStart, int nEnd, int m)
         {
             string query = @$"
-                SELECT id, acct, lastsync FROM {tableName} WHERE id IN (SELECT unnest({FollowingColumnName}) as fid FROM {_settings.FollowersTableName} WHERE host = 'r.town' GROUP BY fid);
+                SELECT id, acct, lastsync 
+                FROM {tableName} 
+                WHERE id IN (SELECT unnest({FollowingColumnName}) as fid FROM {_settings.FollowersTableName} WHERE host = 'r.town' GROUP BY fid)
+                ORDER BY lastsync ASC;
                 ";
 
             await using var connection = DataSource.CreateConnection();
