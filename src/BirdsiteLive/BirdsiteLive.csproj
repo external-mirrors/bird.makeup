@@ -9,12 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grafana.OpenTelemetry" Version="0.9.0-beta.1" />
-    <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="13.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.NET.Build.Containers" Version="8.0.100" />
+    <PackageReference Include="Grafana.OpenTelemetry" Version="1.0.1" />
+    <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="13.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.NET.Build.Containers" Version="8.0.403" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
   </ItemGroup>
 
