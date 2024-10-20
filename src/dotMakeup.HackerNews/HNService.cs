@@ -1,18 +1,26 @@
 ﻿using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Web;
+using BirdsiteLive.Common.Interfaces;
 using dotMakeup.HackerNews.Models;
 
 namespace dotMakeup.HackerNews;
 
-public class HNUserService
+public class HnService : ISocialMediaService
 {
     private IHttpClientFactory _httpClientFactory;
-    public HNUserService(IHttpClientFactory httpClientFactory)
+    public HnService(IHttpClientFactory httpClientFactory)
     {
             _httpClientFactory = httpClientFactory;
         
     }
-    public async Task<HNUser> GetUserAsync(string username)
+
+    public string ServiceName { get; } = "Hacker News";
+    public SocialMediaUserDal UserDal { get; }
+    public Regex ValidUsername { get;  } = new Regex(@"^[a-zA-Z0-9_]{1,15}$");
+    public Regex UserMention { get; } = new Regex(@".^");
+    
+    public async Task<SocialMediaUser> GetUserAsync(string username)
     {
         string reqURL = "https://hacker-news.firebaseio.com/v0/user/dhouston.json";
         reqURL = reqURL.Replace("dhouston", username);
@@ -32,8 +40,21 @@ public class HNUserService
         var user = new HNUser()
         {
             Id = 0,
-            About = about,
+            Acct = username,
+            Name = username,
+            Description = about,
         };
         return user;
     }
+
+    public Task<SocialMediaPost?> GetPostAsync(string id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
+    {
+        throw new NotImplementedException();
+    }
+
 }

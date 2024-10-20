@@ -12,9 +12,9 @@ public class UsersTests
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
-        var userService = new HNUserService(httpFactory.Object);
+        var userService = new HnService(httpFactory.Object);
         var user = await userService.GetUserAsync("dhouston");
         
-        Assert.AreEqual(user.About, "Founder/CEO of Dropbox (http://www.dropbox.com ; yc summer '07)");
+        Assert.AreEqual(user.Description, "Founder/CEO of Dropbox (http://www.dropbox.com ; yc summer '07)");
     }
 }
