@@ -47,9 +47,29 @@ public class HnService : ISocialMediaService
         return user;
     }
 
-    public Task<SocialMediaPost?> GetPostAsync(string id)
+    public async Task<SocialMediaPost?> GetPostAsync(string id)
     {
-        throw new NotImplementedException();
+        string reqURL = "https://hacker-news.firebaseio.com/v0/item/2921983.json";
+        reqURL = reqURL.Replace("2921983", id);
+        
+        var client = _httpClientFactory.CreateClient();
+        var request = new HttpRequestMessage(new HttpMethod("GET"), reqURL);
+        
+        JsonElement userDoc;
+        var httpResponse = await client.SendAsync(request);
+        httpResponse.EnsureSuccessStatusCode();
+        var c = await httpResponse.Content.ReadAsStringAsync();
+        userDoc = JsonDocument.Parse(c).RootElement;
+
+        string text =
+            HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
+        
+        var user = new HNPost()
+        {
+            Id = userDoc.GetProperty("id").GetInt32().ToString(),
+            MessageContent = text,
+        };
+        return user;
     }
 
     public Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
