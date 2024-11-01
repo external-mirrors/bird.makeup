@@ -11,6 +11,6 @@ var dalIg = new InstagramUserPostgresDal(settings);
 
 var wikiService = new WikidataService(dal, dalIg);
 
-await wikiService.SyncQcodes();
+//await wikiService.SyncQcodes();
 //await wikiService.SyncNotableWork();
-//await wikiService.SyncAttachments();
+await wikiService.SyncAttachments();

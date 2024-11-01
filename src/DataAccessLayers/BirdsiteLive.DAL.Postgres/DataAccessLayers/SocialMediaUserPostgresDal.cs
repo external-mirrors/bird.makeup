@@ -405,4 +405,26 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             var extradata = reader["extradata"] as string ?? "{}";
             return extradata;
         }
+        public async Task<string> GetUserWikidataAsync(string acct)
+        {
+            var query = $"SELECT wikidata FROM {tableName} WHERE acct = $1";
+
+            if (acct is not null)
+                acct = acct.ToLowerInvariant();
+
+            await using var connection = DataSource.CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand(query, connection) {
+                Parameters =
+                {
+                    new() { Value = acct },
+                },
+            };
+            var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                return null;
+
+            var extradata = reader["wikidata"] as string ?? "{}";
+            return extradata;
+        }
 }

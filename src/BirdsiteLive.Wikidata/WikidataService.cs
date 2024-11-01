@@ -17,7 +17,7 @@ public class WikidataService
                                        WHERE
                                        {
                                         {?item wdt:P2002 ?handleTwitter } UNION {?item wdt:P2003 ?handleIG}
-                                          OPTIONAL {?item wdt:P4033 ?fediHandle} 
+                                          OPTIONAL {?item wdt:P4033 ?handleFedi} 
                                          OPTIONAL {?item wdt:P4265 ?handleReddit}
                                          OPTIONAL {?item wdt:P7171 ?handleHN}
                                          OPTIONAL {?item wdt:P7085 ?handleTT}
@@ -106,7 +106,7 @@ public class WikidataService
                     QCode = qcode,
                     Description = ExtractValue(n, "itemDescription", false),
                     Label = ExtractValue(n, "itemLabel", false),
-                    FediHandle = ExtractValue(n, "fediHandle", false),
+                    FediHandle = ExtractValue(n, "handleFedi", false),
                     HandleReddit = handleReddit,
                     HandleHN = handleHn,
                     HandleTikTok = handleTikTok,
@@ -195,12 +195,25 @@ public class WikidataService
 
         foreach (string u in twitterUser)
         {
-            var s = await _dal.GetUserExtradataAsync(u, "wikidata");
+            var s = await _dal.GetUserWikidataAsync(u);
             var w = JsonSerializer.Deserialize<WikidataEntry>(s);
             if (w.FediHandle is not null)
             {
                 Console.WriteLine($"{u} - {w.FediHandle}");
-                await _dal.UpdateUserExtradataAsync(u, "hooks", "addAttachments", new Dictionary<string, string>() {{ "fedi", w.FediHandle }});
+                
+                var input = w.FediHandle.TrimStart('@');
+                string[] parts = input.Split('@');
+                if (parts.Length != 2)
+                {
+                    Console.WriteLine($"{u} - invalid fedi handle");
+                    continue;
+                }
+                string username = parts[0];
+                string domain = parts[1];
+
+                string fediLink = $"<span class=\"h-card\" translate=\"no\"><a href=\"https://{domain}/users/{username}\" class=\"u-url mention\">@<span>{username}@{domain}</span></a></span>";
+                
+                await _dal.UpdateUserExtradataAsync(u, "hooks", "addAttachments", new Dictionary<string, string>() {{ "fedi", fediLink }});
             }
         }
     }
