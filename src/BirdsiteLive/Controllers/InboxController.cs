@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Diagnostics.Metrics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using BirdsiteLive.ActivityPub;
 using BirdsiteLive.ActivityPub.Models;
 using BirdsiteLive.Domain;
 using BirdsiteLive.Tools;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -16,6 +13,12 @@ namespace BirdsiteLive.Controllers
     [ApiController]
     public class InboxController : ControllerBase
     {
+        static Meter _meter = new("DotMakeup", "1.0.0");
+        static Counter<int> _activityLike = _meter.CreateCounter<int>("dotmakeup_ap_activity_likes");
+        static Counter<int> _activityFollow = _meter.CreateCounter<int>("dotmakeup_ap_activity_follows");
+        static Counter<int> _activityAnnounce = _meter.CreateCounter<int>("dotmakeup_ap_activity_announces");
+        static Counter<int> _activityCreate = _meter.CreateCounter<int>("dotmakeup_ap_activity_create");
+        
         private readonly ILogger<InboxController> _logger;
         private readonly IUserService _userService;
 
@@ -53,6 +56,7 @@ namespace BirdsiteLive.Controllers
                     {
                         case "Follow":
                             {
+                                _activityFollow.Add(1);
                                 var succeeded = await _userService.FollowRequestedAsync(signature, r.Method, r.Path,
                                     r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers), activity as ActivityFollow, body);
                                 if (succeeded) return Accepted();
@@ -75,6 +79,15 @@ namespace BirdsiteLive.Controllers
                                 if (succeeded) return Accepted();
                                 else return Unauthorized();
                             }
+                        case "Announce":
+                            _activityAnnounce.Add(1);
+                            return Accepted();
+                        case "Like":
+                            _activityLike.Add(1);
+                            return Accepted();
+                        case "Create":
+                            _activityCreate.Add(1);
+                            return Accepted();
 
                     }
                 }

@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -14,6 +15,9 @@ namespace dotMakeup.Instagram;
 
 public class InstagramService : ISocialMediaService
 {
+        static Meter _meter = new("DotMakeup", "1.0.0");
+        static Counter<int> _newPosts = _meter.CreateCounter<int>("dotmakeup_ig_new_posts_count");
+        
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly InstanceSettings _settings;
         private readonly ISettingsDal _settingsDal;
@@ -67,6 +71,11 @@ public class InstagramService : ISocialMediaService
         #endregion
 
 
+        public string ServiceName { get; } = "Instagram";
+        public Regex ValidUsername { get;  } = new Regex(@"^[a-zA-Z0-9_\.]{1,30}$");
+        public Regex UserMention { get;  } = new Regex(@"(^|.?[ \n\.]+)@([a-zA-Z0-9_\.]+)(?=\s|$|[\[\]<>,;:'\.’!?/—\|-]|(. ))");
+        public SocialMediaUserDal UserDal { get; }
+        
         public async Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
         {
             var newPosts = new List<SocialMediaPost>();
@@ -95,13 +104,10 @@ public class InstagramService : ISocialMediaService
 
             await UserDal.UpdateUserLastSyncAsync(user);
             
+            _newPosts.Add(newPosts.Count);
+            
             return newPosts.ToArray();
         }
-
-        public string ServiceName { get; } = "Instagram";
-        public Regex ValidUsername { get;  } = new Regex(@"^[a-zA-Z0-9_\.]{1,30}$");
-        public Regex UserMention { get;  } = new Regex(@"(^|.?[ \n\.]+)@([a-zA-Z0-9_\.]+)(?=\s|$|[\[\]<>,;:'\.’!?/—\|-]|(. ))");
-        public SocialMediaUserDal UserDal { get; }
 
         public async Task<SocialMediaUser?> GetUserAsync(string username)
         {
