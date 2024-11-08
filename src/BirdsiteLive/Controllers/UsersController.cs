@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -26,6 +28,9 @@ namespace BirdsiteLive.Controllers
 {
     public class UsersController : Controller
     {
+        static Meter _meter = new("DotMakeup", "1.0.0");
+        static Counter<int> _activityCounter = _meter.CreateCounter<int>("dotmakeup_ap_activity");
+        
         private readonly ICachedTwitterTweetsService _twitterTweetService;
         private readonly IUserService _userService;
         private readonly IStatusService _statusService;
@@ -292,6 +297,7 @@ namespace BirdsiteLive.Controllers
                     {
                         case "Follow":
                         {
+                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Follow"));
                             var succeeded = await _userService.FollowRequestedAsync(signature, r.Method, r.Path,
                                 r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
                                 activity as ActivityFollow, body);
@@ -301,6 +307,7 @@ namespace BirdsiteLive.Controllers
                         case "Undo":
                             if (activity is ActivityUndoFollow)
                             {
+                                _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Undo"));
                                 var succeeded = await _userService.UndoFollowRequestedAsync(signature, r.Method, r.Path,
                                     r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
                                     activity as ActivityUndoFollow, body);
@@ -311,12 +318,22 @@ namespace BirdsiteLive.Controllers
                             return Accepted();
                         case "Delete":
                         {
+                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Delete"));
                             var succeeded = await _userService.DeleteRequestedAsync(signature, r.Method, r.Path,
                                 r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
                                 activity as ActivityDelete, body);
                             if (succeeded) return Accepted();
                             else return Unauthorized();
                         }
+                        case "Announce":
+                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Announce"));
+                            return Accepted();
+                        case "Like":
+                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Like"));
+                            return Accepted();
+                        case "Create":
+                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Create"));
+                            return Accepted();
                         default:
                             return Accepted();
                     }
