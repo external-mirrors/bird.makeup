@@ -9,10 +9,7 @@ namespace BirdsiteLive.Common.Settings
         public string AdminEmail { get; set; }
         public bool ResolveMentionsInProfiles { get; set; }
         public bool PublishReplies { get; set; }
-        public bool InstaMode { get; set; } = false;
-
-        public string UnlistedTwitterAccounts { get; set; }
-        public string SensitiveTwitterAccounts { get; set; }
+        public string SocialNetwork { get; set; }
 
         public int FailingTwitterUserCleanUpThreshold { get; set; }
         public int FailingFollowerCleanUpThreshold { get; set; } = -1;
@@ -36,5 +33,6 @@ namespace BirdsiteLive.Common.Settings
         public string IpfsGateway { get; set; } = "ipfs.io";
         public string ProxyUser { get; set; }
         public string ProxyPassword { get; set; }
+        public string InstagramCrawlingGroup { get; set; } = "Priority";
     }
 }

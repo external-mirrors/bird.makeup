@@ -58,8 +58,8 @@ spec:
               value: "http://100.102.85.102:5001"
             - name: "Instance__IpfsGateway"
               value: "gateway.pinata.cloud"
-            - name: Instance__InstaMode
-              value: "true"
+            - name: Instance__SocialNetwork
+              value: "Instagram"
             - name: Instance__ParallelFediversePosts
               value: "10"
             - name: Instance__UserCacheCapacity

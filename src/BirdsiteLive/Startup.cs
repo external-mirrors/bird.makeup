@@ -1,4 +1,5 @@
 using System;
+using System.Configuration;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Common.Structs;
@@ -17,11 +18,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OpenTelemetry;
-using OpenTelemetry.Trace;
 using Grafana.OpenTelemetry;
 using OpenTelemetry.Resources;
-using OpenTelemetry.Metrics;
 
 namespace BirdsiteLive
 {
@@ -106,10 +104,14 @@ namespace BirdsiteLive
 
             services.For<ITwitterAuthenticationInitializer>().Use<TwitterAuthenticationInitializer>().Singleton();
 
-            if (Configuration.GetSection("Instance").Get<InstanceSettings>().InstaMode) 
+            if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork is null) 
+                throw new ConfigurationErrorsException("Missing SocialNetwork");
+            else if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Twitter") 
+                services.For<ISocialMediaService>().Use<TwitterService>().Singleton();
+            else if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Instagram") 
                 services.For<ISocialMediaService>().Use<InstagramService>().Singleton();
             else
-                services.For<ISocialMediaService>().Use<TwitterService>().Singleton();
+                throw new ConfigurationErrorsException("Unknown SocialNetwork");
             
             services.For<ICachedStatisticsService>().Use<CachedStatisticsService>().Singleton();
 

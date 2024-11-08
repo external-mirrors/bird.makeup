@@ -1,17 +1,17 @@
 {
   "profiles": {
-    "BirdsiteLive (IG + local sidecar)": {
+    "DotMakeup (IG + local sidecar)": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "Instance__ParallelTwitterRequests": "0",
-        "Instance__InstaMode": "true",
+        "Instance__SocialNetwork": "Instagram",
         "Instance__SidecarURL": "http://localhost:5000"
       },
       "applicationUrl": "http://localhost:5042"
     },
-    "BirdsiteLive (IG)": {
+    "DotMakeup (IG)": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
@@ -19,18 +19,18 @@
         "Instance__ParallelTwitterRequests": "0",
         "Instance__TwitterRequestDelay": "1000",
         "Instance__PipelineStartupDelay": "1",
-        "Instance__InstaMode": "true",
+        "Instance__SocialNetwork": "Instagram",
         "Instance__SidecarURL": "http://alibaba.tail98293.ts.net:5000"
       },
       "applicationUrl": "http://localhost:5042"
     },
-    "BirdsiteLive": {
+    "DotMakeup (Twitter)": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "Instance__ParallelTwitterRequests": "0"
-
+        "Instance__ParallelTwitterRequests": "0",
+        "Instance__SocialNetwork": "Twitter"
       },
       "applicationUrl": "http://localhost:5042"
     },
