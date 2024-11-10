@@ -124,6 +124,25 @@ spec:
           volumeMounts:
             - name: ts
               mountPath: /var/lib/tailscale
+        - name: dotmakeup-social-sidecar
+          image: cloutier/dotmakeup-social-sidecar:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+              name: sidecar
+          env:
+            - name: "HTTP_PROXY"
+              valueFrom:
+                secretKeyRef:
+                  name: http-proxy
+                  key: proxy
+                  optional: true
+            - name: "HTTPS_PROXY"
+              valueFrom:
+                secretKeyRef:
+                  name: http-proxy
+                  key: proxy
+                  optional: true
   volumeClaimTemplates:
     - metadata:
         name: ts

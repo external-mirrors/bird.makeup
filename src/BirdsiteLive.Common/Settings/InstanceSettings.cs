@@ -28,6 +28,7 @@ namespace BirdsiteLive.Common.Settings
         public int ParallelFediversePosts { get; set; } = 10;
         public int PipelineStartupDelay { get; set; } = 15 * 60;
         public string SidecarURL { get; set; } = "http://localhost:5000";
+        public string CrawlingSidecarURL { get; set; }
         public string ProxyURL { get; set; }
         public string IpfsApi { get; set; }
         public string IpfsGateway { get; set; } = "ipfs.io";

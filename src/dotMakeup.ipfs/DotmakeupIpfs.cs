@@ -6,7 +6,7 @@ namespace dotMakeup.ipfs;
 public interface IIpfsService
 {
     string GetIpfsPublicLink(string hash);
-    Task<string> Mirror(string upstream);
+    Task<string> Mirror(string upstream, bool pin);
     
 }
 public class DotmakeupIpfs : IIpfsService
@@ -31,7 +31,7 @@ public class DotmakeupIpfs : IIpfsService
         return $"https://{_instanceSettings.IpfsGateway}/ipfs/{hash}";
     }
 
-    public async Task<string> Mirror(string upstream)
+    public async Task<string> Mirror(string upstream, bool pin)
     {
         var client = _httpClientFactory.CreateClient();
         var pic = await client.GetAsync(upstream);
@@ -41,7 +41,9 @@ public class DotmakeupIpfs : IIpfsService
         using var memoryStream = new MemoryStream(picData);
         
         var i = await _ipfs.FileSystem.AddAsync(memoryStream);
-        await _ipfs.Pin.AddAsync(i.Id);
+        
+        if (pin)
+            await _ipfs.Pin.AddAsync(i.Id);
         
         var gatewayClient = _httpClientFactory.CreateClient();
         gatewayClient.Timeout = TimeSpan.FromMinutes(3);

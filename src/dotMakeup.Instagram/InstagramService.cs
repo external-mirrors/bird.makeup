@@ -83,6 +83,8 @@ public class InstagramService : ISocialMediaService
             if (v2 == null)
                 return Array.Empty<SocialMediaPost>();
             
+            var profileUrlHash = await _ipfs.Mirror(v2.ProfileUrl, false);
+            v2.ProfileUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
             foreach (var p in v2.RecentPosts)
             {
                 if (p.CreatedAt > user.LastSync)
@@ -91,7 +93,7 @@ public class InstagramService : ISocialMediaService
                     {
                         foreach (ExtractedMedia m in p.Media)
                         {
-                            var hash = await _ipfs.Mirror(m.Url);
+                            var hash = await _ipfs.Mirror(m.Url, _settings.InstagramCrawlingGroup == "Priority");
                             m.Url = _ipfs.GetIpfsPublicLink(hash);
                         }
 
@@ -124,7 +126,10 @@ public class InstagramService : ISocialMediaService
             
             if (forceRefresh)
             {
-                user = await CallSidecar(username);
+                if (_settings.CrawlingSidecarURL is not null)
+                    user = await CallSidecar(username, _settings.CrawlingSidecarURL);
+                else
+                    user = await CallSidecar(username, _settings.SidecarURL);
                 await _instagramUserDal.UpdateUserCacheAsync(user);
             }
             else if (!_userCache.TryGetValue(username, out user))
@@ -136,7 +141,7 @@ public class InstagramService : ISocialMediaService
                 }
                 else
                 {
-                    user = await CallSidecar(username);
+                    user = await CallSidecar(username, _settings.SidecarURL);
                     await _instagramUserDal.UpdateUserCacheAsync(user);
                 }
             }
@@ -179,12 +184,12 @@ public class InstagramService : ISocialMediaService
             return post;
         }
 
-        private async Task<InstagramUser> CallSidecar(string username)
+        private async Task<InstagramUser> CallSidecar(string username, string sidecarURL)
         {
             InstagramUser user = null;
             var client = _httpClientFactory.CreateClient();
             string requestUrl;
-            requestUrl = _settings.SidecarURL + "/instagram/user/" + username;
+            requestUrl = sidecarURL + "/instagram/user/" + username;
             var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
             var httpResponse = await client.SendAsync(request);
