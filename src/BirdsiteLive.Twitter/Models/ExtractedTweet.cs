@@ -24,12 +24,7 @@ namespace BirdsiteLive.Twitter.Models
         public long RetweetId { get; set; }
         public SocialMediaUser OriginalAuthor { get; set; }
         public SocialMediaUser Author { get; set; }
-        public TwitterPoll? Poll { get; set; }
+        public Poll? Poll { get; set; }
     }
 
-    public class TwitterPoll
-    {
-        public DateTime endTime { get; set; }
-        public List<(string First, long Second)> options { get; set; }
-    }
 }

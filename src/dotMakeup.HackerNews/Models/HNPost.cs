@@ -14,4 +14,5 @@ public class HNPost : SocialMediaPost
     public string InReplyToAccount { get; set; }
     public DateTime CreatedAt { get; set; }
     public ExtractedMedia[] Media { get; set; }
+    public Poll? Poll { get; set; }
 }

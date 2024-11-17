@@ -72,27 +72,52 @@ namespace BirdsiteLive.Domain
             if (post.InReplyToStatusId != default)
                 inReplyTo = $"https://{_instanceSettings.Domain}/users/{post.InReplyToAccount.ToLowerInvariant()}/statuses/{post.InReplyToStatusId}";
 
-            var note = new Note
+
+            Note note;
+            if (post.Poll is not null)
+                note = new Question() { };
+            else
+                note = new Note { };
+
+            note.id = noteUrl;
+            note.announceId = announceId;
+            note.published = post.CreatedAt.ToString("s") + "Z";
+            note.url = noteUrl;
+            note.attributedTo = actorUrl;
+            note.inReplyTo = inReplyTo;
+            note.to = new[] { to };
+            note.cc = cc;
+            note.sensitive = false;
+            note.summary = summary;
+            note.content = $"<p>{content}</p>";
+            note.attachment = Convert(post.Media);
+            note.tag = extractedTags.tags;
+
+            if (note is Question)
             {
-                id = noteUrl,
-                announceId = announceId,
+                long totalVotes = 0;
+                var nowString = post.Poll.endTime.ToString("s") + "Z";
+                var options = new List<QuestionAnswer>();
+                foreach ((string First, long Second) in post.Poll.options)
+                {
+                    var o = new QuestionAnswer();
+                    o.name = First;
+                    o.replies = new Dictionary<string, object>()
+                    {
+                        ["type"] = "Collection",
+                        ["totalItems"] = Second,
+                    };
+                    totalVotes += Second;
+                    options.Add(o);
+                }
 
-                published = post.CreatedAt.ToString("s") + "Z",
-                url = noteUrl,
-                attributedTo = actorUrl,
-
-                inReplyTo = inReplyTo,
-
-                to = new[] { to },
-                cc = cc,
-
-                sensitive = false,
-                summary = summary,
-                content = $"<p>{content}</p>",
-                attachment = Convert(post.Media),
-                tag = extractedTags.tags
-            };
-
+                ((Question)note).votersCount = totalVotes;
+                ((Question)note).endTime = nowString;
+                if (post.Poll.endTime < DateTime.Now)
+                    ((Question)note).closed = nowString;
+                ((Question)note).answers = options.ToArray();
+            }
+            
             return note;
         }
 

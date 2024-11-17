@@ -737,7 +737,7 @@ namespace BirdsiteLive.Twitter
                 MessageContent = MessageContent + "\n\n" + quoteTweetLink;
             }
 
-            TwitterPoll poll = null;
+            Poll poll = null;
             JsonElement cardDoc;
             if (tweetRes.TryGetProperty("card", out cardDoc))
             {
@@ -768,7 +768,7 @@ namespace BirdsiteLive.Twitter
                 }
 
                 var c = counts.OrderBy(x => x.Key).Select(x => x.Value);
-                poll = new TwitterPoll()
+                poll = new Poll()
                 {
                     endTime = endDate,
                     options = labels.OrderBy(x => x.Key).Select(x => x.Value).Zip(c).ToList(),

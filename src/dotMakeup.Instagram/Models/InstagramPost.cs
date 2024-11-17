@@ -15,5 +15,6 @@ namespace BirdsiteLive.Instagram.Models
         public long RetweetId { get; set; }
         public SocialMediaUser OriginalAuthor { get; set; } = null;
         public SocialMediaUser Author { get; set; }
+        public Poll? Poll { get; set; } = null;
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BirdsiteLive.Common.Interfaces;
 
 namespace BirdsiteLive.Common.Interfaces;
@@ -15,4 +16,10 @@ public interface SocialMediaPost
     public string InReplyToAccount { get; set; }
     public DateTime CreatedAt { get; set; }
     public ExtractedMedia[] Media { get; set; }
+    public Poll? Poll { get; set; }
+}
+public class Poll
+{
+    public DateTime endTime { get; set; }
+    public List<(string First, long Second)> options { get; set; }
 }

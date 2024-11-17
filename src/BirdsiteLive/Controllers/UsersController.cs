@@ -180,7 +180,11 @@ namespace BirdsiteLive.Controllers
 
                 if (r.Contains("application/activity+json") || r.Contains("application/ld+json"))
                 {
-                    var jsonApUser = JsonSerializer.Serialize(status);
+                    string jsonApUser;
+                    if (status is Question)
+                        jsonApUser = JsonSerializer.Serialize((Question)status);
+                    else
+                        jsonApUser = JsonSerializer.Serialize(status);
                     return Content(jsonApUser, "application/activity+json; charset=utf-8");
                 }
             }
