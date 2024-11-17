@@ -83,8 +83,6 @@ public class InstagramService : ISocialMediaService
             if (v2 == null)
                 return Array.Empty<SocialMediaPost>();
             
-            var profileUrlHash = await _ipfs.Mirror(v2.ProfileUrl, false);
-            v2.ProfileUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
             foreach (var p in v2.RecentPosts)
             {
                 if (p.CreatedAt > user.LastSync)
@@ -130,6 +128,10 @@ public class InstagramService : ISocialMediaService
                     user = await CallSidecar(username, _settings.CrawlingSidecarURL);
                 else
                     user = await CallSidecar(username, _settings.SidecarURL);
+                
+                var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, false);
+                user.ProfileUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
+                
                 await _instagramUserDal.UpdateUserCacheAsync(user);
             }
             else if (!_userCache.TryGetValue(username, out user))
