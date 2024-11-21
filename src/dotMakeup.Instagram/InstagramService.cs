@@ -130,7 +130,7 @@ public class InstagramService : ISocialMediaService
                     user = await CallSidecar(username, _settings.SidecarURL);
                 
                 var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, false);
-                user.ProfileUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
+                user.ProfileImageUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
                 
                 await _instagramUserDal.UpdateUserCacheAsync(user);
             }
