@@ -1,24 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using BirdsiteLive.ActivityPub;
 using BirdsiteLive.ActivityPub.Converters;
 using BirdsiteLive.ActivityPub.Models;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
-using BirdsiteLive.Domain.Repository;
 using BirdsiteLive.Domain.Statistics;
 using BirdsiteLive.Domain.Tools;
-using BirdsiteLive.Twitter.Models;
 
 namespace BirdsiteLive.Domain
 {
     public interface IStatusService
     {
-        Note GetStatus(string username, ExtractedTweet tweet);
         Note GetStatus(string username, SocialMediaPost post);
         ActivityCreateNote GetActivity(string username, SocialMediaPost tweet);
     }
@@ -119,11 +113,6 @@ namespace BirdsiteLive.Domain
             }
             
             return note;
-        }
-
-        public Note GetStatus(string username, ExtractedTweet tweet)
-        {
-            return GetStatus(username, (SocialMediaPost)tweet);
         }
 
         public ActivityCreateNote GetActivity(string username, SocialMediaPost tweet)

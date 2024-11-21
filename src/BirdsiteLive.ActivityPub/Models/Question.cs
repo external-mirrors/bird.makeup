@@ -19,6 +19,7 @@ namespace BirdsiteLive.ActivityPub.Models
         public string endTime { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string closed { get; set; } = null;
+        [JsonPropertyName("oneOf")]
         public QuestionAnswer[] answers { get; set; }
     }
 
