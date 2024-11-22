@@ -205,5 +205,12 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
         }
+        [TestMethod]
+        public async Task Poll_false_positive()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1858992492550734176);
+            Assert.IsNull(tweet.Poll);
+            Assert.AreEqual(tweet.Author.Acct, "elidourado");
+        }
     }
 }

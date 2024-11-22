@@ -744,6 +744,7 @@ namespace BirdsiteLive.Twitter
                 DateTime endDate = DateTime.Now;
                 Dictionary<char, string> labels = new Dictionary<char, string>();
                 Dictionary<char, long> counts = new Dictionary<char, long>();
+                string type = cardDoc.GetProperty("legacy").GetProperty("name").GetString();
                 foreach (JsonElement val in cardDoc.GetProperty("legacy").GetProperty("binding_values")
                              .EnumerateArray())
                 {
@@ -773,6 +774,8 @@ namespace BirdsiteLive.Twitter
                     endTime = endDate,
                     options = labels.OrderBy(x => x.Key).Select(x => x.Value).Zip(c).ToList(),
                 };
+                if (!type.StartsWith("poll"))
+                    poll = null;
             }
             
             var extractedTweet = new ExtractedTweet
