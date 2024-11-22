@@ -20,7 +20,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
     public class DbInitializerPostgresDal : PostgresBase, IDbInitializerDal
     {
         private readonly PostgresTools _tools;
-        private readonly Version _currentVersion = new Version(3, 5);
+        private readonly Version _currentVersion = new Version(4, 0);
         private const string DbVersionType = "db-version";
 
         #region Ctor
@@ -137,6 +137,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 new Tuple<Version, Version>(new Version(3,2), new Version(3,3)),
                 new Tuple<Version, Version>(new Version(3,3), new Version(3,4)),
                 new Tuple<Version, Version>(new Version(3,4), new Version(3,5)),
+                new Tuple<Version, Version>(new Version(3,5), new Version(4,0)),
             };
         }
 
@@ -268,7 +269,43 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 await _tools.ExecuteRequestAsync(addLastSync2);
                 await _tools.ExecuteRequestAsync(defaultTweetId);
             }
-            
+            else if (from == new Version(3, 5) && to == new Version(4, 0))
+            {
+                var createTwitterCrawling = $@"CREATE TABLE {_settings.TwitterCrawlingUserTableName}
+                (
+                    acct VARCHAR(20) primary key, 
+                    password VARCHAR(30) NOT NULL, 
+                    email VARCHAR(30), 
+                    phone VARCHAR(30), 
+                    reservedto VARCHAR(30), 
+                    extradata JSONB
+                );";
+                var createHnUsers = $@"CREATE TABLE {_settings.HackerNewsUserTableName}
+                (
+                    id SERIAL PRIMARY KEY,
+                    acct VARCHAR(20) UNIQUE, 
+                    lastsync TIMESTAMP (2) WITHOUT TIME ZONE DEFAULT NOW(),
+                    type char NOT NULL,
+                    wikidata JSONB
+                );
+                INSERT INTO {_settings.HackerNewsUserTableName} (acct, type)
+                VALUES ('frontpage', 'g');";
+                var dropConstraint =
+                    $@"ALTER TABLE {_settings.CachedInstaPostsTableName} DROP CONSTRAINT IF EXISTS cached_insta_posts_acct_key;";
+                var addFollowersIndex =
+                    $@"create index {_settings.CachedInstaPostsTableName}_acct_index on {_settings.CachedInstaPostsTableName} (acct);
+                       DROP INDEX IF EXISTS following_test;
+                       create index followings_twitter_gin_index on {_settings.FollowersTableName} using gin (followings);
+                       create index followings_instagram_gin_index on {_settings.FollowersTableName} using gin (followings_instagram);
+                       create index followings_hn_gin_index on {_settings.FollowersTableName} using gin (followings_hn);
+                    ";
+                var alterFollowersAddHn = $@"ALTER TABLE {_settings.FollowersTableName} ADD followings_hn INTEGER[]";
+                await _tools.ExecuteRequestAsync(alterFollowersAddHn);
+                await _tools.ExecuteRequestAsync(dropConstraint);
+                await _tools.ExecuteRequestAsync(addFollowersIndex);
+                await _tools.ExecuteRequestAsync(createHnUsers);
+                await _tools.ExecuteRequestAsync(createTwitterCrawling);
+            }
             else
             {
                 throw new NotImplementedException();
@@ -301,7 +338,9 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 $@"DROP TABLE {_settings.InstagramUserTableName};",
                 $@"DROP TABLE {_settings.CachedInstaPostsTableName};",
                 $@"DROP TABLE {_settings.SettingTableName};",
-                $@"DROP TABLE {_settings.WorkersTableName};"
+                $@"DROP TABLE {_settings.WorkersTableName};",
+                $@"DROP TABLE {_settings.HackerNewsUserTableName};",
+                $@"DROP TABLE {_settings.TwitterCrawlingUserTableName};",
             };
 
             foreach (var r in dropsRequests)

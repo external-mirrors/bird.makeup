@@ -6,7 +6,9 @@
 
         public string DbVersionTableName { get; set; } = "db_version";
         public string TwitterUserTableName { get; set; } = "twitter_users";
+        public string TwitterCrawlingUserTableName { get; set; } = "twitter_crawling_users";
         public string InstagramUserTableName { get; set; } = "instagram_users";
+        public string HackerNewsUserTableName { get; set; } = "hn_users";
         public string WorkersTableName { get; set; } = "workers";
         public string SettingTableName { get; set; } = "settings";
         public string CachedInstaPostsTableName { get; set; } = "cached_insta_posts";
