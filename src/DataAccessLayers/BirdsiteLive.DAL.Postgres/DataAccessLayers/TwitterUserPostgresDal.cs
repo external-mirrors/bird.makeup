@@ -186,7 +186,18 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 return result.ToArray();
             }
         }
-        
+
+        public async Task<CrawlAccount[]> GetTwitterCrawlUsersAsync(string worker)
+        {
+            var query = $"SELECT * FROM {_settings.TwitterCrawlingUserTableName} WHERE reservedto = @worker";
+
+            using (var dbConnection = Connection)
+            {
+                var result = await dbConnection.QueryAsync<CrawlAccount>(query, new { worker });
+                return result.ToArray();
+            }
+        }
+
 
         public async Task UpdateTwitterUserIdAsync(string username, long twitterUserId)
         {
