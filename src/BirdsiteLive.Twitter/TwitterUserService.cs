@@ -193,16 +193,15 @@ namespace BirdsiteLive.Twitter
 
             try
             {
-                var cred = await _settings.Get("twitteraccounts");
                 string username = String.Empty;
                 string password = String.Empty;
 
-                var candidates = cred.Value.GetProperty("accounts").EnumerateArray().ToArray();
+                var candidates = await _twitterUserDal.GetTwitterCrawlUsersAsync(_instanceSettings.MachineName);
                 Random.Shared.Shuffle(candidates);
-                foreach (JsonElement account in candidates)
+                foreach (var account in candidates)
                 {
-                    username = account.EnumerateArray().First().GetString();
-                    password = account.EnumerateArray().Last().GetString();
+                    username = account.Acct;
+                    password = account.Password;
                 }
 
                 var client = _httpClientFactory.CreateClient();
