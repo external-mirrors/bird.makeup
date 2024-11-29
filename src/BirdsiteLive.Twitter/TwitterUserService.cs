@@ -219,7 +219,10 @@ namespace BirdsiteLive.Twitter
                 );
 
                 if (httpResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    await _twitterUserDal.UpdateUserCacheAsync(null);
                     return;
+                }
                         
                 var profileJson = await httpResponse.Content.ReadAsStringAsync();
                 var profile = JsonSerializer.Deserialize<TwitterUser>(profileJson);
