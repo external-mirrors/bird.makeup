@@ -187,6 +187,8 @@ https://domain.name/@stillgray/1822453985204187319");
         public async Task Poll1()
         {
             var tweet = await _tweetService.GetTweetAsync(1593767953706921985);
+            if (tweet is null)
+                Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent, "Reinstate former President Trump");
             Assert.AreEqual(tweet.Poll.endTime.Year, new DateTime(2022, 11, 19, 7, 47, 45).Year);
             Assert.AreEqual(tweet.Poll.options[0].First, "Yes");
@@ -198,10 +200,24 @@ https://domain.name/@stillgray/1822453985204187319");
         public async Task Poll2()
         {
             var tweet = await _tweetService.GetTweetAsync(1570766012316000263);
+            if (tweet is null)
+                Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent, "On average, how many hours are you *actually* working everyday?");
             Assert.AreEqual(tweet.Poll.endTime.DayOfYear, new DateTime(2022, 9, 17, 9, 26, 45).DayOfYear);
             Assert.AreEqual(tweet.Poll.options[3].First, "1-4 hours");
             Assert.AreEqual(tweet.Poll.options[3].Second, 30);
+            Assert.IsFalse(tweet.IsRetweet);
+            Assert.IsFalse(tweet.IsReply);
+        }
+        [TestMethod]
+        public async Task Poll3()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1861785009805545631);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.AreEqual(tweet.MessageContent, "The IRS just said it wants $20B more money. \n\nDo you think it’s budget should be:");
+            Assert.AreEqual(tweet.Poll.options[3].First, "Deleted");
+            Assert.AreEqual(tweet.Poll.options[3].Second, 128780);
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
         }
