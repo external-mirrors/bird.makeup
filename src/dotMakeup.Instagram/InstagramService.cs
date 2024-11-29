@@ -40,9 +40,9 @@ public class InstagramService : ISocialMediaService
             //Priority on removing when reaching size limit (memory pressure)
             .SetPriority(CacheItemPriority.Low)
             // Keep in cache for this time, reset time if accessed.
-            .SetSlidingExpiration(TimeSpan.FromMinutes(5))
+            .SetSlidingExpiration(TimeSpan.FromHours(5))
             // Remove from cache after this time, regardless of sliding expiration
-            .SetAbsoluteExpiration(TimeSpan.FromMinutes(30));
+            .SetAbsoluteExpiration(TimeSpan.FromHours(30));
 
         private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
         {
