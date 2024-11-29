@@ -63,6 +63,8 @@ namespace BirdsiteLive.Pipeline.Processors.SubTasks
                         {
                             userWtData.Tweets = tweets;
                             usersWtTweets.Add(userWtData);
+                            var latestPostDate = tweets.Max(x => x.CreatedAt);
+                            await _socialMediaService.UserDal.UpdateUserExtradataAsync(user.Acct, "latest_post_date", latestPostDate);
                         }
                     } 
                     catch(RateLimitExceededException e)
