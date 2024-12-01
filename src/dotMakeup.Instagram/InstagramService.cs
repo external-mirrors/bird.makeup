@@ -85,7 +85,7 @@ public class InstagramService : ISocialMediaService
             
             foreach (var p in v2.RecentPosts)
             {
-                if (p.CreatedAt > user.LastSync)
+                if (p.CreatedAt > user.LastPost)
                 {
                     if (_settings.IpfsApi is not null)
                     {

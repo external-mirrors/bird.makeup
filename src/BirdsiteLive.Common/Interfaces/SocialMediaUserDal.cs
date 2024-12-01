@@ -43,6 +43,18 @@ public class SyncUser
 
         public DateTime LastSync { get; set; }
 
+        public DateTime LastPost
+        {
+            get
+            {
+                JsonElement lastPost;
+                if (!ExtraData.TryGetProperty("latest_post_date", out lastPost))
+                    return DateTime.MinValue;
+
+                return lastPost.GetDateTime();
+            }
+        }
+
         public int FetchingErrorCount { get; set; } //TODO: update DAL
         public long Followers { get; set; } 
         public int StatusesCount { get; set; }
