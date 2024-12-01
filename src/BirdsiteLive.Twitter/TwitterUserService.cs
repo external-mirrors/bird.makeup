@@ -220,7 +220,7 @@ namespace BirdsiteLive.Twitter
 
                 if (httpResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    await _twitterUserDal.UpdateUserCacheAsync(null);
+                    await _twitterUserDal.ClearUserCacheAsync(user.Acct);
                     return;
                 }
                         

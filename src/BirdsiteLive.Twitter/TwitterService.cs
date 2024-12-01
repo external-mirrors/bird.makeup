@@ -50,12 +50,12 @@ namespace BirdsiteLive.Twitter
             }
             catch (Exception e)
             {
-                _twitterUserService.PurgeUser(user.Acct);
+                await _userDal.UpdateTwitterUserAsync(user.Id, user.LastTweetPostedId, user.FetchingErrorCount++, user.LastSync);
             }
             if (tweets.Length > 0)
             {
                 var tweetId = tweets.Last().Id;
-                await _userDal.UpdateTwitterUserAsync(user.Id, long.Parse(tweetId), user.FetchingErrorCount, user.LastSync);
+                await _userDal.UpdateTwitterUserAsync(user.Id, long.Parse(tweetId), 0, user.LastSync);
             }
 
             if (user.Followers > 50)
