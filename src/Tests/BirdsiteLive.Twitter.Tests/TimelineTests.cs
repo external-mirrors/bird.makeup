@@ -10,6 +10,7 @@ using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.DAL.Models;
 using System.Net.Http;
 using System.Text.Json;
+using BirdsiteLive.Twitter.Models;
 using Newtonsoft.Json;
 
 namespace BirdsiteLive.ActivityPub.Tests
@@ -51,7 +52,7 @@ namespace BirdsiteLive.ActivityPub.Tests
 
             _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger1.Object);
             ITwitterUserService user = new TwitterUserService(_tweetAuth, _twitterUserDalMoq, settings, settingsDal.Object, httpFactory.Object, logger2.Object);
-            _twitterUserService = new CachedTwitterUserService(user, settings);
+            _twitterUserService = new CachedTwitterUserService(user, twitterDal.Object, settings);
             _tweetService = new TwitterTweetsService(_tweetAuth, _twitterUserService, twitterDal.Object, settings, httpFactory.Object, settingsDal.Object, logger3.Object);
 
         }

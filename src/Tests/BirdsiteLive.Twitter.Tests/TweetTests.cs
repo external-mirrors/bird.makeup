@@ -37,7 +37,7 @@ namespace BirdsiteLive.ActivityPub.Tests
             };
             _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger1.Object);
             ITwitterUserService user = new TwitterUserService(_tweetAuth, twitterDal.Object, settings, settingsDal.Object, httpFactory.Object, logger2.Object);
-            ICachedTwitterUserService user2 = new CachedTwitterUserService(user, settings);
+            ICachedTwitterUserService user2 = new CachedTwitterUserService(user, twitterDal.Object, settings);
             _tweetService = new TwitterTweetsService(_tweetAuth, user2, twitterDal.Object, settings, httpFactory.Object, settingsDal.Object, logger3.Object);
 
         }

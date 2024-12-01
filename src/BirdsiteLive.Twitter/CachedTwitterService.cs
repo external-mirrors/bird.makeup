@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
+using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Twitter.Models;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -18,6 +19,7 @@ namespace BirdsiteLive.Twitter
     public class CachedTwitterUserService : ICachedTwitterUserService
     {
         private readonly ITwitterUserService _twitterService;
+        private readonly ITwitterUserDal _twitterUserDal;
 
         private readonly MemoryCache _userCache;
         private readonly MemoryCacheEntryOptions _cacheEntryOptions = new MemoryCacheEntryOptions()
@@ -38,9 +40,10 @@ namespace BirdsiteLive.Twitter
             // Remove from cache after this time, regardless of sliding expiration
             .SetAbsoluteExpiration(TimeSpan.FromMinutes(30));
         #region Ctor
-        public CachedTwitterUserService(ITwitterUserService twitterService, InstanceSettings settings)
+        public CachedTwitterUserService(ITwitterUserService twitterService, ITwitterUserDal twitterUserDal, InstanceSettings settings)
         {
             _twitterService = twitterService;
+            _twitterUserDal = twitterUserDal;
 
             _userCache = new MemoryCache(new MemoryCacheOptions()
             {
@@ -57,7 +60,15 @@ namespace BirdsiteLive.Twitter
         {
             if (!_userCache.TryGetValue(username, out TwitterUser user))
             {
-                user = await _twitterService.GetUserAsync(username);
+                var cachedUser = await _twitterUserDal.GetUserCacheAsync(username);
+                if (cachedUser is not null)
+                {
+                    user = JsonSerializer.Deserialize<TwitterUser>(cachedUser);
+                }
+                else
+                {
+                    user = await _twitterService.GetUserAsync(username);
+                }
                 if (user is null)
                     _userCache.Set(username, user, _cacheEntryOptionsError);
                 else
