@@ -28,7 +28,7 @@ public class InstagramUserPostgresDal : SocialMediaUserPostgresDal, IInstagramUs
         {
             string query = @$"
                 WITH followings AS (SELECT unnest({FollowingColumnName}) as fid, count(*), bool_or(host = 'r.town') as vip FROM {_settings.FollowersTableName} GROUP BY fid)
-                SELECT id, acct, lastsync
+                SELECT id, acct, lastsync, extradata
                 FROM {_settings.InstagramUserTableName}
                 WHERE id IN (SELECT fid FROM followings WHERE vip = true)
                 OR (
@@ -53,11 +53,13 @@ public class InstagramUserPostgresDal : SocialMediaUserPostgresDal, IInstagramUs
             var results = new List<SyncUser>();
             while (await reader.ReadAsync())
             {
+                var extradata = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement;
                 results.Add(new SyncUser
                     {
                         Id = reader["id"] as int? ?? default,
                         Acct = reader["acct"] as string,
                         LastSync = reader["lastSync"] as DateTime? ?? default,
+                        ExtraData = extradata,
                     }
                 );
 

@@ -20,6 +20,7 @@ public class InstagramUser : SocialMediaUser
         public string ProfileUrl { get; set; }
         public string ProfileImageUrl { get; set; }
         public string ProfileBannerURL { get; set; }
+        public long FollowersCount { get; set; }
 }
 
 public class InstagramSocialMediaUserConverter : JsonConverter<SocialMediaUser>
