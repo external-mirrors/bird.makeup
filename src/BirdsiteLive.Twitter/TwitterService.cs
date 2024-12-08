@@ -58,7 +58,7 @@ namespace BirdsiteLive.Twitter
                 await _userDal.UpdateTwitterUserAsync(user.Id, long.Parse(tweetId), 0, user.LastSync);
             }
 
-            if (user.Followers > 50)
+            if (user.Followers > 60)
                 await _twitterUserService.UpdateUserCache(user);
 
             return tweets;

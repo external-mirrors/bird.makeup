@@ -121,6 +121,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                     SELECT id, lastsync, count(*) as followers FROM following
                     INNER JOIN {_settings.TwitterUserTableName} ON following.follow={_settings.TwitterUserTableName}.id
                     WHERE mod(id, $2) >= $3 AND mod(id, $2) <= $4
+                        AND (extract(dow from now()) = 1 OR extradata['latest_post_date'] is not null)
                     GROUP BY id
                     ORDER BY lastSync ASC NULLS FIRST
                     LIMIT $1
