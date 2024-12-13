@@ -17,6 +17,7 @@ public class InstagramService : ISocialMediaService
 {
         static Meter _meter = new("DotMakeup", "1.0.0");
         static Counter<int> _newPosts = _meter.CreateCounter<int>("dotmakeup_ig_new_posts_count");
+        static Counter<int> _apiCalled = _meter.CreateCounter<int>("dotmakeup_api_called_count");
         
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly InstanceSettings _settings;
@@ -80,6 +81,9 @@ public class InstagramService : ISocialMediaService
         {
             var newPosts = new List<SocialMediaPost>();
             var v2 = await GetUserAsync(user.Acct, true);
+            _apiCalled.Add(1, new KeyValuePair<string, object?>("api", "instagram_sidecar_timeline"),
+                new KeyValuePair<string, object?>("result", v2 != null ? "2xx": "5xx")
+            );
             if (v2 == null)
                 return Array.Empty<SocialMediaPost>();
             
@@ -111,7 +115,11 @@ public class InstagramService : ISocialMediaService
 
         public async Task<SocialMediaUser?> GetUserAsync(string username)
         {
-            return await GetUserAsync(username, false);
+            var user = await GetUserAsync(username, false);
+            _apiCalled.Add(1, new KeyValuePair<string, object?>("api", "instagram_sidecar_user"),
+                new KeyValuePair<string, object?>("result", user != null ? "2xx": "5xx")
+            );
+            return user;
         }
 
         private async Task<InstagramUser?> GetUserAsync(string username, bool forceRefresh)
