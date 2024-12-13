@@ -27,20 +27,5 @@ namespace BirdsiteLive.Controllers
             return View(stats);
         }
 
-        private ModerationStatus GetModerationStatus()
-        {
-            var status = new ModerationStatus
-            {
-                Followers = _moderationRepository.GetModerationType(ModerationEntityTypeEnum.Follower),
-                TwitterAccounts = _moderationRepository.GetModerationType(ModerationEntityTypeEnum.TwitterAccount)
-            };
-            return status;
-        }
-    }
-
-    public class ModerationStatus
-    {
-        public ModerationTypeEnum Followers { get; set; }
-        public ModerationTypeEnum TwitterAccounts { get; set; }
     }
 }

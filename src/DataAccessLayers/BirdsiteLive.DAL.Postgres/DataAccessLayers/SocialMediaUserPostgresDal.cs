@@ -44,6 +44,22 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
         {
             return await GetUserAsync(acct, null);
         }
+        
+        public async Task<(TimeSpan, int)> GetSyncLag()
+        {
+            var query = $"SELECT max(lastsync) - min(lastsync) as diff, count(*) FROM (SELECT unnest({FollowingColumnName}) as follow FROM {_settings.FollowersTableName} GROUP BY follow) AS f INNER JOIN {tableName} ON f.follow={tableName}.id WHERE {tableName}.extradata['latest_post_date'] is not null;";
+
+            await using var connection = DataSource.CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand(query, connection) { };
+            var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                return (default, default);
+
+            var time = reader["diff"] as TimeSpan? ?? default;
+            var count = reader["count"] as long? ?? default;
+            return (time, (int)count);
+        }
 
         public async Task<SyncUser[]> GetAllUsersAsync()
         {

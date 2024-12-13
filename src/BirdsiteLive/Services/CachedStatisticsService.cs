@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
 
@@ -12,16 +13,16 @@ namespace BirdsiteLive.Services
 
     public class CachedStatisticsService : ICachedStatisticsService
     {
-        private readonly ITwitterUserDal _twitterUserDal;
         private readonly IFollowersDal _followersDal;
 
+        private readonly ISocialMediaService _socialMediaService;
         private static Task<CachedStatistics> _cachedStatistics;
         private readonly InstanceSettings _instanceSettings;
 
         #region Ctor
-        public CachedStatisticsService(ITwitterUserDal twitterUserDal, IFollowersDal followersDal, InstanceSettings instanceSettings)
+        public CachedStatisticsService(ISocialMediaService socialMediaService, IFollowersDal followersDal, InstanceSettings instanceSettings)
         {
-            _twitterUserDal = twitterUserDal;
+            _socialMediaService = socialMediaService;
             _instanceSettings = instanceSettings;
             _followersDal = followersDal;
             _cachedStatistics = CreateStats();
@@ -41,8 +42,7 @@ namespace BirdsiteLive.Services
 
         private async Task<CachedStatistics> CreateStats()
         {
-            var twitterUserCount = await _twitterUserDal.GetTwitterUsersCountAsync();
-            var twitterSyncLag = await _twitterUserDal.GetTwitterSyncLag();
+            var (twitterSyncLag, twitterUserCount) = await _socialMediaService.UserDal.GetSyncLag();
             var fediverseUsers = await _followersDal.GetFollowersCountAsync();
 
             var stats = new CachedStatistics
