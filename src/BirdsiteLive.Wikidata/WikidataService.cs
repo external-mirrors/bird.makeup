@@ -13,19 +13,23 @@ public class WikidataService
     private HttpClient _client = new ();
 
     private const string HandleQuery = """
+                                       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                                       PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+                                       PREFIX schema: <http://schema.org/>
                                        SELECT ?item ?handleTwitter ?handleIG ?handleReddit ?handleFedi ?handleHN ?handleTT ?itemLabel ?itemDescription
-                                       WHERE
-                                       {
-                                        {?item wdt:P2002 ?handleTwitter } UNION {?item wdt:P2003 ?handleIG}
-                                          OPTIONAL {?item wdt:P4033 ?handleFedi} 
-                                         OPTIONAL {?item wdt:P4265 ?handleReddit}
-                                         OPTIONAL {?item wdt:P7171 ?handleHN}
-                                         OPTIONAL {?item wdt:P7085 ?handleTT}
-                                         OPTIONAL {?item wdt:P2003 ?handleIG }
-                                         OPTIONAL {?item wdt:P2002 ?handleTwitter }
-                                       
-                                          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-                                       } # LIMIT 10  
+                                         WHERE
+                                         {
+                                          {?item wdt:P2002 ?handleTwitter } UNION {?item wdt:P2003 ?handleIG}
+                                           OPTIONAL {?item wdt:P4033 ?handleFedi} 
+                                           OPTIONAL {?item wdt:P4265 ?handleReddit}
+                                           OPTIONAL {?item wdt:P7171 ?handleHN}
+                                           OPTIONAL {?item wdt:P7085 ?handleTT}
+                                           OPTIONAL {?item wdt:P2003 ?handleIG }
+                                           OPTIONAL {?item wdt:P2002 ?handleTwitter }
+                                         
+                                           OPTIONAL { ?item rdfs:label ?itemLabel . FILTER( LANG(?itemLabel) = "en" ) }
+                                           OPTIONAL { ?item schema:description ?itemDescription . FILTER( LANG(?itemDescription) = "en" ) }
+                                         } 
                                        """;
     private const string NotableWorkQuery = """
                                        SELECT ?item ?handle ?work
@@ -41,17 +45,18 @@ public class WikidataService
         _dal = twitterUserDal;
         _dalIg = instagramUserDal;
 
-        string? key = Environment.GetEnvironmentVariable("semantic");
+        string? key = Environment.GetEnvironmentVariable("semantic2");
         if (key is null)
         {
             _endpoint = "https://query.wikidata.org/sparql?query=";
+            _endpoint = "https://qlever.cs.uni-freiburg.de/api/wikidata?query=";
         }
         else
         {
             _endpoint = "https://query.semantic.builders/sparql?query=";
             _client.DefaultRequestHeaders.Add("api-key", key);   
         }
-        _client.DefaultRequestHeaders.Add("Accept", "application/json");
+        //_client.DefaultRequestHeaders.Add("Accept", "application/json");
         _client.DefaultRequestHeaders.Add("User-Agent", "BirdMakeup/1.0 (https://bird.makeup; https://sr.ht/~cloutier/bird.makeup/) BirdMakeup/1.0");
         _client.Timeout = Timeout.InfiniteTimeSpan;
     }
@@ -78,18 +83,21 @@ public class WikidataService
         Console.WriteLine($"Done loading {instagramUsers.Count} instagram users");
 
         Console.WriteLine("Making Wikidata Query to " + _endpoint);
+        string query = _endpoint + Uri.EscapeDataString(HandleQuery);
         var response = await _client.GetAsync(_endpoint + Uri.EscapeDataString(HandleQuery));
         var content = await response.Content.ReadAsStringAsync();
         var res = JsonDocument.Parse(content);
         Console.WriteLine("Done with Wikidata Query");
 
+        var twitterUpdates = new Dictionary<string, object>();
+        var instagramUpdates = new Dictionary<string, object>();
 
         foreach (JsonElement n in res.RootElement.GetProperty("results").GetProperty("bindings").EnumerateArray())
         {
             
 
             var qcode = n.GetProperty("item").GetProperty("value").GetString()!.Replace("http://www.wikidata.org/entity/", "");
-            var handleTwitter = ExtractValue(n, "handleTwitter", true);
+            string? handleTwitter = ExtractValue(n, "handleTwitter", true);
             var handleIg = ExtractValue(n, "handleIG", true);
             var handleReddit = ExtractValue(n, "handleReddit", true);
             var handleHn = ExtractValue(n, "handleHN", true);
@@ -114,12 +122,16 @@ public class WikidataService
                     HandleIG = handleIg,
                 };
                 Console.WriteLine($"{entry.Label} with {qcode}");
-                if (handleTwitter is not null)
-                    await _dal.UpdateUserWikidataAsync(handleTwitter, entry);
-                if (handleIg is not null)
-                    await _dalIg.UpdateUserWikidataAsync(handleIg, entry);
+                if (handleTwitter is not null && handleTwitter.Length < 19)
+                    twitterUpdates[handleTwitter] = entry;
+                if (handleIg is not null && handleIg.Length < 29)
+                    instagramUpdates[handleIg] = entry;
             }
         }
+        Console.WriteLine($"Checkpointing Twitter");
+        await _dal.UpdateUsersWikidataAsync(twitterUpdates);
+        Console.WriteLine($"Checkpointing Instagram");
+        await _dalIg.UpdateUsersWikidataAsync(instagramUpdates);
     }
 
     private static string? ExtractValue(JsonElement e, string value, bool extraClean)

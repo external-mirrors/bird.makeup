@@ -372,29 +372,41 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
 
             await command.ExecuteNonQueryAsync();
         }
-        public async Task UpdateUserWikidataAsync(string username, object value)
+        public async Task UpdateUsersWikidataAsync(Dictionary<string, object> values)
         {
-            if(username == default) throw new ArgumentException("id");
-
-            var query = $"""
-                INSERT INTO {tableName} (acct, wikidata)
-                VALUES ($1, $2)
-                ON CONFLICT (acct)
-                DO UPDATE
-                    SET wikidata = EXCLUDED.wikidata
-""";
+            
             await using var connection = DataSource.CreateConnection();
             await connection.OpenAsync();
-            await using var command = new NpgsqlCommand(query, connection) {
-                Parameters = 
-                { 
-                    new() { Value = username},
-                    new() { Value = JsonSerializer.Serialize(value), NpgsqlDbType = NpgsqlDbType.Jsonb },
-                    
-                }
-            };
+            await using var transaction = await connection.BeginTransactionAsync();
 
-            await command.ExecuteNonQueryAsync();
+            await using var clearCommand = new NpgsqlCommand($"UPDATE {tableName} SET wikidata = null;", connection);
+            await clearCommand.ExecuteNonQueryAsync();
+            
+            foreach ((string username, object value) in values)
+            {
+                if(username == default)
+                    continue;
+                Console.WriteLine($"\r writing {username}"); 
+                var query = $"""
+                    INSERT INTO {tableName} (acct, wikidata)
+                    VALUES ($1, $2)
+                    ON CONFLICT (acct)
+                    DO UPDATE
+                        SET wikidata = EXCLUDED.wikidata
+                    """;
+                await using var command = new NpgsqlCommand(query, connection) {
+                    Parameters = 
+                    { 
+                        new() { Value = username},
+                        new() { Value = JsonSerializer.Serialize(value), NpgsqlDbType = NpgsqlDbType.Jsonb },
+                        
+                    }
+                };
+
+                await command.ExecuteNonQueryAsync();
+            }
+            Console.WriteLine($"commiting for {tableName}"); 
+            await transaction.CommitAsync();
         }
         public async Task<string> GetUserExtradataAsync(string acct, string key)
         {

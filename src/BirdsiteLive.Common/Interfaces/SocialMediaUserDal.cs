@@ -28,7 +28,7 @@ public interface SocialMediaUserDal
         Task<Follower[]> GetFollowersAsync(int id);
         Task UpdateUserExtradataAsync(string username, string key, string subkey, object value);
         Task UpdateUserExtradataAsync(string username, string key, object value);
-        Task UpdateUserWikidataAsync(string username, object value);
+        Task UpdateUsersWikidataAsync(Dictionary<string, object> values);
         Task<string> GetUserWikidataAsync(string username);
         Task<string> GetUserExtradataAsync(string username, string key);
 }
