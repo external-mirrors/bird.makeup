@@ -398,11 +398,14 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             await using var clearCommand = new NpgsqlCommand($"UPDATE {tableName} SET wikidata = null;", connection);
             await clearCommand.ExecuteNonQueryAsync();
             
+            Console.WriteLine($"Importing {values.Count} entries");
+            int i = 0;
             foreach ((string username, object value) in values)
             {
+                i++;
                 if(username == default)
                     continue;
-                Console.WriteLine($"\r writing {username}"); 
+                Console.Write($"\r writing {username.PadRight(40, ' ')}   {i.ToString().PadLeft(5, ' ')}/{values.Count}"); 
                 var query = $"""
                     INSERT INTO {tableName} (acct, wikidata)
                     VALUES ($1, $2)

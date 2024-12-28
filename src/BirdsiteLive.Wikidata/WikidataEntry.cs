@@ -11,15 +11,15 @@ public class WikidataEntry
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Description { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? FediHandle { get; set; }
+    public HashSet<string>? FediHandle { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? HandleHN { get; set; }
+    public HashSet<string>? HandleHN { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? HandleIG { get; set; }
+    public HashSet<string>? HandleIG { get; set; } 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? HandleReddit { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? HandleTikTok { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? HandleTwitter { get; set; }
+    public HashSet<string>? HandleTwitter { get; set; }
 }

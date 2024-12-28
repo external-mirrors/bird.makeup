@@ -89,6 +89,7 @@ public class WikidataService
         var res = JsonDocument.Parse(content);
         Console.WriteLine("Done with Wikidata Query");
 
+        var qcodeUpdates = new Dictionary<string, WikidataEntry>();
         var twitterUpdates = new Dictionary<string, object>();
         var instagramUpdates = new Dictionary<string, object>();
 
@@ -102,30 +103,79 @@ public class WikidataService
             var handleReddit = ExtractValue(n, "handleReddit", true);
             var handleHn = ExtractValue(n, "handleHN", true);
             var handleTikTok = ExtractValue(n, "handleTT", true);
+            var handleFedi = ExtractValue(n, "handleFedi", false);
 
             // for any network
             bool isFollowed = (handleTwitter is not null && twitterUser.Contains(handleTwitter))
                               || (handleIg is not null && instagramUsers.Contains(handleIg));
 
-            if (isFollowed)
+            if (!isFollowed)
+                continue;
+
+            WikidataEntry entry;
+            if (qcodeUpdates.ContainsKey(qcode))
             {
-                var entry = new WikidataEntry()
+                entry = qcodeUpdates[qcode];
+            }
+            else
+            {
+                entry = new WikidataEntry()
                 {
                     QCode = qcode,
                     Description = ExtractValue(n, "itemDescription", false),
                     Label = ExtractValue(n, "itemLabel", false),
-                    FediHandle = ExtractValue(n, "handleFedi", false),
                     HandleReddit = handleReddit,
-                    HandleHN = handleHn,
                     HandleTikTok = handleTikTok,
-                    HandleTwitter = handleTwitter,
-                    HandleIG = handleIg,
                 };
-                Console.WriteLine($"{entry.Label} with {qcode}");
-                if (handleTwitter is not null && handleTwitter.Length < 19)
-                    twitterUpdates[handleTwitter] = entry;
-                if (handleIg is not null && handleIg.Length < 29)
-                    instagramUpdates[handleIg] = entry;
+            }
+
+            if (handleHn is not null)
+            {
+                if (entry.HandleHN is null)
+                    entry.HandleHN = new HashSet<string>();
+                entry.HandleHN.Add(handleHn);
+            }
+            if (handleFedi is not null)
+            {
+                if (entry.FediHandle is null)
+                    entry.FediHandle = new HashSet<string>();
+                entry.FediHandle.Add(handleFedi);
+            }
+            if (handleIg is not null)
+            {
+                if (entry.HandleIG is null)
+                    entry.HandleIG = new HashSet<string>();
+                entry.HandleIG.Add(handleIg);
+            }
+            if (handleTwitter is not null)
+            {
+                if (entry.HandleTwitter is null)
+                    entry.HandleTwitter = new HashSet<string>();
+                entry.HandleTwitter.Add(handleTwitter);
+            }
+            
+            
+            Console.Write($"\r {entry.Label} with {qcode}");
+            qcodeUpdates[qcode] = entry;
+        }
+
+        foreach ((string qcode, WikidataEntry entry) in qcodeUpdates)
+        {
+            if (entry.HandleTwitter is not null)
+            {
+                foreach (var handleTwitter in entry.HandleTwitter)
+                {
+                    if (handleTwitter.Length < 21)
+                        twitterUpdates[handleTwitter] = entry;
+                }
+            }
+            if (entry.HandleIG is not null)
+            {
+                foreach (var handleIg in entry.HandleIG)
+                {
+                    if (handleIg.Length < 31)
+                        instagramUpdates[handleIg] = entry;
+                }
             }
         }
         Console.WriteLine($"Checkpointing Twitter");
@@ -196,37 +246,65 @@ public class WikidataService
 
     public async Task SyncAttachments()
     {
-        var twitterUser = new HashSet<string>();
-        var twitterUserQuery = await _dal.GetAllTwitterUsersAsync();
         Console.WriteLine("Loading twitter users");
-        foreach (SyncTwitterUser user in twitterUserQuery)
-        {
-            twitterUser.Add(user.Acct);
-        }
-        Console.WriteLine($"Done loading {twitterUser.Count} twitter users");
+        var twitterUserQuery = await _dal.GetAllUsersAsync()!;
+        Console.WriteLine($"Done loading {twitterUserQuery.Length} twitter users");
 
-        foreach (string u in twitterUser)
+        foreach (SyncUser u in twitterUserQuery)
         {
-            var s = await _dal.GetUserWikidataAsync(u);
+            var s = await _dal.GetUserWikidataAsync(u.Acct);
+            if (s is null)
+                continue;
             var w = JsonSerializer.Deserialize<WikidataEntry>(s);
-            if (w.FediHandle is not null)
+            var att = CreateAttachements(w, false, true);
+            if (att.Count > 0)
             {
-                Console.WriteLine($"{u} - {w.FediHandle}");
-                
-                var input = w.FediHandle.TrimStart('@');
-                string[] parts = input.Split('@');
-                if (parts.Length != 2)
-                {
-                    Console.WriteLine($"{u} - invalid fedi handle");
-                    continue;
-                }
+                await _dal.UpdateUserExtradataAsync(u.Acct, "hooks", "addAttachments", att);
+            }
+        }
+    }
+
+    private Dictionary<string, string> CreateAttachements(WikidataEntry w, bool skipTwitter, bool skipIg)
+    {
+        var results = new Dictionary<string, string>();
+        
+        if (w.FediHandle is not null)
+        {
+            var fediHandle = w.FediHandle.ElementAt(0);
+            Console.WriteLine($"{w.QCode} - {w.FediHandle}");
+
+            var input = fediHandle.TrimStart('@');
+            string[] parts = input.Split('@');
+            if (parts.Length == 2)
+            {
+
                 string username = parts[0];
                 string domain = parts[1];
 
-                string fediLink = $"<span class=\"h-card\" translate=\"no\"><a href=\"https://{domain}/users/{username}\" class=\"u-url mention\">@<span>{username}@{domain}</span></a></span>";
-                
-                await _dal.UpdateUserExtradataAsync(u, "hooks", "addAttachments", new Dictionary<string, string>() {{ "fedi", fediLink }});
+                string fediLink =
+                    $"<span class=\"h-card\" translate=\"no\"><a href=\"https://{domain}/users/{username}\" class=\"u-url mention\">@<span>{username}@{domain}</span></a></span>";
+                results.Add("fedi", fediLink);
             }
         }
+        
+        if (w.HandleTwitter is not null && w.HandleTwitter.Count == 1 && !skipTwitter)
+        {
+            var twitterHandle = w.HandleTwitter.ElementAt(0);
+
+            string fediLink =
+                $"<span class=\"h-card\" translate=\"no\"><a href=\"https://bird.makeup/users/{twitterHandle}\" class=\"u-url mention\">@<span>{twitterHandle}@bird.makeup</span></a></span>";
+            results.Add("Twitter", fediLink);
+        }
+        
+        if (w.HandleIG is not null && w.HandleIG.Count == 1 && !skipIg)
+        {
+            var handle = w.HandleIG.ElementAt(0);
+
+            string fediLink =
+                $"<span class=\"h-card\" translate=\"no\"><a href=\"https://kilogram.makeup/users/{handle}\" class=\"u-url mention\">@<span>{handle}@kilogram.makeup</span></a></span>";
+            results.Add("Instagram", fediLink);
+        }
+
+        return results;
     }
 }
