@@ -222,6 +222,18 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsFalse(tweet.IsReply);
         }
         [TestMethod]
+        public async Task Poll4()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1872489920297910742);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.AreEqual(tweet.MessageContent, "Do you feel the immigration debates on X have been:");
+            Assert.AreEqual(tweet.Poll.options[1].First, "Toxic");
+            Assert.AreEqual(tweet.Poll.options[1].Second, 6323);
+            Assert.IsFalse(tweet.IsRetweet);
+            Assert.IsFalse(tweet.IsReply);
+        }
+        [TestMethod]
         public async Task Poll_false_positive()
         {
             var tweet = await _tweetService.GetTweetAsync(1858992492550734176);
