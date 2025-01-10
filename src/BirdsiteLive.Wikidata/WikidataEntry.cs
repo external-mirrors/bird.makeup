@@ -22,4 +22,6 @@ public class WikidataEntry
     public string? HandleTikTok { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public HashSet<string>? HandleTwitter { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public HashSet<string>? NotableWorks { get; set; }
 }

@@ -16,7 +16,7 @@ public class WikidataService
                                        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                                        PREFIX wdt: <http://www.wikidata.org/prop/direct/>
                                        PREFIX schema: <http://schema.org/>
-                                       SELECT ?item ?handleTwitter ?handleIG ?handleReddit ?handleFedi ?handleHN ?handleTT ?itemLabel ?itemDescription
+                                       SELECT ?item ?handleTwitter ?handleIG ?handleReddit ?handleFedi ?handleHN ?handleTT ?work ?itemLabel ?itemDescription
                                          WHERE
                                          {
                                           {?item wdt:P2002 ?handleTwitter } UNION {?item wdt:P2003 ?handleIG}
@@ -26,6 +26,7 @@ public class WikidataService
                                            OPTIONAL {?item wdt:P7085 ?handleTT}
                                            OPTIONAL {?item wdt:P2003 ?handleIG }
                                            OPTIONAL {?item wdt:P2002 ?handleTwitter }
+                                           OPTIONAL {?item wdt:P800 ?work }
                                          
                                            OPTIONAL { ?item rdfs:label ?itemLabel . FILTER( LANG(?itemLabel) = "en" ) }
                                            OPTIONAL { ?item schema:description ?itemDescription . FILTER( LANG(?itemDescription) = "en" ) }
@@ -104,6 +105,7 @@ public class WikidataService
             var handleHn = ExtractValue(n, "handleHN", true);
             var handleTikTok = ExtractValue(n, "handleTT", true);
             var handleFedi = ExtractValue(n, "handleFedi", false);
+            var work = ExtractValue(n, "work", false);
 
             // for any network
             bool isFollowed = (handleTwitter is not null && twitterUser.Contains(handleTwitter))
@@ -153,6 +155,12 @@ public class WikidataService
                     entry.HandleTwitter = new HashSet<string>();
                 entry.HandleTwitter.Add(handleTwitter);
             }
+            if (work is not null)
+            {
+                if (entry.NotableWorks is null)
+                    entry.NotableWorks = new HashSet<string>();
+                entry.NotableWorks.Add(work.Replace("http://www.wikidata.org/entity/", ""));
+            }
             
             
             Console.Write($"\r {entry.Label} with {qcode}");
@@ -199,51 +207,6 @@ public class WikidataService
         return res;
     }
 
-    public async Task SyncNotableWork()
-    {
-        var twitterUser = new HashSet<string>();
-        var twitterUserQuery = await _dal.GetAllTwitterUsersAsync();
-        Console.WriteLine("Loading twitter users");
-        foreach (SyncTwitterUser user in twitterUserQuery)
-        {
-            twitterUser.Add(user.Acct);
-        }
-        Console.WriteLine($"Done loading {twitterUser.Count} twitter users");
-        
-        
-        Console.WriteLine("Making Wikidata Query to " + _endpoint);
-        var response = await _client.GetAsync(_endpoint + Uri.EscapeDataString(NotableWorkQuery));
-        var content = await response.Content.ReadAsStringAsync();
-        var res = JsonDocument.Parse(content);
-        Console.WriteLine("Done with Wikidata Query");
-
-        var notableWork = new Dictionary<string, List<string>>();
-        foreach (JsonElement n in res.RootElement.GetProperty("results").GetProperty("bindings").EnumerateArray())
-        {
-            var qcode =
-                n.GetProperty("item").GetProperty("value").GetString()!.Replace("http://www.wikidata.org/entity/", "");
-            var acct = n.GetProperty("handle").GetProperty("value").GetString()!.ToLower().Trim().TrimEnd('\r', '\n');
-            var work =
-                n.GetProperty("work").GetProperty("value").GetString()!.Replace("http://www.wikidata.org/entity/", "");
-
-            List<string> workList;
-            if (!notableWork.TryGetValue("qcode", out workList))
-                workList = new List<string>();
-
-            workList = workList.Append(work).ToList();
-
-            notableWork[acct] = workList;
-        }
-
-        foreach ((string acct, List<string> works) in notableWork)
-        {
-            Console.WriteLine(acct + " " + works.Count);
-            if (twitterUser.Contains(acct))
-                await _dal.UpdateUserExtradataAsync(acct, "wikidata", "notableWorks", works);
-        }
-
-    }
-
     public async Task SyncAttachments()
     {
         Console.WriteLine("Loading twitter users");
@@ -256,10 +219,27 @@ public class WikidataService
             if (s is null)
                 continue;
             var w = JsonSerializer.Deserialize<WikidataEntry>(s);
-            var att = CreateAttachements(w, false, true);
+            var att = CreateAttachements(w, true, false);
             if (att.Count > 0)
             {
                 await _dal.UpdateUserExtradataAsync(u.Acct, "hooks", "addAttachments", att);
+            }
+        }
+        
+        Console.WriteLine("Loading instagram users");
+        var igUserQuery = await _dalIg.GetAllUsersAsync()!;
+        Console.WriteLine($"Done loading {igUserQuery.Length} instagram users");
+
+        foreach (SyncUser u in igUserQuery)
+        {
+            var s = await _dalIg.GetUserWikidataAsync(u.Acct);
+            if (s is null)
+                continue;
+            var w = JsonSerializer.Deserialize<WikidataEntry>(s);
+            var att = CreateAttachements(w, false, true);
+            if (att.Count > 0)
+            {
+                await _dalIg.UpdateUserExtradataAsync(u.Acct, "hooks", "addAttachments", att);
             }
         }
     }
@@ -271,7 +251,7 @@ public class WikidataService
         if (w.FediHandle is not null)
         {
             var fediHandle = w.FediHandle.ElementAt(0);
-            Console.WriteLine($"{w.QCode} - {w.FediHandle}");
+            Console.WriteLine($"{w.QCode} - {fediHandle}");
 
             var input = fediHandle.TrimStart('@');
             string[] parts = input.Split('@');
