@@ -135,7 +135,7 @@ public class InstagramService : ISocialMediaService
                 if (_settings.CrawlingSidecarURL is not null)
                     user = await CallSidecar(username, _settings.CrawlingSidecarURL);
                 else
-                    user = await CallSidecar(username, _settings.SidecarURL);
+                    user = await CallSidecar(username, await GetWebSidecar());
                 
                 var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, false);
                 user.ProfileImageUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
@@ -151,7 +151,7 @@ public class InstagramService : ISocialMediaService
                 }
                 else
                 {
-                    user = await CallSidecar(username, _settings.SidecarURL);
+                    user = await CallSidecar(username, await GetWebSidecar());
                     await _instagramUserDal.UpdateUserCacheAsync(user);
                 }
             }
@@ -174,7 +174,7 @@ public class InstagramService : ISocialMediaService
                 
                 var client = _httpClientFactory.CreateClient();
                 string requestUrl;
-                requestUrl = _settings.SidecarURL + "/instagram/post/" + id;
+                requestUrl = (await GetWebSidecar()) + "/instagram/post/" + id;
                 var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
                 var httpResponse = await client.SendAsync(request);
@@ -295,6 +295,26 @@ public class InstagramService : ISocialMediaService
                     };
                 return post;
             
+        }
+
+        private async Task<string> GetWebSidecar()
+        {
+            var settings = await _settingsDal.Get("ig_crawling");
+            if (settings == null)
+                return _settings.SidecarURL;
+
+            JsonElement sidecars;
+            if (!settings.Value.TryGetProperty("WebSidecars", out sidecars))
+                return _settings.SidecarURL;
+
+            List<string> sidecarsURL = new List<string>();
+            foreach (var s in sidecars.EnumerateArray())
+            {
+                sidecarsURL.Add(s.GetString());
+            }
+            var day1 = (int)DateTime.Now.DayOfWeek;
+
+            return "http://" + sidecarsURL[day1 % sidecarsURL.Count];
         }
         
 }
