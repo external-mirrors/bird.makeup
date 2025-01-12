@@ -73,7 +73,7 @@ public class InstagramService : ISocialMediaService
 
 
         public string ServiceName { get; } = "Instagram";
-        public Regex ValidUsername { get;  } = new Regex(@"^[a-zA-Z0-9_\.]{1,30}$");
+        public Regex ValidUsername { get;  } = new Regex(@"^[a-zA-Z0-9_\.]{1,30}(?<!\.)$");
         public Regex UserMention { get;  } = new Regex(@"(^|.?[ \n\.]+)@([a-zA-Z0-9_\.]+)(?=\s|$|[\[\]<>,;:'\.’!?/—\|-]|(. ))");
         public SocialMediaUserDal UserDal { get; }
         
@@ -237,6 +237,7 @@ public class InstagramService : ISocialMediaService
                     PinnedPosts = pinnedPost,
                     RecentPosts = recentPost,
                     ProfileUrl = "www.instagram.com/" + username,
+                    Url = userDocument.RootElement.GetProperty("Url").GetString(),
                 };
 
             }

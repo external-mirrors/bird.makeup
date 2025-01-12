@@ -55,7 +55,7 @@ spec:
             - name: Instance__ParallelTwitterRequests
               value: "1"
             - name: Instance__SidecarURL
-              value: "http://100.75.190.95:5000"
+              value: "http://100.100.41.58:5000"
             - name: Instance__CrawlingSidecarURL
               value: "http://localhost:5000"
             - name: "Instance__IpfsApi"
