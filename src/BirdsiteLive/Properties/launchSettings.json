@@ -34,6 +34,16 @@
       },
       "applicationUrl": "http://localhost:5042"
     },
+    "DotMakeup (HN)": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Instance__ParallelTwitterRequests": "0",
+        "Instance__SocialNetwork": "HackerNews"
+      },
+      "applicationUrl": "http://localhost:5042"
+    },
     "Docker": {
       "commandName": "Docker",
       "launchBrowser": true,

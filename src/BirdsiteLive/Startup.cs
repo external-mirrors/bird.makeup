@@ -11,6 +11,7 @@ using BirdsiteLive.Services;
 using BirdsiteLive.Twitter;
 using BirdsiteLive.Twitter.Tools;
 using dotMakeup.Instagram;
+using dotMakeup.HackerNews;
 using dotMakeup.ipfs;
 using Lamar;
 using Microsoft.AspNetCore.Builder;
@@ -89,6 +90,7 @@ namespace BirdsiteLive
                 
                 services.For<ITwitterUserDal>().Use<TwitterUserPostgresDal>().Singleton();
                 services.For<IInstagramUserDal>().Use<InstagramUserPostgresDal>().Singleton();
+                services.For<IHackerNewsUserDal>().Use<HackerNewsUserPostgresDal>().Singleton();
                 services.For<IFollowersDal>().Use<FollowersPostgresDal>().Singleton();
                 services.For<IDbInitializerDal>().Use<DbInitializerPostgresDal>().Singleton();
                 services.For<ISettingsDal>().Use<SettingsPostgresDal>().Singleton();
@@ -108,6 +110,8 @@ namespace BirdsiteLive
                 throw new ConfigurationErrorsException("Missing SocialNetwork");
             else if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Twitter") 
                 services.For<ISocialMediaService>().Use<TwitterService>().Singleton();
+            else if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "HackerNews") 
+                services.For<ISocialMediaService>().Use<HnService>().Singleton();
             else if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Instagram") 
                 services.For<ISocialMediaService>().Use<InstagramService>().Singleton();
             else

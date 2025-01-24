@@ -1,3 +1,4 @@
+using BirdsiteLive.Common.Settings;
 using Moq;
 
 namespace dotMakeup.HackerNews.Tests;
@@ -5,12 +6,13 @@ namespace dotMakeup.HackerNews.Tests;
 [TestClass]
 public class PostsTests
 {
+    private InstanceSettings _settings = new InstanceSettings();
     [TestMethod]
     public async Task TestMethod1()
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
-        var userService = new HnService(httpFactory.Object);
+        var userService = new HnService(httpFactory.Object, null, _settings);
         var post = await userService.GetPostAsync("2921983");
         
         Assert.AreEqual(post.Id, "2921983");
@@ -21,7 +23,7 @@ public class PostsTests
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
-        var userService = new HnService(httpFactory.Object);
+        var userService = new HnService(httpFactory.Object, null, _settings);
         var post = await userService.GetPostAsync("121003");
         
         Assert.AreEqual(post.Id, "121003");
