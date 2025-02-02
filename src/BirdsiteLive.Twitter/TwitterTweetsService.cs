@@ -777,6 +777,8 @@ namespace BirdsiteLive.Twitter
                 if (!type.StartsWith("poll"))
                     poll = null;
             }
+
+            MessageContent = await ExpandShortLinks(MessageContent);
             
             var extractedTweet = new ExtractedTweet
             {
@@ -829,6 +831,29 @@ namespace BirdsiteLive.Twitter
                     return "video/mp4";
             }
             return null;
+        }
+        
+        public async Task<string> ExpandShortLinks(string input)
+        {
+            try
+            {
+                // Regular expression to match t.co short links
+                string pattern = @"https?://t\.co/\S+";
+                Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
+                
+                MatchCollection matches = regex.Matches(input);
+
+                using var client = _httpClientFactory.CreateClient();
+                
+                foreach (Match match in matches)
+                {
+                    HttpResponseMessage response = await client.GetAsync(match.ToString(), HttpCompletionOption.ResponseHeadersRead);
+                    var longlink = response.RequestMessage.RequestUri.ToString();
+                    input = input.Replace(match.ToString(), longlink);
+                }
+            } catch (Exception _) {}
+            
+            return input;
         }
     }
 }

@@ -16,13 +16,13 @@ namespace BirdsiteLive.ActivityPub.Tests
     {
         private ITwitterTweetsService _tweetService = null;
         private ITwitterAuthenticationInitializer _tweetAuth = null;
-        
+
         [TestInitialize]
         public async Task TestInit()
         {
             if (_tweetService != null)
                 return;
-            
+
             var logger1 = new Mock<ILogger<TwitterAuthenticationInitializer>>(MockBehavior.Strict);
             var logger2 = new Mock<ILogger<TwitterUserService>>(MockBehavior.Strict);
             var logger3 = new Mock<ILogger<TwitterTweetsService>>();
@@ -35,10 +35,13 @@ namespace BirdsiteLive.ActivityPub.Tests
             {
                 Domain = "domain.name"
             };
-            _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger1.Object);
-            ITwitterUserService user = new TwitterUserService(_tweetAuth, twitterDal.Object, settings, settingsDal.Object, httpFactory.Object, logger2.Object);
+            _tweetAuth =
+                new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger1.Object);
+            ITwitterUserService user = new TwitterUserService(_tweetAuth, twitterDal.Object, settings,
+                settingsDal.Object, httpFactory.Object, logger2.Object);
             ICachedTwitterUserService user2 = new CachedTwitterUserService(user, twitterDal.Object, settings);
-            _tweetService = new TwitterTweetsService(_tweetAuth, user2, twitterDal.Object, settings, httpFactory.Object, settingsDal.Object, logger3.Object);
+            _tweetService = new TwitterTweetsService(_tweetAuth, user2, twitterDal.Object, settings, httpFactory.Object,
+                settingsDal.Object, logger3.Object);
 
         }
 
@@ -47,7 +50,8 @@ namespace BirdsiteLive.ActivityPub.Tests
         public async Task SimpleTextTweet()
         {
             var tweet = await _tweetService.GetTweetAsync(1600905296892891149);
-            Assert.AreEqual(tweet.MessageContent, "We’re strengthening American manufacturing by creating 750,000 manufacturing jobs since I became president.");
+            Assert.AreEqual(tweet.MessageContent,
+                "We’re strengthening American manufacturing by creating 750,000 manufacturing jobs since I became president.");
             Assert.AreEqual(tweet.IdLong, 1600905296892891149);
             Assert.AreEqual(tweet.CreatedAt, new DateTime(2022, 12, 8, 17, 29, 0));
             Assert.IsFalse(tweet.IsRetweet);
@@ -58,19 +62,22 @@ namespace BirdsiteLive.ActivityPub.Tests
         public async Task SimpleTextAndSinglePictureTweet()
         {
             var tweet = await _tweetService.GetTweetAsync(1593344577385160704);
-            Assert.AreEqual(tweet.MessageContent, "Speaker Nancy Pelosi will go down as one of most accomplished legislators in American history—breaking barriers, opening doors for others, and working every day to serve the American people. I couldn’t be more grateful for her friendship and leadership.");
+            Assert.AreEqual(tweet.MessageContent,
+                "Speaker Nancy Pelosi will go down as one of most accomplished legislators in American history—breaking barriers, opening doors for others, and working every day to serve the American people. I couldn’t be more grateful for her friendship and leadership.");
 
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.AreEqual(tweet.Media[0].AltText, "President Obama with Speaker Nancy Pelosi in DC.");
         }
+
         [TestMethod]
         public async Task SimpleTextAndSingleLinkTweet()
         {
             var tweet = await _tweetService.GetTweetAsync(1602618920996945922);
             if (tweet is null)
                 Assert.Inconclusive();
-            Assert.AreEqual(tweet.MessageContent, "#Linux 6.2 Expands Support For More #Qualcomm #Snapdragon SoCs, #Apple M1 Pro/Ultra/Max\n\nhttps://www.phoronix.com/news/Linux-6.2-Arm-SoC-Updates");
+            Assert.AreEqual(tweet.MessageContent,
+                "#Linux 6.2 Expands Support For More #Qualcomm #Snapdragon SoCs, #Apple M1 Pro/Ultra/Max\n\nhttps://www.phoronix.com/news/Linux-6.2-Arm-SoC-Updates");
         }
 
         [TestMethod]
@@ -79,18 +86,19 @@ namespace BirdsiteLive.ActivityPub.Tests
             var tweet = await _tweetService.GetTweetAsync(1604231025311129600);
             if (tweet is null)
                 Assert.Inconclusive();
-            
-            Assert.AreEqual(tweet.MessageContent, "Falcon 9’s first stage has landed on the Just Read the Instructions droneship, completing the 15th launch and landing of this booster!");
+
+            Assert.AreEqual(tweet.MessageContent,
+                "Falcon 9’s first stage has landed on the Just Read the Instructions droneship, completing the 15th launch and landing of this booster!");
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
             Assert.IsNull(tweet.Media[0].AltText);
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/"));
-            
-            
+
+
             var tweet2 = await _tweetService.GetTweetAsync(1657913781006258178);
             if (tweet2 is null)
                 Assert.Inconclusive();
-            
+
             Assert.AreEqual(tweet2.MessageContent,
                 "Coinbase has big international expansion plans\n\nTom Duff Gordon (@tomduffgordon), VP of International Policy @coinbase has the deets");
             Assert.AreEqual(tweet2.Media.Length, 1);
@@ -118,11 +126,12 @@ namespace BirdsiteLive.ActivityPub.Tests
             if (tweet is null)
                 Assert.Inconclusive();
 
-            Assert.AreEqual(tweet.MessageContent, "When you gave them your keys you gave them your coins.\n\nhttps://domain.name/@kadhim/1610706613207285773");
+            Assert.AreEqual(tweet.MessageContent,
+                "When you gave them your keys you gave them your coins.\n\nhttps://domain.name/@kadhim/1610706613207285773");
             Assert.AreEqual(tweet.Author.Acct, "ryansadams");
             Assert.IsNull(tweet.Poll);
         }
-        
+
         [TestMethod]
         public async Task QTandTextContainsLink()
         {
@@ -134,7 +143,7 @@ namespace BirdsiteLive.ActivityPub.Tests
             Assert.AreEqual(tweet.Author.Acct, "weekinethnews");
             Assert.IsNull(tweet.Poll);
         }
-        
+
         [TestMethod]
         public async Task QTandTextContainsXWebLink()
         {
@@ -142,7 +151,8 @@ namespace BirdsiteLive.ActivityPub.Tests
             if (tweet is null)
                 Assert.Inconclusive();
 
-            Assert.AreEqual(tweet.MessageContent, @"Ironically the real video shows like 10x more people than the AI conspirooooors were conspiring about 
+            Assert.AreEqual(tweet.MessageContent,
+                @"Ironically the real video shows like 10x more people than the AI conspirooooors were conspiring about 
 
 
 
@@ -171,7 +181,7 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsTrue(tweet.IsReply);
             Assert.IsFalse(tweet.IsThread);
         }
-        
+
         [TestMethod]
         public async Task LongFormTweet()
         {
@@ -183,6 +193,7 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsTrue(tweet.IsReply);
             Assert.IsNull(tweet.Poll);
         }
+
         [TestMethod]
         public async Task Poll1()
         {
@@ -196,6 +207,7 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
         }
+
         [TestMethod]
         public async Task Poll2()
         {
@@ -209,18 +221,21 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
         }
+
         [TestMethod]
         public async Task Poll3()
         {
             var tweet = await _tweetService.GetTweetAsync(1861785009805545631);
             if (tweet is null)
                 Assert.Inconclusive();
-            Assert.AreEqual(tweet.MessageContent, "The IRS just said it wants $20B more money. \n\nDo you think it’s budget should be:");
+            Assert.AreEqual(tweet.MessageContent,
+                "The IRS just said it wants $20B more money. \n\nDo you think it’s budget should be:");
             Assert.AreEqual(tweet.Poll.options[3].First, "Deleted");
             Assert.AreEqual(tweet.Poll.options[3].Second, 128780);
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
         }
+
         [TestMethod]
         public async Task Poll4()
         {
@@ -233,6 +248,7 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
         }
+
         [TestMethod]
         public async Task Poll_false_positive()
         {
@@ -240,5 +256,44 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.Author.Acct, "elidourado");
         }
+
+        [TestMethod]
+        public async Task ShortLink_Expension_1()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1884240424870568326);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.IsNull(tweet.Poll);
+            Assert.AreEqual(tweet.Author.Acct, "spotifyartists");
+
+            Assert.AreEqual(tweet.MessageContent,
+                "For another year, Spotify set the record for the highest annual payment to the music industry from any single retailer: over $10 billion. That figure has grown tenfold over the past decade, bringing Spotify's total payouts since founding to $60B. \n\nFor more on how we got there, and what it means, hit the link below.\n\ud83d\udd17 https://newsroom.spotify.com/2025-01-28/on-our-10-billion-milestone-and-a-decade-of-getting-the-world-to-value-music/?utm_campaign=organic-social_all-social_trf_all-en_econ_crossdevice_none_general&utm_medium=organic-social&utm_source=all-socialorganic-social_all-social_trf_all-en_econ_crossdevice_none_general");
+        }
+
+        [TestMethod]
+        public async Task ShortLink_Expension_2()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1883636068647342141);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.IsNull(tweet.Poll);
+            Assert.AreEqual(tweet.Author.Acct, "doge");
+
+            Assert.AreEqual(tweet.MessageContent,
+                "The DOGE Team is looking for world-class talent to work long hours identifying/eliminating waste, fraud, and abuse. These are full-time, salaried positions for software engineers, InfoSec engineers, financial analysts, HR professionals, and, in general, all competent/caring people.  Apply here!\n\nhttps://join.doge.gov/");
+        }
+        [TestMethod]
+        public async Task ShortLink_Expension_3()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1887282879925002660);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.IsNull(tweet.Poll);
+            Assert.AreEqual(tweet.Author.Acct, "base");
+
+            Assert.AreEqual(tweet.MessageContent,
+                "Based community meetups are happening all over the world:\n\nDubai 2/11\nhttps://lu.ma/8tbivk8o\n\nSeoul 2/13\nhttps://lu.ma/ch9wy5gd\n\nAddis Ababa 2/14\nhttps://lu.ma/v2tnqtk8\n\nSydney 2/15\nhttps://lu.ma/s127mjn5\n\nHong Kong 2/18\nhttps://lu.ma/based-brunch\n\nZurich 2/20\nhttps://lu.ma/rvsd4s97\n\nArusha 2/20\nhttps://lu.ma/fkrh9jeh\n\nHong Kong 2/20\nhttps://lu.ma/wdvepo9r\n\nTaipei City 2/22\nhttps://lu.ma/ypuh65ad\n\nKabale 2/22\nhttps://lu.ma/i0ekoliq\n\nMalawi 2/26\nhttps://lu.ma/ouzen3rx\n\nDenver | @EthereumDenver  3/1\nhttps://lu.ma/l3cadx8j\n\nKampala 3/22\nhttps://lu.ma/g9yyct7s");
+        }
     }
+
 }
