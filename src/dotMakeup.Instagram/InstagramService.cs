@@ -116,9 +116,6 @@ public class InstagramService : ISocialMediaService
         public async Task<SocialMediaUser?> GetUserAsync(string username)
         {
             var user = await GetUserAsync(username, false);
-            _apiCalled.Add(1, new KeyValuePair<string, object?>("api", "instagram_sidecar_user"),
-                new KeyValuePair<string, object?>("result", user != null ? "2xx": "5xx")
-            );
             return user;
         }
 
@@ -204,6 +201,11 @@ public class InstagramService : ISocialMediaService
 
             var httpResponse = await client.SendAsync(request);
 
+            _apiCalled.Add(1, new KeyValuePair<string, object>("sidecar", "ig_user"),
+                new KeyValuePair<string, object>("status", httpResponse.StatusCode),
+                new KeyValuePair<string, object>("domain", sidecarURL)
+            );
+            
             if (httpResponse.StatusCode != HttpStatusCode.OK)
             {
                 _userCache.Set(username, user, _cacheEntryOptionsError);
