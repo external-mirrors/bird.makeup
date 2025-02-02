@@ -1,7 +1,9 @@
 image: archlinux
 packages:
   - dotnet-sdk
+  - dotnet-sdk-8.0
   - dotnet-runtime
+  - dotnet-runtime-8.0
   - docker
   - kubectl
 sources:

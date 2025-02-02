@@ -109,8 +109,55 @@ public class HnService : ISocialMediaService
         var c = await httpResponse.Content.ReadAsStringAsync();
         userDoc = JsonDocument.Parse(c).RootElement;
 
-        string text =
-            HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
+        string type =
+            HttpUtility.HtmlDecode(userDoc.GetProperty("type").GetString());
+
+        string text;
+        long? inReplyToId = null;
+        string? inReplyToaccount = null;
+        if (type == "story")
+        {
+            text =
+                HttpUtility.HtmlDecode(userDoc.GetProperty("title").GetString());
+            if (userDoc.TryGetProperty("text", out JsonElement textProperty))
+            {
+                text += "\n\n";
+                text += textProperty.GetString();
+            }
+            if (userDoc.TryGetProperty("url", out JsonElement urlProperty))
+            {
+                text += "\n\n";
+                text += urlProperty.GetString();
+            }
+        }
+        else if (type == "comment")
+        {
+            text =
+                HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
+            long parentId = userDoc.GetProperty("parent").GetInt64();
+            var parent = await GetPostAsync(parentId.ToString());
+            inReplyToId = Int64.Parse(parent?.Id);
+            inReplyToaccount = parent?.Author.Acct;
+        }
+        else if (type == "job")
+        {
+            text =
+                HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
+        }
+        else if (type == "poll")
+        {
+            text =
+                HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
+        }
+        else if (type == "pollopt")
+        {
+            text =
+                HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
         
         var user = await GetUserAsync(userDoc.GetProperty("by").GetString());
         var post = new HNPost()
@@ -118,6 +165,8 @@ public class HnService : ISocialMediaService
             Id = userDoc.GetProperty("id").GetInt32().ToString(),
             MessageContent = text,
             Author = user,
+            InReplyToStatusId = inReplyToId,
+            InReplyToAccount = inReplyToaccount,
         };
         return post;
     }

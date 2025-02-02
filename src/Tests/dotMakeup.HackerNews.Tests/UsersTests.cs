@@ -11,7 +11,7 @@ public class UsersTests
     private InstanceSettings _settings = new InstanceSettings();
     
     [TestMethod]
-    public async Task TestMethod1()
+    public async Task User_dhouston()
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
