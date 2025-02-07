@@ -20,7 +20,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
     public class DbInitializerPostgresDal : PostgresBase, IDbInitializerDal
     {
         private readonly PostgresTools _tools;
-        private readonly Version _currentVersion = new Version(4, 1);
+        private readonly Version _currentVersion = new Version(4, 2);
         private const string DbVersionType = "db-version";
 
         #region Ctor
@@ -139,6 +139,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 new Tuple<Version, Version>(new Version(3,4), new Version(3,5)),
                 new Tuple<Version, Version>(new Version(3,5), new Version(4,0)),
                 new Tuple<Version, Version>(new Version(4,0), new Version(4,1)),
+                new Tuple<Version, Version>(new Version(4,1), new Version(4,2)),
             };
         }
 
@@ -311,6 +312,11 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
             {
                 var alterHnAddExtradata = $@"ALTER TABLE {_settings.HackerNewsUserTableName} ADD extradata JSONB";
                 await _tools.ExecuteRequestAsync(alterHnAddExtradata);
+            }
+            else if (from == new Version(4, 1) && to == new Version(4, 2))
+            {
+                var alterHnAddDefault = $@"ALTER TABLE {_settings.HackerNewsUserTableName} ALTER COLUMN type SET DEFAULT 'u'";
+                await _tools.ExecuteRequestAsync(alterHnAddDefault);
             }
             else
             {
