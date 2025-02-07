@@ -838,7 +838,7 @@ namespace BirdsiteLive.Twitter
             try
             {
                 // Regular expression to match t.co short links
-                string pattern = @"https?://t\.co/\S+";
+                string pattern = @"https?://t\.co/[a-zA-Z0-9]+";
                 Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
                 
                 MatchCollection matches = regex.Matches(input);

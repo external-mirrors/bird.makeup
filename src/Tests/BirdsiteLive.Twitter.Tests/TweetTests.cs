@@ -294,6 +294,18 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.MessageContent,
                 "Based community meetups are happening all over the world:\n\nDubai 2/11\nhttps://lu.ma/8tbivk8o\n\nSeoul 2/13\nhttps://lu.ma/ch9wy5gd\n\nAddis Ababa 2/14\nhttps://lu.ma/v2tnqtk8\n\nSydney 2/15\nhttps://lu.ma/s127mjn5\n\nHong Kong 2/18\nhttps://lu.ma/based-brunch\n\nZurich 2/20\nhttps://lu.ma/rvsd4s97\n\nArusha 2/20\nhttps://lu.ma/fkrh9jeh\n\nHong Kong 2/20\nhttps://lu.ma/wdvepo9r\n\nTaipei City 2/22\nhttps://lu.ma/ypuh65ad\n\nKabale 2/22\nhttps://lu.ma/i0ekoliq\n\nMalawi 2/26\nhttps://lu.ma/ouzen3rx\n\nDenver | @EthereumDenver  3/1\nhttps://lu.ma/l3cadx8j\n\nKampala 3/22\nhttps://lu.ma/g9yyct7s");
         }
+        [TestMethod]
+        public async Task ShortLink_Expension_4()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1887592728621420875);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.IsNull(tweet.Poll);
+            Assert.AreEqual(tweet.Author.Acct, "askvenice");
+
+            Assert.AreEqual(tweet.MessageContent,
+                "The last three days at Venice...\n\nFebruary 3rd, 2025\n**App UI**\n* Inference - Update error handling on document upload to gracefully handle display of invalid PDF errors.\n\n* Characters - Update the share URL within the character settings screen to use the character's public slug vs. UUID.\n\n* With Enter Submits Chat disabled, permit sending the chat with control-enter. Solves request from user in [Featurebase](https://veniceai.featurebase.app/p/use-ctrlenter-to-submit-prompt)\n\n* Remove Retiring Soon tag from Dolphin. Our intent was to retire this model and replace it with an upcoming Dolphin release but until we have a final ETA from Dolphin, the model will remain.\n\n* Add a spinner to the Thinking... block in Dolphin to make the UI more clear that the LLM is generating content behind the scenes.\n\n* Fixed a bug that made the Copy option on code blocks not possible to click until the entire message completed rendering.\n\n\u2800**Token Dashboard**\n* Add a key to the Network Utilization Graph\n\n* Fix rendering of VCU cards on mobile screens\n\n* Force wallets to connect to the Base network when executing transactions on-chain.\n\n* Add \"Claim and Restake\" button to facilitate claiming and immediately restaking rewards in a single transaction.\n\n* Create [Dune Analytics dashboard](https://dune.com/queries/4661260/7760387) showing network utilization over time as recorded on-chain.\n\n\u2800**API**\n* Fixed issue where the use of max_completion_tokens in combination with the llama-3.1-405b model would result in a 500 response.\n\n* Support light and dark mode, toggle-able in the top right corner.");
+        }
     }
 
 }
