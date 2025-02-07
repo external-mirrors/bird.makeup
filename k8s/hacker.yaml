@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dotmakeup-hacker
+spec:
+  selector:
+    matchLabels:
+      app: dotmakeup
+      network: hackernews
+  serviceName: "dotmakeup"
+  replicas: 1 
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: dotmakeup 
+        network: hackernews
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: network
+                    operator: In
+                    values:
+                      - hackernews
+              topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: dotmakeup
+          image: cloutier/bird.makeup:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: web
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+          envFrom:
+            - secretRef:
+                name: grafana
+          env:
+            - name: Instance__domain
+              value: "hacker.makeup"
+            - name: Instance__Name
+              value: "hacker.makeup"
+            - name: Instance__TwitterRequestDelay
+              value: "700000"
+            - name: Instance__SocialNetworkRequestJitter
+              value: "19000"
+            - name: Instance__ParallelTwitterRequests
+              value: "0"
+            - name: Instance__SocialNetwork
+              value: "HackerNews"
+            - name: Instance__ParallelFediversePosts
+              value: "10"
+            - name: Instance__UserCacheCapacity
+              value: "5000"
+            - name: Instance__TweetCacheCapacity
+              value: "5000"
+            - name: Instance__MultiplyNByOrdinal
+              value: "true"
+            - name: Instance__n_start
+              value: "0"
+            - name: Instance__n_end
+              value: "20"
+            - name: Instance__m
+              value: "79"
+            - name: db__type
+              value: "postgres"
+            - name: db__host
+              valueFrom:
+                secretKeyRef:
+                  name: dotmakeup-db
+                  key: host
+            - name: db__port
+              value: "20184"
+            - name: db__name
+              valueFrom:
+                secretKeyRef:
+                  name: dotmakeup-db
+                  key: name
+            - name: db__user
+              valueFrom:
+                secretKeyRef:
+                  name: dotmakeup-db
+                  key: user
+            - name: db__password
+              valueFrom:
+                secretKeyRef:
+                  name: dotmakeup-db
+                  key: password
+          livenessProbe:
+            httpGet:
+              path: /About
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dotmakeup-hn
+spec:
+  type: ClusterIP
+  selector:
+    app: dotmakeup
+    network: hackernews
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

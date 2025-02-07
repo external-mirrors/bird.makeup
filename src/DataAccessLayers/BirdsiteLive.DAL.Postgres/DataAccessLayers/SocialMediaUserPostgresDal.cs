@@ -299,10 +299,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
         {
             acct = acct.ToLowerInvariant();
 
-            var query = $"INSERT INTO {tableName} (acct,lastTweetPostedId) VALUES($1,-1)";
-            // TODO improve this
-            if (tableName == _settings.InstagramUserTableName)
-                query = $"INSERT INTO {tableName} (acct) VALUES($1)";
+            var query = $"INSERT INTO {tableName} (acct) VALUES($1)";
                 
             await using var connection = DataSource.CreateConnection();
             await connection.OpenAsync();
