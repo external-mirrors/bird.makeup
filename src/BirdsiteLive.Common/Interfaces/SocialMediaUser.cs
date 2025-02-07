@@ -3,8 +3,14 @@ using System.Threading.Tasks;
 
 namespace BirdsiteLive.Common.Interfaces;
 
+public enum SocialMediaUserTypes
+{
+        User,
+        Group
+}
 public interface SocialMediaUser
 {
+        public SocialMediaUserTypes SocialMediaUserType { get; }
         public long Id { get; set; }
         public string Name { get; set; }
         public string Url { get; set; }

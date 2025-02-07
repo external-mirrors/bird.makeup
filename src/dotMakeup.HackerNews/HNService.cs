@@ -23,6 +23,13 @@ public class HnService : ISocialMediaService
         .SetSlidingExpiration(TimeSpan.FromHours(16))
         // Remove from cache after this time, regardless of sliding expiration
         .SetAbsoluteExpiration(TimeSpan.FromHours(24));
+
+    private readonly HNUser _frontpage = new HNUser()
+    {
+        SocialMediaUserType = SocialMediaUserTypes.Group,
+        Acct = "frontpage",
+        Description = "Front page",
+    };
     public HnService(IHttpClientFactory httpClientFactory, IHackerNewsUserDal hackerNewsUsersDal, InstanceSettings settings)
     {
             _httpClientFactory = httpClientFactory;
@@ -45,6 +52,9 @@ public class HnService : ISocialMediaService
 
     public async Task<SocialMediaUser> GetUserAsync(string username)
     {
+        if (username == "frontpage")
+            return _frontpage;
+        
         HNUser user;
 
         if (!_userCache.TryGetValue(username, out user))
@@ -74,7 +84,7 @@ public class HnService : ISocialMediaService
         
         var user = new HNUser()
         {
-            Id = 0,
+            SocialMediaUserType = SocialMediaUserTypes.User,
             Acct = username,
             Name = username,
             Description = about,

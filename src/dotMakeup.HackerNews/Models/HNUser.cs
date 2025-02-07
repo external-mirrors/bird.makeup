@@ -4,6 +4,7 @@ namespace dotMakeup.HackerNews.Models;
 
 public class HNUser : SocialMediaUser
 {
+    public SocialMediaUserTypes SocialMediaUserType { get; set; }
     public long Id { get; set; }
     public string Name { get; set; }
     public string Url { get; set; }

@@ -7,7 +7,7 @@ namespace dotMakeup.Instagram.Models;
 
 public class InstagramUser : SocialMediaUser
 {
-    
+        public SocialMediaUserTypes SocialMediaUserType { get; } = SocialMediaUserTypes.User;
         public long Id { get; set; }
         public string Name { get; set; }
         public bool Protected { get; set; }

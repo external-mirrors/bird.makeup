@@ -4,12 +4,13 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using BirdsiteLive.ActivityPub;
 using BirdsiteLive.ActivityPub.Converters;
 using BirdsiteLive.ActivityPub.Models;
 using BirdsiteLive.Common.Interfaces;
-using BirdsiteLive.Common.Regexes;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Cryptography;
 using BirdsiteLive.DAL.Contracts;
@@ -18,13 +19,12 @@ using BirdsiteLive.Domain.Repository;
 using BirdsiteLive.Domain.Statistics;
 using BirdsiteLive.Domain.Tools;
 using BirdsiteLive.Twitter;
-using BirdsiteLive.Twitter.Models;
 
 namespace BirdsiteLive.Domain
 {
     public interface IUserService
     {
-        Task<Actor> GetUser(SocialMediaUser twitterUser);
+        Task<string> GetUser(SocialMediaUser twitterUser);
         Task<bool> FollowRequestedAsync(string signature, string method, string path, string queryString, Dictionary<string, string> requestHeaders, ActivityFollow activity, string body);
         Task<bool> UndoFollowRequestedAsync(string signature, string method, string path, string queryString, Dictionary<string, string> requestHeaders, ActivityUndoFollow activity, string body);
 
@@ -47,6 +47,10 @@ namespace BirdsiteLive.Domain
         private readonly ISocialMediaService _socialMediaService;
 
         private readonly IModerationRepository _moderationRepository;
+        private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
 
         #region Ctor
         public UserService(InstanceSettings instanceSettings, ICryptoService cryptoService, IActivityPubService activityPubService, IProcessFollowUser processFollowUser, IProcessUndoFollowUser processUndoFollowUser, IStatusExtractor statusExtractor, IExtractionStatisticsHandler statisticsHandler, ITwitterUserService twitterUserService, IModerationRepository moderationRepository, IProcessDeleteUser processDeleteUser, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService)
@@ -64,7 +68,7 @@ namespace BirdsiteLive.Domain
         }
         #endregion
 
-        public async Task<Actor> GetUser(SocialMediaUser twitterUser)
+        public async Task<string> GetUser(SocialMediaUser twitterUser)
         {
             var actorUrl = UrlFactory.GetActorUrl(_instanceSettings.Domain, twitterUser.Acct);
             var acct = twitterUser.Acct.ToLowerInvariant();
@@ -131,6 +135,33 @@ namespace BirdsiteLive.Domain
                 }
             }
 
+            if (twitterUser.SocialMediaUserType == SocialMediaUserTypes.Group)
+            {
+                var group = new Group
+                {
+                    id = actorUrl,
+                    followers = $"{actorUrl}/followers",
+                    outbox = $"{actorUrl}/outbox",
+                    preferredUsername = acct,
+                    name = twitterUser.Name,
+                    inbox = $"{actorUrl}/inbox",
+                    summary = description + $"<br>This account is a replica from {_socialMediaService.ServiceName}. Its author can't see your replies. If you find this service useful, please consider supporting us via our Patreon. <br>",
+                    url = actorUrl,
+                    publicKey = new PublicKey()
+                    {
+                        id = $"{actorUrl}#main-key",
+                        owner = actorUrl,
+                        publicKeyPem =  await _cryptoService.GetUserPem(acct)
+                    },
+                    endpoints = new EndPoints
+                    {
+                        sharedInbox = $"https://{_instanceSettings.Domain}/inbox"
+                    }
+                };
+                return System.Text.Json.JsonSerializer.Serialize(group, _jsonOptions);
+
+            }
+
             var user = new Actor
             {
                 id = actorUrl,
@@ -172,7 +203,7 @@ namespace BirdsiteLive.Domain
                     url = twitterUser.ProfileImageUrl
                 };
             }
-            return user;
+            return System.Text.Json.JsonSerializer.Serialize(user, _jsonOptions);
         }
 
         public async Task<bool> FollowRequestedAsync(string signature, string method, string path, string queryString, Dictionary<string, string> requestHeaders, ActivityFollow activity, string body)
