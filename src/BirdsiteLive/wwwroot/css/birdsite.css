@@ -10,7 +10,12 @@
 
 .logo-twitter {
     filter: invert(51%) sepia(92%) saturate(1166%) hue-rotate(180deg) brightness(94%) contrast(98%);
-    /*background: #349fef;*/
+}
+
+.logo-ig {
+    filter: brightness(0) saturate(100%) invert(14%) sepia(84%) saturate(5617%) hue-rotate(322deg) brightness(102%) contrast(107%);
+    transform: scale(1.5, 1.5);
+    padding: 10px;
 }
 
 .profile {
