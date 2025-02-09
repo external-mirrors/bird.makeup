@@ -15,4 +15,5 @@ public class HNPost : SocialMediaPost
     public DateTime CreatedAt { get; set; }
     public ExtractedMedia[] Media { get; set; }
     public Poll? Poll { get; set; }
+    public long? Score { get; set; }
 }

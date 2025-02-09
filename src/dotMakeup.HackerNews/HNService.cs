@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
+using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
@@ -28,7 +29,8 @@ public class HnService : ISocialMediaService
     {
         SocialMediaUserType = SocialMediaUserTypes.Group,
         Acct = "frontpage",
-        Description = "Front page",
+        Name = "Hacker News",
+        Description = "Hacker News' front page",
     };
     public HnService(IHttpClientFactory httpClientFactory, IHackerNewsUserDal hackerNewsUsersDal, InstanceSettings settings)
     {
@@ -77,6 +79,9 @@ public class HnService : ISocialMediaService
         var httpResponse = await client.SendAsync(request);
         httpResponse.EnsureSuccessStatusCode();
         var c = await httpResponse.Content.ReadAsStringAsync();
+        if (c == "null")
+            throw new UserNotFoundException();
+        
         userDoc = JsonDocument.Parse(c);
 
         string about =
@@ -113,70 +118,82 @@ public class HnService : ISocialMediaService
         var client = _httpClientFactory.CreateClient();
         var request = new HttpRequestMessage(new HttpMethod("GET"), reqURL);
         
-        JsonElement userDoc;
+        JsonElement postDoc;
         var httpResponse = await client.SendAsync(request);
         httpResponse.EnsureSuccessStatusCode();
         var c = await httpResponse.Content.ReadAsStringAsync();
-        userDoc = JsonDocument.Parse(c).RootElement;
+        postDoc = JsonDocument.Parse(c).RootElement;
 
         string type =
-            HttpUtility.HtmlDecode(userDoc.GetProperty("type").GetString());
+            HttpUtility.HtmlDecode(postDoc.GetProperty("type").GetString());
 
         string text;
         long? inReplyToId = null;
         string? inReplyToaccount = null;
-        if (type == "story")
+        Poll? poll = null;
+        long? score = null;
+        if (type == "story" || type == "job")
         {
             text =
-                HttpUtility.HtmlDecode(userDoc.GetProperty("title").GetString());
-            if (userDoc.TryGetProperty("text", out JsonElement textProperty))
+                HttpUtility.HtmlDecode(postDoc.GetProperty("title").GetString());
+            if (postDoc.TryGetProperty("text", out JsonElement textProperty))
             {
                 text += "\n\n";
                 text += textProperty.GetString();
             }
-            if (userDoc.TryGetProperty("url", out JsonElement urlProperty))
+            if (postDoc.TryGetProperty("url", out JsonElement urlProperty))
             {
                 text += "\n\n";
                 text += urlProperty.GetString();
             }
+
+            score = postDoc.GetProperty("score").GetInt32();
         }
         else if (type == "comment")
         {
             text =
-                HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
-            long parentId = userDoc.GetProperty("parent").GetInt64();
+                HttpUtility.HtmlDecode(postDoc.GetProperty("text").GetString());
+            long parentId = postDoc.GetProperty("parent").GetInt64();
             var parent = await GetPostAsync(parentId.ToString());
             inReplyToId = Int64.Parse(parent?.Id);
             inReplyToaccount = parent?.Author.Acct;
         }
-        else if (type == "job")
-        {
-            text =
-                HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
-        }
         else if (type == "poll")
         {
+            poll = new Poll();
             text =
-                HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
+                HttpUtility.HtmlDecode(postDoc.GetProperty("title").GetString());
+            foreach (var part in postDoc.GetProperty("parts").EnumerateArray())
+            {
+                var partNumber = part.GetInt32();
+                var opt = await _getPostAsync(partNumber.ToString());
+                poll.options = poll.options.Append((opt.MessageContent, opt.Score.Value)).ToList();
+            }
+            score = postDoc.GetProperty("score").GetInt32();
         }
         else if (type == "pollopt")
         {
             text =
-                HttpUtility.HtmlDecode(userDoc.GetProperty("text").GetString());
+                HttpUtility.HtmlDecode(postDoc.GetProperty("text").GetString());
+            score = postDoc.GetProperty("score").GetInt32();
         }
         else
         {
             throw new NotImplementedException();
         }
+        DateTime time = DateTimeOffset.FromUnixTimeSeconds(postDoc.GetProperty("time").GetInt64()).UtcDateTime;
         
-        var user = await GetUserAsync(userDoc.GetProperty("by").GetString());
+        var user = await GetUserAsync(postDoc.GetProperty("by").GetString());
         var post = new HNPost()
         {
-            Id = userDoc.GetProperty("id").GetInt32().ToString(),
+            Id = postDoc.GetProperty("id").GetInt32().ToString(),
             MessageContent = text,
             Author = user,
+            CreatedAt = time,
             InReplyToStatusId = inReplyToId,
             InReplyToAccount = inReplyToaccount,
+            Score = score,
+            Poll = poll,
         };
         return post;
     }

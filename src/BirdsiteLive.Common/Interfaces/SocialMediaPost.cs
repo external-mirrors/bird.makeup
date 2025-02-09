@@ -21,5 +21,5 @@ public interface SocialMediaPost
 public class Poll
 {
     public DateTime endTime { get; set; }
-    public List<(string First, long Second)> options { get; set; }
+    public List<(string First, long Second)> options { get; set; } = new List<(string First, long Second)>();
 }
