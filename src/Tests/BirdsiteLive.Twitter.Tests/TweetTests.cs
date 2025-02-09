@@ -280,7 +280,7 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.Author.Acct, "doge");
 
             Assert.AreEqual(tweet.MessageContent,
-                "The DOGE Team is looking for world-class talent to work long hours identifying/eliminating waste, fraud, and abuse. These are full-time, salaried positions for software engineers, InfoSec engineers, financial analysts, HR professionals, and, in general, all competent/caring people.  Apply here!\n\nhttps://join.doge.gov/");
+                "The DOGE Team is looking for world-class talent to work long hours identifying/eliminating waste, fraud, and abuse. These are full-time, salaried positions for software engineers, InfoSec engineers, financial analysts, HR professionals, and, in general, all competent/caring people.  Apply here!\n\nhttps://doge.gov/join/");
         }
         [TestMethod]
         public async Task ShortLink_Expension_3()
