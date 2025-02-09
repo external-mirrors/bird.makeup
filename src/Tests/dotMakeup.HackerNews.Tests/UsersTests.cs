@@ -12,6 +12,26 @@ public class UsersTests
     private InstanceSettings _settings = new InstanceSettings();
     
     [TestMethod]
+    public async Task User_marcan_42()
+    {
+        var httpFactory = new Mock<IHttpClientFactory>();
+        httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+        var userService = new HnService(httpFactory.Object, null, _settings);
+        var user = await userService.GetUserAsync("marcan_42");
+        
+        Assert.AreEqual(user.Description, "");
+    }
+    [TestMethod]
+    public async Task User_gargron()
+    {
+        var httpFactory = new Mock<IHttpClientFactory>();
+        httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+        var userService = new HnService(httpFactory.Object, null, _settings);
+        var user = await userService.GetUserAsync("gargron");
+        
+        Assert.AreEqual(user.Description, "");
+    }
+    [TestMethod]
     public async Task User_dhouston()
     {
         var httpFactory = new Mock<IHttpClientFactory>();

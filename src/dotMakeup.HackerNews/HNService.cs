@@ -84,8 +84,11 @@ public class HnService : ISocialMediaService
         
         userDoc = JsonDocument.Parse(c);
 
-        string about =
-            HttpUtility.HtmlDecode(userDoc.RootElement.GetProperty("about").GetString());
+        string about = "";
+        if (userDoc.RootElement.TryGetProperty("about", out JsonElement aboutProperty))
+        {
+            about = HttpUtility.HtmlDecode(aboutProperty.GetString());
+        }
         
         var user = new HNUser()
         {
