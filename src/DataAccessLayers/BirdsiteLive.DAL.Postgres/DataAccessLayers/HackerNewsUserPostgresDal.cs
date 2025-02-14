@@ -26,6 +26,39 @@ public class HackerNewsUserPostgresDal : SocialMediaUserPostgresDal, IHackerNews
         public override string FollowingColumnName { get; set; } = "followings_hn";
         public override async Task<SyncUser[]> GetNextUsersToCrawlAsync(int nStart, int nEnd, int m)
         {
-            throw new NotImplementedException();
+            string query = @$"
+                SELECT id, acct, lastsync, extradata
+                FROM {tableName}
+                WHERE type != 'g'
+                ORDER BY lastsync ASC
+                LIMIT 20
+                ";
+
+            await using var connection = DataSource.CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand(query, connection) {
+                Parameters =
+                {
+                    new() { Value = m},
+                    new() { Value = nStart},
+                    new() { Value = nEnd}
+                }
+            };
+            var reader = await command.ExecuteReaderAsync();
+            var results = new List<SyncUser>();
+            while (await reader.ReadAsync())
+            {
+                var extradata = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement;
+                results.Add(new SyncUser
+                    {
+                        Id = reader["id"] as int? ?? default,
+                        Acct = reader["acct"] as string,
+                        LastSync = reader["lastSync"] as DateTime? ?? default,
+                        ExtraData = extradata,
+                    }
+                );
+
+            }
+            return results.ToArray();
         }
 }
