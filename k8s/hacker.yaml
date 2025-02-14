@@ -53,7 +53,7 @@ spec:
             - name: Instance__SocialNetworkRequestJitter
               value: "19000"
             - name: Instance__ParallelTwitterRequests
-              value: "0"
+              value: "1"
             - name: Instance__SocialNetwork
               value: "HackerNews"
             - name: Instance__ParallelFediversePosts
@@ -62,14 +62,6 @@ spec:
               value: "5000"
             - name: Instance__TweetCacheCapacity
               value: "5000"
-            - name: Instance__MultiplyNByOrdinal
-              value: "true"
-            - name: Instance__n_start
-              value: "0"
-            - name: Instance__n_end
-              value: "20"
-            - name: Instance__m
-              value: "79"
             - name: db__type
               value: "postgres"
             - name: db__host

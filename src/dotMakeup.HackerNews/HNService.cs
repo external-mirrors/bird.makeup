@@ -90,12 +90,18 @@ public class HnService : ISocialMediaService
             about = HttpUtility.HtmlDecode(aboutProperty.GetString());
         }
         
+        List<long> submision = new List<long>();
+        foreach (var s in userDoc.RootElement.GetProperty("submitted").EnumerateArray())
+        {
+            submision.Add(s.GetInt64());
+        }
         var user = new HNUser()
         {
             SocialMediaUserType = SocialMediaUserTypes.User,
             Acct = username,
             Name = username,
             Description = about,
+            Posts = submision.ToArray(),
         };
         return user;
     }
@@ -154,8 +160,11 @@ public class HnService : ISocialMediaService
         }
         else if (type == "comment")
         {
-            text =
-                HttpUtility.HtmlDecode(postDoc.GetProperty("text").GetString());
+            text = "";
+            if (postDoc.TryGetProperty("text", out JsonElement textProperty))
+            {
+                text += textProperty.GetString();
+            }
             long parentId = postDoc.GetProperty("parent").GetInt64();
             var parent = await GetPostAsync(parentId.ToString());
             inReplyToId = Int64.Parse(parent?.Id);
@@ -201,9 +210,36 @@ public class HnService : ISocialMediaService
         return post;
     }
 
-    public Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
+    public async Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
     {
-        throw new NotImplementedException();
+        if (user.Acct == "frontpage")
+            throw new NotImplementedException();
+        
+        List<SocialMediaPost> posts = new List<SocialMediaPost>();
+        var userData = await _getUserAsync(user.Acct);
+        foreach (var p in userData.Posts)
+        {
+            HNPost post;
+            try
+            {
+                post = await _getPostAsync(p.ToString());
+            }
+            catch (Exception _)
+            {
+                continue;
+            }
+            if (post == null)
+                continue;
+            
+            if (post.CreatedAt <= user.LastPost)
+                break;
+            
+            posts.Add(post);
+            if (posts.Count > 20)
+                break;
+        }
+
+        return posts.ToArray();
     }
 
 }

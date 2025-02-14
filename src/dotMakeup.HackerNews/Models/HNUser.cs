@@ -16,4 +16,5 @@ public class HNUser : SocialMediaUser
     public string Description { get; set; }
     public string Location { get; set; }
     public IEnumerable<string> PinnedPosts { get; set; } = Array.Empty<string>();
+    public long[] Posts { get; set; } = Array.Empty<long>();
 }
