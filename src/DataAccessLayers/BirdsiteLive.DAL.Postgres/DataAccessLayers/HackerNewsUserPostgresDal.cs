@@ -29,8 +29,12 @@ public class HackerNewsUserPostgresDal : SocialMediaUserPostgresDal, IHackerNews
             string query = @$"
                 SELECT id, acct, lastsync, extradata
                 FROM {tableName}
-                WHERE type != 'g'
-                ORDER BY lastsync ASC
+                ORDER BY
+                    CASE
+                        WHEN acct = 'frontpage' THEN 0
+                        ELSE 1
+                    END,
+                    lastsync ASC
                 LIMIT 20
                 ";
 

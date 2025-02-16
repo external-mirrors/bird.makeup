@@ -219,6 +219,7 @@ public class HnService : ISocialMediaService
 
     public async Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
     {
+        await UserDal.UpdateUserLastSyncAsync(user);
         if (user.Acct == "frontpage")
             return await _getFrontpagePosts(user);
         
@@ -273,6 +274,9 @@ public class HnService : ISocialMediaService
             ogPost.OriginalAuthor = ogPost.Author;
             ogPost.Author = _frontpage;
 
+            if (ogPost.CreatedAt <= frontpageUser.LastPost)
+                continue;
+            
             posts.Add(ogPost);
             
             if (posts.Count >= 10)
