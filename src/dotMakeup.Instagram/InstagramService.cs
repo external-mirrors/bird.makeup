@@ -201,12 +201,15 @@ public class InstagramService : ISocialMediaService
             InstagramUser user = null;
             var client = _httpClientFactory.CreateClient();
             string requestUrl;
-            requestUrl = sidecarURL + "/instagram/user/" + username;
+            string method = "user";
+            if (sidecarURL == "http://localhost:5000")
+                method = "user_2";
+            requestUrl = $"{sidecarURL}/instagram/{method}/{username}";
             var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
             var httpResponse = await client.SendAsync(request);
 
-            _apiCalled.Add(1, new KeyValuePair<string, object>("sidecar", "ig_user"),
+            _apiCalled.Add(1, new KeyValuePair<string, object>("sidecar", $"ig_{method}"),
                 new KeyValuePair<string, object>("status", httpResponse.StatusCode),
                 new KeyValuePair<string, object>("domain", sidecarURL)
             );
