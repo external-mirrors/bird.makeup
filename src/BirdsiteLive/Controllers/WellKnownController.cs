@@ -190,7 +190,7 @@ namespace BirdsiteLive.Controllers
             }
 
             // Ensure lowercase
-            name = name.ToLowerInvariant();
+            name = _socialMediaService.MakeUserNameCanonical(name);
             domain = domain?.ToLowerInvariant();
 
             // Ensure valid username 

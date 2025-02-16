@@ -71,7 +71,7 @@ namespace BirdsiteLive.Domain
         public async Task<string> GetUser(SocialMediaUser twitterUser)
         {
             var actorUrl = UrlFactory.GetActorUrl(_instanceSettings.Domain, twitterUser.Acct);
-            var acct = twitterUser.Acct.ToLowerInvariant();
+            var acct = _socialMediaService.MakeUserNameCanonical(twitterUser.Acct);
 
             // Extract links, mentions, etc
             var description = twitterUser.Description;
@@ -218,7 +218,7 @@ namespace BirdsiteLive.Domain
             var followerHost = SigValidationResultExtractor.GetHost(sigValidation);
             var followerInbox = sigValidation.User.inbox;
             var followerSharedInbox = SigValidationResultExtractor.GetSharedInbox(sigValidation);
-            var twitterUser = activity.apObject.Split('/').Last().Replace("@", string.Empty).ToLowerInvariant().Trim();
+            var twitterUser = _socialMediaService.MakeUserNameCanonical(activity.apObject.Split('/').Last().Replace("@", string.Empty)).Trim();
 
             // Make sure to only keep routes
             followerInbox = OnlyKeepRoute(followerInbox, followerHost);
@@ -312,7 +312,7 @@ namespace BirdsiteLive.Domain
             if (!sigValidation.SignatureIsValidated) return false;
 
             // Save Follow in DB
-            var followerUserName = sigValidation.User.preferredUsername.ToLowerInvariant();
+            var followerUserName = _socialMediaService.MakeUserNameCanonical(sigValidation.User.preferredUsername);
             var followerHost = sigValidation.User.url.Replace("https://", string.Empty).Split('/').First();
             //var followerInbox = sigValidation.User.inbox;
             var twitterUser = activity.apObject.apObject.Split('/').Last().Replace("@", string.Empty);

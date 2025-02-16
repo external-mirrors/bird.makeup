@@ -72,6 +72,11 @@ public class InstagramService : ISocialMediaService
         #endregion
 
 
+        public string MakeUserNameCanonical(string name)
+        {
+            return name.Trim().ToLowerInvariant();
+        }
+
         public string ServiceName { get; } = "Instagram";
         public Regex ValidUsername { get;  } = new Regex(@"^[a-zA-Z0-9_\.]{1,30}(?<!\.)$");
         public Regex UserMention { get;  } = new Regex(@"(^|.?[ \n\.]+)@([a-zA-Z0-9_\.]+)(?=\s|$|[\[\]<>,;:'\.’!?/—\|-]|(. ))");

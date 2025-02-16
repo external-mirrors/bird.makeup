@@ -29,6 +29,10 @@ namespace BirdsiteLive.Twitter
         }
         #endregion
 
+        public string MakeUserNameCanonical(string name)
+        {
+            return name.Trim().ToLowerInvariant();
+        }
         public async Task<SocialMediaPost> GetPostAsync(string id)
         {
             if (!long.TryParse(id, out var parsedStatusId))

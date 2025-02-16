@@ -78,7 +78,7 @@ namespace BirdsiteLive.Controllers
         {
             _logger.LogTrace("User Index: {Id}", id);
 
-            id = id.Trim(new[] { ' ', '@' }).ToLowerInvariant();
+            id = _socialMediaService.MakeUserNameCanonical(id.Trim(new[] { ' ', '@' }));
 
             SocialMediaUser user = null;
             var isSaturated = false;
@@ -145,14 +145,14 @@ namespace BirdsiteLive.Controllers
             {
                 Name = user.Name,
                 Description = user.Description,
-                Acct = user.Acct.ToLowerInvariant(),
+                Acct = _socialMediaService.MakeUserNameCanonical(user.Acct),
                 Url = user.Url,
                 ProfileImageUrl = user.ProfileImageUrl,
                 Protected = user.Protected,
                 FollowerCount = followers.Length,
                 MostPopularServer = followers.GroupBy(x => x.Host).OrderByDescending(x => x.Count()).Select(x => x.Key).FirstOrDefault("N/A"),
                 FediverseAccount = fediAccount,
-                InstanceHandle = $"@{user.Acct.ToLowerInvariant()}@{_instanceSettings.Domain}",
+                InstanceHandle = $"@{_socialMediaService.MakeUserNameCanonical(user.Acct)}@{_instanceSettings.Domain}",
                 ServiceName = _socialMediaService.ServiceName,
             };
             return View(displayableUser);

@@ -51,6 +51,10 @@ public class HnService : ISocialMediaService
     public SocialMediaUserDal UserDal { get; }
     public Regex ValidUsername { get;  } = new Regex(@"^[a-zA-Z0-9_]{1,15}$");
     public Regex UserMention { get; } = new Regex(@".^");
+    public string MakeUserNameCanonical(string name)
+    {
+        return name.Trim();
+    }
 
     public async Task<SocialMediaUser> GetUserAsync(string username)
     {

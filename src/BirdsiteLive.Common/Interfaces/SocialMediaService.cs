@@ -9,6 +9,7 @@ public interface ISocialMediaService
         Task<SocialMediaUser> GetUserAsync(string username);
         Task<SocialMediaPost?> GetPostAsync(string id);
         Task<SocialMediaPost[]> GetNewPosts(SyncUser user);
+        string MakeUserNameCanonical(string name);
         string ServiceName { get;  }
         SocialMediaUserDal UserDal { get; }
         Regex ValidUsername { get;  }
