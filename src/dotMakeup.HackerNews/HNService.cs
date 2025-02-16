@@ -273,6 +273,7 @@ public class HnService : ISocialMediaService
             ogPost.IsRetweet = true;
             ogPost.OriginalAuthor = ogPost.Author;
             ogPost.Author = _frontpage;
+            ogPost.RetweetId = Int64.Parse(ogPost.Id) * 1000;
 
             if (ogPost.CreatedAt <= frontpageUser.LastPost)
                 continue;
