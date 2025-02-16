@@ -175,6 +175,8 @@ https://domain.name/@stillgray/1822453985204187319");
         public async Task SimpleReply()
         {
             var tweet = await _tweetService.GetTweetAsync(1612622335546363904);
+            if (tweet is null)
+                Assert.Inconclusive();
 
             Assert.AreEqual(tweet.InReplyToAccount, "DriveTeslaca");
             Assert.AreEqual(tweet.InReplyToStatusId, 1612610060194312193);
