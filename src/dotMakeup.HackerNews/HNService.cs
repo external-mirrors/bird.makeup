@@ -91,9 +91,12 @@ public class HnService : ISocialMediaService
         }
         
         List<long> submision = new List<long>();
-        foreach (var s in userDoc.RootElement.GetProperty("submitted").EnumerateArray())
+        if (userDoc.RootElement.TryGetProperty("submitted", out JsonElement submittedProperty))
         {
-            submision.Add(s.GetInt64());
+            foreach (var s in submittedProperty.EnumerateArray())
+            {
+                submision.Add(s.GetInt64());
+            }
         }
         var user = new HNUser()
         {
@@ -213,7 +216,7 @@ public class HnService : ISocialMediaService
     public async Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
     {
         if (user.Acct == "frontpage")
-            throw new NotImplementedException();
+            return await _getFrontpagePosts(user);
         
         List<SocialMediaPost> posts = new List<SocialMediaPost>();
         var userData = await _getUserAsync(user.Acct);
@@ -239,6 +242,39 @@ public class HnService : ISocialMediaService
                 break;
         }
 
+        return posts.ToArray();
+    }
+
+    private async Task<SocialMediaPost[]> _getFrontpagePosts(SyncUser frontpageUser)
+    {
+        string reqURL = "https://hacker-news.firebaseio.com/v0/topstories.json";
+        
+        var client = _httpClientFactory.CreateClient();
+        var request = new HttpRequestMessage(new HttpMethod("GET"), reqURL);
+        
+        JsonElement postDoc;
+        var httpResponse = await client.SendAsync(request);
+        httpResponse.EnsureSuccessStatusCode();
+        var c = await httpResponse.Content.ReadAsStringAsync();
+        postDoc = JsonDocument.Parse(c).RootElement;
+
+        var posts = new List<SocialMediaPost>();
+        foreach (var p in postDoc.EnumerateArray())
+        {
+            var ogPost = await _getPostAsync(p.ToString());
+            if (ogPost == null)
+                continue;
+
+            ogPost.IsRetweet = true;
+            ogPost.OriginalAuthor = ogPost.Author;
+            ogPost.Author = _frontpage;
+
+            posts.Add(ogPost);
+            
+            if (posts.Count >= 10)
+                break;
+        }
+        
         return posts.ToArray();
     }
 
