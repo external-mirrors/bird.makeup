@@ -84,6 +84,8 @@ public class InstagramService : ISocialMediaService
         
         public async Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
         {
+            await UserDal.UpdateUserLastSyncAsync(user);
+            
             var newPosts = new List<SocialMediaPost>();
             var v2 = await GetUserAsync(user.Acct, true);
             _apiCalled.Add(1, new KeyValuePair<string, object?>("api", "instagram_sidecar_timeline"),
@@ -111,8 +113,6 @@ public class InstagramService : ISocialMediaService
                 }
             }
 
-            await UserDal.UpdateUserLastSyncAsync(user);
-            
             _newPosts.Add(newPosts.Count);
             
             return newPosts.ToArray();
