@@ -8,6 +8,7 @@ namespace BirdsiteLive.Common.Settings
         public string Domain { get; set; }
         public string AdminEmail { get; set; }
         public bool ResolveMentionsInProfiles { get; set; }
+        public string ResolveMentionsInPosts { get; set; } = "all";
         public bool PublishReplies { get; set; }
         public string SocialNetwork { get; set; }
 

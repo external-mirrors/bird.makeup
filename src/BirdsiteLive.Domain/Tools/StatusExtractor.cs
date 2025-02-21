@@ -13,7 +13,7 @@ namespace BirdsiteLive.Domain.Tools
 {
     public interface IStatusExtractor
     {
-        (string content, Tag[] tags) Extract(string messageContent, bool extractMentions = true);
+        (string content, Tag[] tags) Extract(string messageContent, string extractMentions = "all");
     }
 
     public class StatusExtractor : IStatusExtractor
@@ -31,7 +31,7 @@ namespace BirdsiteLive.Domain.Tools
         }
         #endregion
 
-        public (string content, Tag[] tags) Extract(string messageContent, bool extractMentions = true)
+        public (string content, Tag[] tags) Extract(string messageContent, string extractMentions = "all")
         {
             var tags = new List<Tag>();
 
@@ -94,7 +94,7 @@ namespace BirdsiteLive.Domain.Tools
             }
 
             // Extract Mentions
-            if (extractMentions)
+            if (extractMentions == "all")
             {
                 var mentionMatch = OrderByLength(_socialMediaService.UserMention.Matches(messageContent));
                 foreach (Match m in mentionMatch)

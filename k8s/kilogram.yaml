@@ -49,9 +49,11 @@ spec:
             - name: Instance__Name
               value: "kilogram.makeup"
             - name: Instance__TwitterRequestDelay
-              value: "700000"
+              value: "400000"
+            - name: Instance__ResolveMentionsInPosts
+              value: "cached"
             - name: Instance__SocialNetworkRequestJitter
-              value: "19000"
+              value: "1000"
             - name: Instance__ParallelTwitterRequests
               value: "1"
             - name: Instance__SidecarURL

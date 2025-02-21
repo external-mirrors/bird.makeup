@@ -50,7 +50,7 @@ namespace BirdsiteLive.Domain
             
             string summary = null;
 
-            var extractedTags = _statusExtractor.Extract(post.MessageContent);
+            var extractedTags = _statusExtractor.Extract(post.MessageContent, _instanceSettings.ResolveMentionsInPosts);
             _statisticsHandler.ExtractedStatus(extractedTags.tags.Count(x => x.type == "Mention"));
 
             // Replace RT by a link

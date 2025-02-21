@@ -48,6 +48,8 @@ spec:
               value: "hacker.makeup"
             - name: Instance__Name
               value: "hacker.makeup"
+            - name: Instance__ResolveMentionsInPosts
+              value: "none"
             - name: Instance__TwitterRequestDelay
               value: "700000"
             - name: Instance__SocialNetworkRequestJitter
