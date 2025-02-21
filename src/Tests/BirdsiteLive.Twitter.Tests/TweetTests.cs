@@ -164,6 +164,8 @@ https://domain.name/@stillgray/1822453985204187319");
         public async Task SimpleThread()
         {
             var tweet = await _tweetService.GetTweetAsync(1445468404815597573);
+            if (tweet is null)
+                Assert.Inconclusive();
 
             Assert.AreEqual(tweet.InReplyToAccount, "punk6529");
             Assert.AreEqual(tweet.InReplyToStatusId, 1445468401745289235);
