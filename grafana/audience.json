@@ -1,47 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_POSTGRESQL",
-      "label": "PostgreSQL",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "grafana-postgresql-datasource",
-      "pluginName": "PostgreSQL"
-    }
-  ],
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "barchart",
-      "name": "Bar chart",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "11.3.0-75221"
-    },
-    {
-      "type": "datasource",
-      "id": "grafana-postgresql-datasource",
-      "name": "PostgreSQL",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -61,13 +18,13 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 17,
   "links": [],
   "panels": [
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
@@ -79,8 +36,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -92,7 +48,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 5,
         "x": 0,
         "y": 0
@@ -115,12 +71,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "11.6.0-83314",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
@@ -152,7 +108,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
@@ -164,8 +120,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -177,7 +132,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 3,
         "x": 5,
         "y": 0
@@ -200,12 +155,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "11.6.0-83314",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
@@ -237,7 +192,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
@@ -249,8 +204,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -285,12 +239,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "11.6.0-83314",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
@@ -322,7 +276,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
@@ -334,8 +288,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -370,12 +323,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "11.6.0-83314",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
@@ -407,7 +360,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
@@ -419,8 +372,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -455,12 +407,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "11.6.0-83314",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
@@ -492,7 +444,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
@@ -504,8 +456,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -540,12 +491,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "11.6.0-83314",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
@@ -577,41 +528,187 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineWidth": 1,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 8,
+        "y": 8
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.0-83314",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(cardinality(followings_hn)) FROM followers;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Connections (HackerNews <> fedi)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 13,
+        "y": 8
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.0-83314",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) FROM (SELECT unnest(followings_hn) as follow FROM followers GROUP BY follow) AS f INNER JOIN hn_users ON f.follow=hn_users.id",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "HackerNews users and groups",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
               },
               {
                 "color": "red",
@@ -626,43 +723,23 @@
         "h": 13,
         "w": 17,
         "x": 0,
-        "y": 8
+        "y": 12
       },
       "id": 6,
       "options": {
-        "barRadius": 0,
-        "barWidth": 0.97,
-        "fullHighlight": false,
-        "groupWidth": 0.7,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "orientation": "vertical",
-        "showValue": "never",
-        "stacking": "none",
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        },
-        "xField": "host",
-        "xTickLabelMaxLength": 20,
-        "xTickLabelRotation": 45,
-        "xTickLabelSpacing": 0
+        "tiling": "treemapSquarify"
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "2.0.1",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT '' as d, host, COUNT(*) FROM followers GROUP BY host ORDER BY count DESC LIMIT 80",
+          "rawSql": "SELECT host, COUNT(*) FROM followers GROUP BY host ORDER BY count DESC",
           "refId": "A",
           "sql": {
             "columns": [
@@ -684,12 +761,12 @@
         }
       ],
       "title": "Most popular servers",
-      "type": "barchart"
+      "type": "marcusolsson-treemap-panel"
     },
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
@@ -709,8 +786,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -756,7 +832,7 @@
         "h": 28,
         "w": 11,
         "x": 0,
-        "y": 21
+        "y": 25
       },
       "id": 2,
       "options": {
@@ -772,17 +848,17 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "11.6.0-83314",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*), acct, cache['Description'] as bio, extradata['wikidata']['Description'] as description, bool_or(vipfollow) as vip FROM (SELECT unnest(followings) as follow, host='r.town' as vipfollow FROM followers) AS f INNER JOIN twitter_users ON f.follow=twitter_users.id GROUP BY acct, bio, description ORDER BY count DESC LIMIT 100",
+          "rawSql": "SELECT \n  COUNT(*), acct, cache['Description'] as bio, \n  wikidata['Description'] as description, \n  extradata['latest_post_date']::text::timestamp as last_post, \n  bool_or(vipfollow) as vip \nFROM (SELECT unnest(followings) as follow, host='r.town' as vipfollow FROM followers) AS f \nINNER JOIN twitter_users ON f.follow=twitter_users.id \nGROUP BY acct, bio, description, last_post \nORDER BY count DESC \nLIMIT 100",
           "refId": "A",
           "sql": {
             "columns": [
@@ -809,7 +885,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
       },
       "fieldConfig": {
         "defaults": {
@@ -828,8 +904,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -880,14 +955,56 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "description"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 424
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "img"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "image"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 20
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_post"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
           }
         ]
       },
       "gridPos": {
         "h": 28,
-        "w": 11,
+        "w": 13,
         "x": 11,
-        "y": 21
+        "y": 25
       },
       "id": 9,
       "options": {
@@ -903,17 +1020,17 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "11.3.0-75221",
+      "pluginVersion": "11.6.0-83314",
       "targets": [
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*), acct, cache['Description'] as bio, extradata['wikidata']['Description'] as description, bool_or(vipfollow) as vip FROM (SELECT unnest(followings_instagram) as follow, host='r.town' as vipfollow FROM followers) AS f INNER JOIN instagram_users ON f.follow=instagram_users.id GROUP BY acct, bio, description ORDER BY count DESC;",
+          "rawSql": "SELECT \n  COUNT(*), \n  acct, \n  cache->>'ProfileImageUrl' as img,\n  cache['Description'] as bio, \n  wikidata['Description'] as description, \n  extradata['latest_post_date']::text::timestamp as last_post,\n  bool_or(vipfollow) as vip \nFROM (SELECT unnest(followings_instagram) as follow, host='r.town' as vipfollow FROM followers) AS f \nINNER JOIN instagram_users ON f.follow=instagram_users.id \nGROUP BY acct, img, bio, description, last_post\nORDER BY count DESC\nLIMIT 1000;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -938,8 +1055,9 @@
       "type": "table"
     }
   ],
+  "preload": false,
   "refresh": "",
-  "schemaVersion": 39,
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": []
@@ -952,6 +1070,6 @@
   "timezone": "",
   "title": "Dotmakeup audiance",
   "uid": "cefca9ac-e9a3-4133-b6fa-1a9ffa175015",
-  "version": 26,
+  "version": 36,
   "weekStart": ""
 }
