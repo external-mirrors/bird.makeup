@@ -82,7 +82,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors.SubTasks
                 .Setup(x => x.GetActivity(
                 It.Is<string>(y => y == twitterHandle),
                 It.Is<ExtractedTweet>(y => y.Id == tweetId.ToString())))
-                .Returns(activity);
+                .Returns(Task.FromResult(activity));
 
             var followersDalMock = new Mock<IFollowersDal>(MockBehavior.Strict);
 
@@ -160,7 +160,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors.SubTasks
                 .Setup(x => x.GetActivity(
                 It.Is<string>(y => y == twitterHandle),
                 It.Is<ExtractedTweet>(y => y.Id == tweetId.ToString())))
-                .Returns(activity);
+                .Returns(Task.FromResult(activity));
 
             var followersDalMock = new Mock<IFollowersDal>(MockBehavior.Strict);
 
@@ -241,7 +241,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors.SubTasks
                 .Setup(x => x.GetActivity(
                 It.Is<string>(y => y == twitterHandle),
                 It.Is<ExtractedTweet>(y => y.Id == tweetId.ToString())))
-                .Returns(activity);
+                .Returns(Task.FromResult(activity));
 
             var followersDalMock = new Mock<IFollowersDal>(MockBehavior.Strict);
 
@@ -323,7 +323,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors.SubTasks
                 .Setup(x => x.GetActivity(
                 It.Is<string>(y => y == twitterHandle),
                 It.Is<ExtractedTweet>(y => y.Id == tweetId.ToString())))
-                .Returns(activity);
+                .Returns(Task.FromResult(activity));
 
             var followersDalMock = new Mock<IFollowersDal>(MockBehavior.Strict);
  
@@ -401,7 +401,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors.SubTasks
                     .Setup(x => x.GetActivity(
                         It.Is<string>(y => y == twitterHandle),
                         It.Is<ExtractedTweet>(y => y.Id == tweetId.ToString())))
-                    .Returns(new ActivityCreateNote { apObject = new Note { id = tweetId.ToString() }});
+                    .Returns(Task.FromResult( new ActivityCreateNote { apObject = new Note { id = tweetId.ToString() }} ));
             }
 
             var followersDalMock = new Mock<IFollowersDal>(MockBehavior.Strict);
@@ -497,7 +497,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors.SubTasks
                     .Setup(x => x.GetActivity(
                         It.Is<string>(y => y == twitterHandle),
                         It.Is<ExtractedTweet>(y => y.Id == tweetId.ToString())))
-                    .Returns(new ActivityCreateNote { apObject = new Note { id = tweetId.ToString() }});
+                    .Returns(Task.FromResult( new ActivityCreateNote { apObject = new Note { id = tweetId.ToString() }} ));
             }
 
             var followersDalMock = new Mock<IFollowersDal>(MockBehavior.Strict);

@@ -77,7 +77,7 @@ namespace BirdsiteLive.Domain
             var description = twitterUser.Description;
             if (!string.IsNullOrWhiteSpace(description))
             {
-                var extracted = _statusExtractor.Extract(description, _instanceSettings.ResolveMentionsInProfiles ? "all" : "none");
+                var extracted = await _statusExtractor.Extract(description, _instanceSettings.ResolveMentionsInProfiles ? "all" : "none");
                 description = extracted.content;
 
                 _statisticsHandler.ExtractedDescription(extracted.tags.Count(x => x.type == "Mention"));

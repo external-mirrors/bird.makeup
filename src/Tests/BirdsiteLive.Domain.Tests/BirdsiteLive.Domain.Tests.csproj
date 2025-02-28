@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\BirdsiteLive.Domain\BirdsiteLive.Domain.csproj" />
+    <ProjectReference Include="..\..\dotMakeup.Instagram\dotMakeup.Instagram.csproj" />
   </ItemGroup>
 
   <ItemGroup>

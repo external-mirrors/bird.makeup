@@ -7,13 +7,14 @@ using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Twitter;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
 
 namespace BirdsiteLive.Domain.Tools
 {
     public interface IStatusExtractor
     {
-        (string content, Tag[] tags) Extract(string messageContent, string extractMentions = "all");
+        Task<(string content, Tag[] tags)> Extract(string messageContent, string extractMentions = "all");
     }
 
     public class StatusExtractor : IStatusExtractor
@@ -31,7 +32,7 @@ namespace BirdsiteLive.Domain.Tools
         }
         #endregion
 
-        public (string content, Tag[] tags) Extract(string messageContent, string extractMentions = "all")
+        public async Task<(string content, Tag[] tags)> Extract(string messageContent, string extractMentions = "all")
         {
             var tags = new List<Tag>();
 
@@ -94,7 +95,7 @@ namespace BirdsiteLive.Domain.Tools
             }
 
             // Extract Mentions
-            if (extractMentions == "all")
+            if (extractMentions != "none")
             {
                 var mentionMatch = OrderByLength(_socialMediaService.UserMention.Matches(messageContent));
                 foreach (Match m in mentionMatch)
@@ -110,6 +111,13 @@ namespace BirdsiteLive.Domain.Tools
                     var url = $"https://{_instanceSettings.Domain}/users/{mention.ToLower()}";
                     var name = $"@{mention.ToLower()}";
 
+                    if (extractMentions == "cached")
+                    {
+                        var user = await _socialMediaService.UserDal.GetUserCacheAsync(mention.ToLower());
+                        if (user is null)
+                            continue;
+                    }
+                    
                     if (tags.All(x => x.href != url))
                     {
                         tags.Add(new Tag

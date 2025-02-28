@@ -171,7 +171,7 @@ namespace BirdsiteLive.Controllers
             if (tweet.Author.Acct != id)
                 return NotFound();
             
-            var status = _statusService.GetStatus(id, tweet);
+            var status = await _statusService.GetStatus(id, tweet);
 
             if (acceptHeaders.Any())
             {
@@ -211,7 +211,7 @@ namespace BirdsiteLive.Controllers
                 return NotFound();
             
             var user = await _socialMediaService.GetUserAsync(tweet.Author.Acct);
-            var status = _statusService.GetActivity(tweet.Author.Acct, tweet);
+            var status = await _statusService.GetActivity(tweet.Author.Acct, tweet);
             var res = new MastodonPostApi()
             {
                 id = parsedStatusId,
@@ -254,7 +254,7 @@ namespace BirdsiteLive.Controllers
                 var tweet = await _socialMediaService.GetPostAsync(postId);
                 if (tweet is null)
                     continue;
-                var status = _statusService.GetActivity(id, tweet);
+                var status = await _statusService.GetActivity(id, tweet);
                 status.apObject.context = null;
 
                 featured.orderedItems.Add(status.apObject);

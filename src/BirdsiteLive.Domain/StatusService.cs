@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using BirdsiteLive.ActivityPub;
 using BirdsiteLive.ActivityPub.Converters;
 using BirdsiteLive.ActivityPub.Models;
@@ -13,8 +14,8 @@ namespace BirdsiteLive.Domain
 {
     public interface IStatusService
     {
-        Note GetStatus(string username, SocialMediaPost post);
-        ActivityCreateNote GetActivity(string username, SocialMediaPost tweet);
+        Task<Note> GetStatus(string username, SocialMediaPost post);
+        Task<ActivityCreateNote> GetActivity(string username, SocialMediaPost tweet);
     }
 
     public class StatusService : IStatusService
@@ -32,7 +33,7 @@ namespace BirdsiteLive.Domain
         }
         #endregion
 
-        public Note GetStatus(string username, SocialMediaPost post)
+        public async Task<Note> GetStatus(string username, SocialMediaPost post)
         {
             var actorUrl = UrlFactory.GetActorUrl(_instanceSettings.Domain, username);
             var noteUrl = UrlFactory.GetNoteUrl(_instanceSettings.Domain, username, post.Id.ToString());
@@ -50,7 +51,7 @@ namespace BirdsiteLive.Domain
             
             string summary = null;
 
-            var extractedTags = _statusExtractor.Extract(post.MessageContent, _instanceSettings.ResolveMentionsInPosts);
+            var extractedTags = await _statusExtractor.Extract(post.MessageContent, _instanceSettings.ResolveMentionsInPosts);
             _statisticsHandler.ExtractedStatus(extractedTags.tags.Count(x => x.type == "Mention"));
 
             // Replace RT by a link
@@ -115,9 +116,9 @@ namespace BirdsiteLive.Domain
             return note;
         }
 
-        public ActivityCreateNote GetActivity(string username, SocialMediaPost tweet)
+        public async Task<ActivityCreateNote> GetActivity(string username, SocialMediaPost tweet)
         {
-            var note = GetStatus(username, tweet);
+            var note = await GetStatus(username, tweet);
             var actor = UrlFactory.GetActorUrl(_instanceSettings.Domain, username);
             String noteUri;
             string activityType;

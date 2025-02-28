@@ -50,7 +50,7 @@ namespace BirdsiteLive.Pipeline.Processors.SubTasks
             {
                 try
                 {
-                    var activity = _statusService.GetActivity(user.Acct, tweet);
+                    var activity = await _statusService.GetActivity(user.Acct, tweet);
                     await _activityPubService.PostNewActivity(activity, user.Acct, tweet.Id.ToString(), host, inbox);
                 }
                 catch (ArgumentException e)

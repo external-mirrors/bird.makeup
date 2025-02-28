@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Domain.Statistics;
@@ -28,7 +29,7 @@ namespace BirdsiteLive.Domain.Tests
         #endregion
 
         [TestMethod]
-        public void ActivityTest()
+        public async Task ActivityTest()
         {
             #region Stubs
             var username = "MyUserName";
@@ -51,7 +52,7 @@ Photo by Tim Tronckoe | @timtronckoe
             var statusExtractor = new StatusExtractor(_settings, socialMediaService.Object, logger1.Object);
             var stats = new Mock<IExtractionStatisticsHandler>();
             var service = new StatusService(_settings, statusExtractor, stats.Object);
-            var activity = service.GetActivity(username, extractedTweet);
+            var activity = await service.GetActivity(username, extractedTweet);
 
             #region Validations
             Assert.AreEqual(activity.type, "Create");
@@ -60,7 +61,7 @@ Photo by Tim Tronckoe | @timtronckoe
         }
 
         [TestMethod]
-        public void RetweetTest()
+        public async Task RetweetTest()
         {
             #region Stubs
             var username = "MyUserName";
@@ -82,7 +83,7 @@ Photo by Tim Tronckoe | @timtronckoe
             var statusExtractor = new StatusExtractor(_settings, socialMediaService.Object, logger1.Object);
             var stats = new Mock<IExtractionStatisticsHandler>();
             var service = new StatusService(_settings, statusExtractor, stats.Object);
-            var activity = service.GetActivity(username, extractedTweet);
+            var activity = await service.GetActivity(username, extractedTweet);
 
             #region Validations
             Assert.AreEqual(activity.type, "Announce");
