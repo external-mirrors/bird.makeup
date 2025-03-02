@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <RootNamespace>BirdsiteLive.Moderation.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BirdsiteLive.Moderation\BirdsiteLive.Moderation.csproj" />
+    <ProjectReference Include="..\..\dotMakeup.Housekeeping\dotMakeup.Housekeeping.csproj" />
   </ItemGroup>
 
 </Project>

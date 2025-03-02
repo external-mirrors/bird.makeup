@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Moderation;
@@ -13,16 +14,18 @@ namespace BirdsiteLive.Services
     public class FederationService : BackgroundService
     {
         private readonly IDatabaseInitializer _databaseInitializer;
-        private readonly IModerationPipeline _moderationPipeline;
+        private readonly IHousekeeping _housekeeping;
         private readonly IStatusPublicationPipeline _statusPublicationPipeline;
+        private readonly InstanceSettings _instanceSettings;
         private readonly IHostApplicationLifetime _applicationLifetime;
 
         #region Ctor
-        public FederationService(IDatabaseInitializer databaseInitializer, IModerationPipeline moderationPipeline, IStatusPublicationPipeline statusPublicationPipeline, IHostApplicationLifetime applicationLifetime)
+        public FederationService(IDatabaseInitializer databaseInitializer, IHousekeeping housekeeping, IStatusPublicationPipeline statusPublicationPipeline, InstanceSettings instanceSettings, IHostApplicationLifetime applicationLifetime)
         {
             _databaseInitializer = databaseInitializer;
-            _moderationPipeline = moderationPipeline;
+            _housekeeping = housekeeping;
             _statusPublicationPipeline = statusPublicationPipeline;
+            _instanceSettings = instanceSettings;
             _applicationLifetime = applicationLifetime;
         }
         #endregion
@@ -32,7 +35,10 @@ namespace BirdsiteLive.Services
             try
             {
                 await _databaseInitializer.InitAndMigrateDbAsync();
-                await _moderationPipeline.ApplyModerationSettingsAsync();
+                if (_instanceSettings.Ordinal == 0)
+                {
+                    await Task.WhenAll(_housekeeping.ApplyModerationSettingsAsync(), _housekeeping.CleanCaches());
+                }
                 await _statusPublicationPipeline.ExecuteAsync(stoppingToken);
             }
             finally

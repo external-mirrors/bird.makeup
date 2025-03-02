@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 
 namespace BirdsiteLive.Common.Settings
 {
     public class InstanceSettings
     {
+        private readonly Regex _ordinalRegex = new Regex(".*-([0-9])");
         public string Name { get; set; }
         public string Domain { get; set; }
         public string AdminEmail { get; set; }
@@ -21,6 +23,16 @@ namespace BirdsiteLive.Common.Settings
         public int n_start { get; set; } = 0;
         public int n_end { get; set; } = 1;
         public bool MultiplyNByOrdinal { get; set; } = false;
+
+        public int Ordinal
+        {
+            get
+            {
+                if (!MultiplyNByOrdinal)
+                    return 0;
+                return int.Parse( _ordinalRegex.Match( MachineName ).Groups[1].Value );
+            }
+        }
 
         public string MachineName { get; set; } = Environment.MachineName;
         public int ParallelTwitterRequests { get; set; } = 10;

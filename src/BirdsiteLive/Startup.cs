@@ -128,7 +128,7 @@ namespace BirdsiteLive
                 _.Assembly("BirdsiteLive.Domain");
                 _.Assembly("BirdsiteLive.DAL");
                 _.Assembly("BirdsiteLive.DAL.Postgres");
-                _.Assembly("BirdsiteLive.Moderation");
+                _.Assembly("dotMakeup.Housekeeping");
                 _.Assembly("BirdsiteLive.Pipeline");
                 _.TheCallingAssembly();
 

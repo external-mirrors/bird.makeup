@@ -6,21 +6,22 @@ using Microsoft.Extensions.Logging;
 
 namespace BirdsiteLive.Moderation
 {
-    public interface IModerationPipeline
+    public interface IHousekeeping
     {
         Task ApplyModerationSettingsAsync();
+        Task CleanCaches();
     }
 
-    public class ModerationPipeline : IModerationPipeline
+    public class HousekeepingPipelines : IHousekeeping
     {
         private readonly IModerationRepository _moderationRepository;
         private readonly IFollowerModerationProcessor _followerModerationProcessor;
         private readonly ITwitterAccountModerationProcessor _twitterAccountModerationProcessor;
 
-        private readonly ILogger<ModerationPipeline> _logger;
+        private readonly ILogger<HousekeepingPipelines> _logger;
 
         #region Ctor
-        public ModerationPipeline(IModerationRepository moderationRepository, IFollowerModerationProcessor followerModerationProcessor, ITwitterAccountModerationProcessor twitterAccountModerationProcessor, ILogger<ModerationPipeline> logger)
+        public HousekeepingPipelines(IModerationRepository moderationRepository, IFollowerModerationProcessor followerModerationProcessor, ITwitterAccountModerationProcessor twitterAccountModerationProcessor, ILogger<HousekeepingPipelines> logger)
         {
             _moderationRepository = moderationRepository;
             _followerModerationProcessor = followerModerationProcessor;
@@ -31,6 +32,7 @@ namespace BirdsiteLive.Moderation
 
         public async Task ApplyModerationSettingsAsync()
         {
+            _logger.LogWarning("ModerationPipeline started.");
             try
             {
                 await CheckFollowerModerationPolicyAsync();
@@ -40,6 +42,11 @@ namespace BirdsiteLive.Moderation
             {
                 _logger.LogCritical(e, "ModerationPipeline execution failed.");
             }
+        }
+
+        public Task CleanCaches()
+        {
+            return Task.CompletedTask;
         }
 
         private async Task CheckFollowerModerationPolicyAsync()

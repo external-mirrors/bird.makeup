@@ -22,7 +22,6 @@ namespace BirdsiteLive.Pipeline.Processors
         private readonly ILogger<RetrieveTwitterUsersProcessor> _logger;
         private static Random rng = new Random();
 
-        private readonly Regex _ordinalRegex = new Regex(".*-([0-9])");
         private readonly int _n_start;
         private readonly int _n_end;
 
@@ -35,7 +34,7 @@ namespace BirdsiteLive.Pipeline.Processors
 
             if (_instanceSettings.MultiplyNByOrdinal)
             {
-                var ordinal = int.Parse( _ordinalRegex.Match( _instanceSettings.MachineName ).Groups[1].Value );
+                var ordinal = _instanceSettings.Ordinal;
                 var range = _instanceSettings.n_end - _instanceSettings.n_start;
                 _n_start = _instanceSettings.n_start + (range * ordinal);
                 _n_end = _instanceSettings.n_end + (range * ordinal) - 1;
