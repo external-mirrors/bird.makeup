@@ -7,7 +7,8 @@ public interface IIpfsService
 {
     string GetIpfsPublicLink(string hash);
     Task<string> Mirror(string upstream, bool pin);
-    
+
+    Task GarbageCollection();
 }
 public class DotmakeupIpfs : IIpfsService
 {
@@ -57,5 +58,10 @@ public class DotmakeupIpfs : IIpfsService
         }
         
         return i.Id;
+    }
+
+    public async Task GarbageCollection()
+    {
+        await _ipfs.BlockRepository.RemoveGarbageAsync();
     }
 }

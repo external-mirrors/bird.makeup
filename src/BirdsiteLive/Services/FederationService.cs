@@ -20,10 +20,10 @@ namespace BirdsiteLive.Services
         private readonly IHostApplicationLifetime _applicationLifetime;
 
         #region Ctor
-        public FederationService(IDatabaseInitializer databaseInitializer, IStatusPublicationPipeline statusPublicationPipeline, InstanceSettings instanceSettings, IHostApplicationLifetime applicationLifetime)
+        public FederationService(IDatabaseInitializer databaseInitializer, IHousekeeping housekeeping, IStatusPublicationPipeline statusPublicationPipeline, InstanceSettings instanceSettings, IHostApplicationLifetime applicationLifetime)
         {
             _databaseInitializer = databaseInitializer;
-            //_housekeeping = housekeeping;
+            _housekeeping = housekeeping;
             _statusPublicationPipeline = statusPublicationPipeline;
             _instanceSettings = instanceSettings;
             _applicationLifetime = applicationLifetime;
@@ -37,7 +37,7 @@ namespace BirdsiteLive.Services
                 await _databaseInitializer.InitAndMigrateDbAsync();
                 if (_instanceSettings.Ordinal == 0)
                 {
-                    //await Task.WhenAll(_housekeeping.ApplyModerationSettingsAsync(), _housekeeping.CleanCaches());
+                    await Task.WhenAll(_housekeeping.ApplyModerationSettingsAsync(), _housekeeping.CleanCaches());
                 }
                 await _statusPublicationPipeline.ExecuteAsync(stoppingToken);
             }

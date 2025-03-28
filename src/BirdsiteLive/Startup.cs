@@ -7,6 +7,7 @@ using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.DAL.Postgres.DataAccessLayers;
 using BirdsiteLive.DAL.Postgres.Settings;
 using BirdsiteLive.Middleware;
+using BirdsiteLive.Moderation;
 using BirdsiteLive.Services;
 using BirdsiteLive.Twitter;
 using BirdsiteLive.Twitter.Tools;
@@ -122,22 +123,16 @@ namespace BirdsiteLive
             services.AddHttpClient();
             services.AddHttpClient("WithProxy").AddProxySupport(instanceSettings.ProxyURL, instanceSettings.ProxyUser, instanceSettings.ProxyPassword);
             
-            services.Scan(_ =>
+            services.Scan(scanner =>
             {
-                _.Assembly("BirdsiteLive.Twitter");
-                _.Assembly("BirdsiteLive.Domain");
-                _.Assembly("BirdsiteLive.DAL");
-                _.Assembly("BirdsiteLive.DAL.Postgres");
-                _.Assembly("dotMakeup.Housekeeping");
-                _.Assembly("BirdsiteLive.Pipeline");
-                _.TheCallingAssembly();
-
-                //_.AssemblyContainingType<IDal>();
-                //_.Exclude(type => type.Name.Contains("Settings"));
-                
-                _.WithDefaultConventions();
-
-                _.LookForRegistries();
+                scanner.Assembly("BirdsiteLive.Twitter");
+                scanner.Assembly("dotMakeup.Housekeeping");
+                scanner.Assembly("BirdsiteLive.Domain");
+                scanner.Assembly("BirdsiteLive.DAL");
+                scanner.Assembly("BirdsiteLive.DAL.Postgres");
+                scanner.Assembly("BirdsiteLive.Pipeline");
+                scanner.TheCallingAssembly();
+                scanner.WithDefaultConventions();
             });
         }
 

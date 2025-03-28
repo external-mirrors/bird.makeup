@@ -1,7 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using BirdsiteLive.Common.Interfaces;
+using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Domain.Repository;
 using BirdsiteLive.Moderation.Processors;
+using dotMakeup.ipfs;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -25,10 +28,13 @@ namespace BirdsiteLive.Moderation.Tests
             
             var followerModerationProcessorMock = new Mock<IFollowerModerationProcessor>(MockBehavior.Strict);
             var twitterAccountModerationProcessorMock = new Mock<ITwitterAccountModerationProcessor>(MockBehavior.Strict);
-            var loggerMock = new Mock<ILogger<HousekeepingPipelines>>();
+            var loggerMock = new Mock<ILogger<Housekeeping>>();
+            var ifpsMock = new Mock<IIpfsService>();
+            var socialMediaServiceMock = new Mock<ISocialMediaService>();
+            var settings = new InstanceSettings();
             #endregion
 
-            var pipeline = new HousekeepingPipelines(moderationRepositoryMock.Object, followerModerationProcessorMock.Object, twitterAccountModerationProcessorMock.Object, loggerMock.Object);
+            var pipeline = new Housekeeping(moderationRepositoryMock.Object, followerModerationProcessorMock.Object, twitterAccountModerationProcessorMock.Object, ifpsMock.Object, socialMediaServiceMock.Object, settings, loggerMock.Object);
             await pipeline.ApplyModerationSettingsAsync();
 
             #region Validations
@@ -63,10 +69,13 @@ namespace BirdsiteLive.Moderation.Tests
                     It.Is<ModerationTypeEnum>(y => y == ModerationTypeEnum.BlackListing)))
                 .Returns(Task.CompletedTask);
 
-            var loggerMock = new Mock<ILogger<HousekeepingPipelines>>();
+            var loggerMock = new Mock<ILogger<Housekeeping>>();
+            var ifpsMock = new Mock<IIpfsService>();
+            var socialMediaServiceMock = new Mock<ISocialMediaService>();
+            var settings = new InstanceSettings();
             #endregion
 
-            var pipeline = new HousekeepingPipelines(moderationRepositoryMock.Object, followerModerationProcessorMock.Object, twitterAccountModerationProcessorMock.Object, loggerMock.Object);
+            var pipeline = new Housekeeping(moderationRepositoryMock.Object, followerModerationProcessorMock.Object, twitterAccountModerationProcessorMock.Object, ifpsMock.Object, socialMediaServiceMock.Object, settings, loggerMock.Object);
             await pipeline.ApplyModerationSettingsAsync();
 
             #region Validations
@@ -89,10 +98,13 @@ namespace BirdsiteLive.Moderation.Tests
             var followerModerationProcessorMock = new Mock<IFollowerModerationProcessor>(MockBehavior.Strict);
             var twitterAccountModerationProcessorMock = new Mock<ITwitterAccountModerationProcessor>(MockBehavior.Strict);
             
-            var loggerMock = new Mock<ILogger<HousekeepingPipelines>>();
+            var loggerMock = new Mock<ILogger<Housekeeping>>();
+            var ifpsMock = new Mock<IIpfsService>();
+            var socialMediaServiceMock = new Mock<ISocialMediaService>();
+            var settings = new InstanceSettings();
             #endregion
 
-            var pipeline = new HousekeepingPipelines(moderationRepositoryMock.Object, followerModerationProcessorMock.Object, twitterAccountModerationProcessorMock.Object, loggerMock.Object);
+            var pipeline = new Housekeeping(moderationRepositoryMock.Object, followerModerationProcessorMock.Object, twitterAccountModerationProcessorMock.Object, ifpsMock.Object, socialMediaServiceMock.Object, settings, loggerMock.Object);
             await pipeline.ApplyModerationSettingsAsync();
 
             #region Validations
