@@ -273,13 +273,13 @@ namespace BirdsiteLive.Twitter
                 }
 
 
-                var client = _httpClientFactory.CreateClient();
+                using var client = _httpClientFactory.CreateClient();
                 string endpoint;
                 if (withReplies)
                     endpoint = "postbyuserwithreplies";
                 else
                     endpoint = "postbyuser";
-                var request = new HttpRequestMessage(HttpMethod.Get,
+                using var request = new HttpRequestMessage(HttpMethod.Get,
                     $"http://localhost:5000/twitter/{endpoint}/{user.TwitterUserId}");
                 request.Headers.TryAddWithoutValidation("dotmakeup-user", username);
                 request.Headers.TryAddWithoutValidation("dotmakeup-password", password);
