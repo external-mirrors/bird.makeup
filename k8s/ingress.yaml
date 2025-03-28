@@ -37,12 +37,12 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: dotmakeup-bird
+  name: dotmakeup
   annotations:
     certmanager.k8s.io/cluster-issuer: "letsencrypt"
     nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri"
 spec:
-  ingressClassName: "nginx"
+  ingressClassName: "contour"
   tls:
     - hosts:
         - bird.makeup
