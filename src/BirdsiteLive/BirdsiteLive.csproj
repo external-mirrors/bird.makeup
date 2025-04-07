@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grafana.OpenTelemetry" Version="1.0.1" />
+    <PackageReference Include="Grafana.OpenTelemetry" Version="1.1.0" />
     <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="13.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />

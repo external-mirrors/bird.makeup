@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BirdsiteLive.ActivityPub;
 using BirdsiteLive.ActivityPub.Models;
 using BirdsiteLive.Domain;
+using BirdsiteLive.Domain.Statistics;
 using BirdsiteLive.Tools;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -15,12 +16,14 @@ namespace BirdsiteLive.Controllers
     {
         private readonly ILogger<InboxController> _logger;
         private readonly IUserService _userService;
+        private readonly IStatisticsHandler _statisticsHandler;
 
         #region Ctor
-        public InboxController(ILogger<InboxController> logger, IUserService userService)
+        public InboxController(ILogger<InboxController> logger, IUserService userService, IStatisticsHandler statisticsHandler)
         {
             _logger = logger;
             _userService = userService;
+            _statisticsHandler = statisticsHandler;
         }
         #endregion
 
@@ -39,6 +42,7 @@ namespace BirdsiteLive.Controllers
                     //System.IO.File.WriteAllText($@"C:\apdebug\inbox\{Guid.NewGuid()}.json", body);
 
                     var activity = ApDeserializer.ProcessActivity(body);
+                    _statisticsHandler.RegisterNewActivity(activity);
                     var signature = HeaderHandler.RequestHeaders(r.Headers)["signature"];
                     _logger.LogTrace("Signature: {Signature}", signature);
                     _logger.LogTrace($"Date: {HeaderHandler.RequestHeaders(r.Headers)["date"]}");

@@ -22,10 +22,10 @@ namespace BirdsiteLive.Domain
     {
         private readonly InstanceSettings _instanceSettings;
         private readonly IStatusExtractor _statusExtractor;
-        private readonly IExtractionStatisticsHandler _statisticsHandler;
+        private readonly IStatisticsHandler _statisticsHandler;
 
         #region Ctor
-        public StatusService(InstanceSettings instanceSettings, IStatusExtractor statusExtractor, IExtractionStatisticsHandler statisticsHandler)
+        public StatusService(InstanceSettings instanceSettings, IStatusExtractor statusExtractor, IStatisticsHandler statisticsHandler)
         {
             _instanceSettings = instanceSettings;
             _statusExtractor = statusExtractor;

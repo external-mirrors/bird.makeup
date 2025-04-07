@@ -9,28 +9,22 @@ using System.Threading.Tasks;
 using BirdsiteLive.ActivityPub;
 using BirdsiteLive.ActivityPub.Models;
 using BirdsiteLive.Common.Interfaces;
-using BirdsiteLive.Common.Regexes;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Models;
 using BirdsiteLive.DAL.Contracts;
-using BirdsiteLive.DAL.Models;
 using BirdsiteLive.Domain;
+using BirdsiteLive.Domain.Statistics;
 using BirdsiteLive.Models;
 using BirdsiteLive.Tools;
 using BirdsiteLive.Twitter;
-using BirdsiteLive.Twitter.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace BirdsiteLive.Controllers
 {
     public class UsersController : Controller
     {
-        static Meter _meter = new("DotMakeup", "1.0.0");
-        static Counter<int> _activityCounter = _meter.CreateCounter<int>("dotmakeup_ap_activity");
-        
         private readonly ICachedTwitterTweetsService _twitterTweetService;
         private readonly IUserService _userService;
         private readonly IStatusService _statusService;
@@ -40,9 +34,10 @@ namespace BirdsiteLive.Controllers
         private readonly ISocialMediaService _socialMediaService;
         private readonly ILogger<UsersController> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
+        private readonly IStatisticsHandler _statisticsHandler;
 
         #region Ctor
-        public UsersController(IUserService userService, IStatusService statusService, InstanceSettings instanceSettings, ICachedTwitterTweetsService twitterTweetService, IFollowersDal followersDal, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService, ILogger<UsersController> logger)
+        public UsersController(IUserService userService, IStatusService statusService, InstanceSettings instanceSettings, ICachedTwitterTweetsService twitterTweetService, IFollowersDal followersDal, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService, IStatisticsHandler statistic, ILogger<UsersController> logger)
         {
             _statusService = statusService;
             _userService = userService;
@@ -52,6 +47,7 @@ namespace BirdsiteLive.Controllers
             _twitterUserDal = twitterUserDal;
             _socialMediaService = socialMediaService;
             _logger = logger;
+            _statisticsHandler = statistic;
             _jsonOptions = new JsonSerializerOptions
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -294,13 +290,13 @@ namespace BirdsiteLive.Controllers
                     //System.IO.File.WriteAllText($@"C:\apdebug\{Guid.NewGuid()}.json", body);
 
                     var activity = ApDeserializer.ProcessActivity(body);
+                    _statisticsHandler.RegisterNewActivity(activity);
                     var signature = r.Headers["Signature"].First();
 
                     switch (activity?.type)
                     {
                         case "Follow":
                         {
-                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Follow"));
                             var succeeded = await _userService.FollowRequestedAsync(signature, r.Method, r.Path,
                                 r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
                                 activity as ActivityFollow, body);
@@ -310,7 +306,6 @@ namespace BirdsiteLive.Controllers
                         case "Undo":
                             if (activity is ActivityUndoFollow)
                             {
-                                _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Undo"));
                                 var succeeded = await _userService.UndoFollowRequestedAsync(signature, r.Method, r.Path,
                                     r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
                                     activity as ActivityUndoFollow, body);
@@ -321,7 +316,6 @@ namespace BirdsiteLive.Controllers
                             return Accepted();
                         case "Delete":
                         {
-                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Delete"));
                             var succeeded = await _userService.DeleteRequestedAsync(signature, r.Method, r.Path,
                                 r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
                                 activity as ActivityDelete, body);
@@ -329,13 +323,10 @@ namespace BirdsiteLive.Controllers
                             else return Unauthorized();
                         }
                         case "Announce":
-                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Announce"));
                             return Accepted();
                         case "Like":
-                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Like"));
                             return Accepted();
                         case "Create":
-                            _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Create"));
                             return Accepted();
                         default:
                             return Accepted();

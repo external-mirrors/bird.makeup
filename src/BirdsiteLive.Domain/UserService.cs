@@ -42,7 +42,7 @@ namespace BirdsiteLive.Domain
         private readonly ICryptoService _cryptoService;
         private readonly IActivityPubService _activityPubService;
         private readonly IStatusExtractor _statusExtractor;
-        private readonly IExtractionStatisticsHandler _statisticsHandler;
+        private readonly IStatisticsHandler _statisticsHandler;
 
         private readonly ISocialMediaService _socialMediaService;
 
@@ -53,7 +53,7 @@ namespace BirdsiteLive.Domain
             };
 
         #region Ctor
-        public UserService(InstanceSettings instanceSettings, ICryptoService cryptoService, IActivityPubService activityPubService, IProcessFollowUser processFollowUser, IProcessUndoFollowUser processUndoFollowUser, IStatusExtractor statusExtractor, IExtractionStatisticsHandler statisticsHandler, ITwitterUserService twitterUserService, IModerationRepository moderationRepository, IProcessDeleteUser processDeleteUser, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService)
+        public UserService(InstanceSettings instanceSettings, ICryptoService cryptoService, IActivityPubService activityPubService, IProcessFollowUser processFollowUser, IProcessUndoFollowUser processUndoFollowUser, IStatusExtractor statusExtractor, IStatisticsHandler statisticsHandler, ITwitterUserService twitterUserService, IModerationRepository moderationRepository, IProcessDeleteUser processDeleteUser, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService)
         {
             _instanceSettings = instanceSettings;
             _cryptoService = cryptoService;

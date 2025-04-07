@@ -13,10 +13,10 @@ namespace BirdsiteLive.Controllers
     {
         private readonly ITwitterUserDal _twitterUserDal;
         private readonly IFollowersDal _followersDal;
-        private readonly IExtractionStatisticsHandler _extractionStatistics;
+        private readonly IStatisticsHandler _extractionStatistics;
 
         #region Ctor
-        public StatisticsController(ITwitterUserDal twitterUserDal, IFollowersDal followersDal, IExtractionStatisticsHandler extractionStatistics)
+        public StatisticsController(ITwitterUserDal twitterUserDal, IFollowersDal followersDal, IStatisticsHandler extractionStatistics)
         {
             _twitterUserDal = twitterUserDal;
             _followersDal = followersDal;
