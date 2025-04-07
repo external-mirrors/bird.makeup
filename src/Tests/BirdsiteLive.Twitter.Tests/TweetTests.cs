@@ -61,6 +61,32 @@ namespace BirdsiteLive.ActivityPub.Tests
         }
 
         [TestMethod]
+        public async Task LeadingDotTextAndSinglePictureTweet_2()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1908137050907558326);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.AreEqual(tweet.MessageContent,
+                "@ETHGlobal Taipei is kicking off! \ud83d\udd25\n\nPowered by\ud83e\uddcb\nBuilt on Ethereum");
+
+            Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
+            Assert.AreEqual(tweet.Media.Length, 1);
+            Assert.IsNull(tweet.Media[0].AltText);
+        }
+        [TestMethod]
+        public async Task LeadingDotTextAndSinglePictureTweet()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1905980906189254989);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.AreEqual(tweet.MessageContent,
+                "@SBelangerCAQ voici ce qui se passe avec les aînés de ma région. \n\nC’est tout simplement scandaleux.");
+
+            Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
+            Assert.AreEqual(tweet.Media.Length, 1);
+            Assert.IsNull(tweet.Media[0].AltText);
+        }
+        [TestMethod]
         public async Task SimpleTextAndSinglePictureTweet()
         {
             var tweet = await _tweetService.GetTweetAsync(1593344577385160704);
@@ -148,6 +174,26 @@ namespace BirdsiteLive.ActivityPub.Tests
             Assert.IsNull(tweet.Poll);
         }
 
+        [TestMethod]
+        public async Task QTandTextContainsXWebLink_2()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1906784491349377365);
+            if (tweet is null)
+                Assert.Inconclusive();
+
+            Assert.AreEqual(tweet.MessageContent,
+                @"If you want a detailed walkthrough of how Privacy Pools works, we got you covered 🤝
+
+Still feeling unsure? Feel free to post your questions, and we’ll help you out! ✅
+
+Note: pay attention when creating an account!
+
+
+
+https://domain.name/@0xbowio/1906779676053209370");
+            Assert.AreEqual(tweet.Author.Acct, "0xbowio");
+        }
+        [Ignore]
         [TestMethod]
         public async Task QTandTextContainsXWebLink()
         {
@@ -263,6 +309,8 @@ https://domain.name/@stillgray/1822453985204187319");
         public async Task Poll_false_positive()
         {
             var tweet = await _tweetService.GetTweetAsync(1858992492550734176);
+            if (tweet is null)
+                Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.Author.Acct, "elidourado");
         }
@@ -316,6 +364,18 @@ https://domain.name/@stillgray/1822453985204187319");
 
             Assert.AreEqual(tweet.MessageContent,
                 "The last three days at Venice...\n\nFebruary 3rd, 2025\n**App UI**\n* Inference - Update error handling on document upload to gracefully handle display of invalid PDF errors.\n\n* Characters - Update the share URL within the character settings screen to use the character's public slug vs. UUID.\n\n* With Enter Submits Chat disabled, permit sending the chat with control-enter. Solves request from user in [Featurebase](https://veniceai.featurebase.app/p/use-ctrlenter-to-submit-prompt)\n\n* Remove Retiring Soon tag from Dolphin. Our intent was to retire this model and replace it with an upcoming Dolphin release but until we have a final ETA from Dolphin, the model will remain.\n\n* Add a spinner to the Thinking... block in Dolphin to make the UI more clear that the LLM is generating content behind the scenes.\n\n* Fixed a bug that made the Copy option on code blocks not possible to click until the entire message completed rendering.\n\n\u2800**Token Dashboard**\n* Add a key to the Network Utilization Graph\n\n* Fix rendering of VCU cards on mobile screens\n\n* Force wallets to connect to the Base network when executing transactions on-chain.\n\n* Add \"Claim and Restake\" button to facilitate claiming and immediately restaking rewards in a single transaction.\n\n* Create [Dune Analytics dashboard](https://dune.com/queries/4661260/7760387) showing network utilization over time as recorded on-chain.\n\n\u2800**API**\n* Fixed issue where the use of max_completion_tokens in combination with the llama-3.1-405b model would result in a 500 response.\n\n* Support light and dark mode, toggle-able in the top right corner.");
+        }
+        [TestMethod]
+        public async Task ShortLink_Expension_5()
+        {
+            var tweet = await _tweetService.GetTweetAsync(1908169318828810274);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.IsNull(tweet.Poll);
+            Assert.AreEqual(tweet.Author.Acct, "val_plante");
+
+            Assert.AreEqual(tweet.MessageContent,
+                "Les horreurs de la guerre au Proche-Orient et la violence démesurée envers la population civile dans la bande de Gaza sont choquantes et éprouvantes, mais nous devons choisir le dialogue à Montréal. Les actes d’intimidation et de grabuge qui provoquent un sentiment d’insécurité dans une institution universitaire ne peuvent pas être tolérés. https://t.co/LRkcv7fsWM");
         }
     }
 

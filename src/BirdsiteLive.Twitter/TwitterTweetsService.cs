@@ -648,6 +648,10 @@ namespace BirdsiteLive.Twitter
                     .GetProperty("retweeted_status_result").GetProperty("result")
                     .GetProperty("rest_id").GetString());
             }
+            
+            if (MessageContent.StartsWith(".@"))
+                MessageContent = MessageContent.Remove(0, 1);
+                
 
             string creationTime = tweetRes.GetProperty("legacy")
                     .GetProperty("created_at").GetString().Replace(" +0000", "");
@@ -709,10 +713,11 @@ namespace BirdsiteLive.Twitter
                 }
             }
 
+            MessageContent = await ExpandShortLinks(MessageContent);
             bool isQuoteTweet = tweetRes.GetProperty("legacy")
                     .GetProperty("is_quote_status").GetBoolean();
 
-            if (isQuoteTweet) 
+            if (isQuoteTweet)
             {
 
                 string quoteTweetId = tweetRes.GetProperty("legacy")
@@ -778,7 +783,6 @@ namespace BirdsiteLive.Twitter
                     poll = null;
             }
 
-            MessageContent = await ExpandShortLinks(MessageContent);
             
             var extractedTweet = new ExtractedTweet
             {
