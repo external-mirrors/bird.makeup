@@ -3,9 +3,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
-using BirdsiteLive.Domain.Statistics;
 using BirdsiteLive.Domain.Tools;
-using BirdsiteLive.Twitter;
 using BirdsiteLive.Twitter.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -50,8 +48,7 @@ Photo by Tim Tronckoe | @timtronckoe
             socialMediaService.Setup(x => x.ValidUsername).Returns(new Regex(@"^[a-zA-Z0-9_]+$"));
             socialMediaService.Setup(x => x.UserMention).Returns(new Regex(@"(^|.?[ \n\.]+)@([a-zA-Z0-9_]+)(?=\s|$|[\[\]<>,;:'\.’!?/—\|-]|(. ))"));
             var statusExtractor = new StatusExtractor(_settings, socialMediaService.Object, logger1.Object);
-            var stats = new Mock<IStatisticsHandler>();
-            var service = new StatusService(_settings, statusExtractor, stats.Object);
+            var service = new StatusService(_settings, statusExtractor);
             var activity = await service.GetActivity(username, extractedTweet);
 
             #region Validations
@@ -81,8 +78,7 @@ Photo by Tim Tronckoe | @timtronckoe
             socialMediaService.Setup(x => x.ValidUsername).Returns(new Regex(@"^[a-zA-Z0-9_]+$"));
             socialMediaService.Setup(x => x.UserMention).Returns(new Regex(@"(^|.?[ \n\.]+)@([a-zA-Z0-9_]+)(?=\s|$|[\[\]<>,;:'\.’!?/—\|-]|(. ))"));
             var statusExtractor = new StatusExtractor(_settings, socialMediaService.Object, logger1.Object);
-            var stats = new Mock<IStatisticsHandler>();
-            var service = new StatusService(_settings, statusExtractor, stats.Object);
+            var service = new StatusService(_settings, statusExtractor);
             var activity = await service.GetActivity(username, extractedTweet);
 
             #region Validations

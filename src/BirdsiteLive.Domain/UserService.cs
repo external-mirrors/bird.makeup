@@ -42,7 +42,6 @@ namespace BirdsiteLive.Domain
         private readonly ICryptoService _cryptoService;
         private readonly IActivityPubService _activityPubService;
         private readonly IStatusExtractor _statusExtractor;
-        private readonly IStatisticsHandler _statisticsHandler;
 
         private readonly ISocialMediaService _socialMediaService;
 
@@ -53,7 +52,7 @@ namespace BirdsiteLive.Domain
             };
 
         #region Ctor
-        public UserService(InstanceSettings instanceSettings, ICryptoService cryptoService, IActivityPubService activityPubService, IProcessFollowUser processFollowUser, IProcessUndoFollowUser processUndoFollowUser, IStatusExtractor statusExtractor, IStatisticsHandler statisticsHandler, ITwitterUserService twitterUserService, IModerationRepository moderationRepository, IProcessDeleteUser processDeleteUser, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService)
+        public UserService(InstanceSettings instanceSettings, ICryptoService cryptoService, IActivityPubService activityPubService, IProcessFollowUser processFollowUser, IProcessUndoFollowUser processUndoFollowUser, IStatusExtractor statusExtractor, ITwitterUserService twitterUserService, IModerationRepository moderationRepository, IProcessDeleteUser processDeleteUser, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService)
         {
             _instanceSettings = instanceSettings;
             _cryptoService = cryptoService;
@@ -61,7 +60,6 @@ namespace BirdsiteLive.Domain
             _processFollowUser = processFollowUser;
             _processUndoFollowUser = processUndoFollowUser;
             _statusExtractor = statusExtractor;
-            _statisticsHandler = statisticsHandler;
             _moderationRepository = moderationRepository;
             _processDeleteUser = processDeleteUser;
             _socialMediaService = socialMediaService;
@@ -79,8 +77,6 @@ namespace BirdsiteLive.Domain
             {
                 var extracted = await _statusExtractor.Extract(description, _instanceSettings.ResolveMentionsInProfiles ? "all" : "none");
                 description = extracted.content;
-
-                _statisticsHandler.ExtractedDescription(extracted.tags.Count(x => x.type == "Mention"));
             }
             
             string featured = null;

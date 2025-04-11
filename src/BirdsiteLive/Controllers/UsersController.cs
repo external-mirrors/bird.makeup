@@ -290,7 +290,7 @@ namespace BirdsiteLive.Controllers
                     //System.IO.File.WriteAllText($@"C:\apdebug\{Guid.NewGuid()}.json", body);
 
                     var activity = ApDeserializer.ProcessActivity(body);
-                    _statisticsHandler.RegisterNewActivity(activity);
+                    _statisticsHandler.RegisterNewInboundActivity(activity);
                     var signature = r.Headers["Signature"].First();
 
                     switch (activity?.type)

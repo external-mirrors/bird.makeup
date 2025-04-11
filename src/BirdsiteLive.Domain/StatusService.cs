@@ -22,14 +22,12 @@ namespace BirdsiteLive.Domain
     {
         private readonly InstanceSettings _instanceSettings;
         private readonly IStatusExtractor _statusExtractor;
-        private readonly IStatisticsHandler _statisticsHandler;
 
         #region Ctor
-        public StatusService(InstanceSettings instanceSettings, IStatusExtractor statusExtractor, IStatisticsHandler statisticsHandler)
+        public StatusService(InstanceSettings instanceSettings, IStatusExtractor statusExtractor)
         {
             _instanceSettings = instanceSettings;
             _statusExtractor = statusExtractor;
-            _statisticsHandler = statisticsHandler;
         }
         #endregion
 
@@ -52,7 +50,6 @@ namespace BirdsiteLive.Domain
             string summary = null;
 
             var extractedTags = await _statusExtractor.Extract(post.MessageContent, _instanceSettings.ResolveMentionsInPosts);
-            _statisticsHandler.ExtractedStatus(extractedTags.tags.Count(x => x.type == "Mention"));
 
             // Replace RT by a link
             var content = extractedTags.content;
