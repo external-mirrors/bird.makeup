@@ -20,6 +20,8 @@ namespace BirdsiteLive.ActivityPub
                         return JsonSerializer.Deserialize<ActivityLike>(json);
                     case "Flag":
                         return JsonSerializer.Deserialize<ActivityFlag>(json);
+                    case "Announce":
+                        return JsonSerializer.Deserialize<Activity>(json);
                     case "Undo":
                         var a = JsonSerializer.Deserialize<ActivityUndo>(json);
                         if(a.apObject.type == "Follow")

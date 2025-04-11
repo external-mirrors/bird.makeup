@@ -9,21 +9,24 @@ using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Pipeline.Contracts;
 using BirdsiteLive.Pipeline.Models;
 using BirdsiteLive.Common.Settings;
+using BirdsiteLive.Domain.Statistics;
 using Microsoft.Extensions.Logging;
 
-namespace BirdsiteLive.Pipeline.Processors.SubTasks
+namespace BirdsiteLive.Pipeline.Processors
 {
     public class RetrieveTweetsProcessor : IRetrieveTweetsProcessor
     {
         private readonly ISocialMediaService _socialMediaService;
         private readonly ILogger<RetrieveTweetsProcessor> _logger;
+        private readonly IStatisticsHandler _statisticsHandler;
         private readonly InstanceSettings _settings;
 
         #region Ctor
-        public RetrieveTweetsProcessor(ISocialMediaService socialMediaService, InstanceSettings settings, ILogger<RetrieveTweetsProcessor> logger)
+        public RetrieveTweetsProcessor(ISocialMediaService socialMediaService, IStatisticsHandler statisticsHandler, InstanceSettings settings, ILogger<RetrieveTweetsProcessor> logger)
         {
             _socialMediaService = socialMediaService;
             _logger = logger;
+            _statisticsHandler = statisticsHandler;
             _settings = settings;
         }
         #endregion
@@ -62,6 +65,7 @@ namespace BirdsiteLive.Pipeline.Processors.SubTasks
                             var latestPostDate = tweets.Max(x => x.CreatedAt);
                             await _socialMediaService.UserDal.UpdateUserExtradataAsync(user.Acct, "latest_post_date", latestPostDate);
                         }
+                        _statisticsHandler.RegisterNewPosts(tweets);
                     } 
                     catch(RateLimitExceededException e)
                     {
