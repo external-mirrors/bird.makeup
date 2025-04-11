@@ -49,6 +49,30 @@ namespace BirdsiteLive.ActivityPub.Tests
             Assert.AreEqual("Follow", data.apObject.type);
             Assert.AreEqual("https://mamot.fr/users/testtest", data.apObject.apObject);
         }
+        [TestMethod]
+        public void LikeDeserializationTest()
+        {
+	        var json = "{\n  \"@context\": \"https://www.w3.org/ns/activitystreams\",\n  \"type\": \"Like\",\n  \"id\": \"https://mymath.rocks/activitypub/helge/like-c62dab9f-34fb-4940-bb72-98e8872f96be\",\n  \"actor\": \"https://mymath.rocks/activitypub/helge\",\n  \"content\": \"\ud83d\udc2e\",\n  \"object\": \"https://i.calckey.cloud/notes/9ajhcxg0lu\",\n  \"to\": [\"https://i.calckey.cloud/users/99is5hpneh\"]\n}";
+
+
+            var data = ApDeserializer.ProcessActivity(json) as ActivityLike;
+            Assert.AreEqual("https://mymath.rocks/activitypub/helge/like-c62dab9f-34fb-4940-bb72-98e8872f96be", data.id);
+            Assert.AreEqual("Like", data.type);
+            Assert.AreEqual("https://mymath.rocks/activitypub/helge", data.actor);
+            Assert.AreEqual("https://i.calckey.cloud/notes/9ajhcxg0lu", data.apObject);
+        }
+        [TestMethod]
+        public void FlagDeserializationTest()
+        {
+	        var json = "{\n  \"@context\": \"https://www.w3.org/ns/activitystreams\",\n  \"id\": \"https://mastodon.example/ccb4f39a-506a-490e-9a8c-71831c7713a4\",\n  \"type\": \"Flag\",\n  \"actor\": \"https://mastodon.example/actor\",\n  \"content\": \"Please take a look at this user and their posts\",\n  \"object\": [\n    \"https://example.com/users/1\",\n    \"https://example.com/posts/380590\",\n    \"https://example.com/posts/380591\"\n  ],\n  \"to\": \"https://example.com/users/1\"\n}";
+
+
+            var data = ApDeserializer.ProcessActivity(json) as ActivityFlag; 
+            Assert.AreEqual("https://mastodon.example/ccb4f39a-506a-490e-9a8c-71831c7713a4", data.id);
+            Assert.AreEqual("Flag", data.type);
+            Assert.AreEqual("https://mastodon.example/actor", data.actor);
+            Assert.AreEqual("https://example.com/users/1", data.apObject[0]);
+        }
 
         [TestMethod]
         public void DeleteDeserializationTest()

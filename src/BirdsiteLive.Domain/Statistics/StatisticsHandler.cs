@@ -82,8 +82,11 @@ namespace BirdsiteLive.Domain.Statistics
                 case "Like":
                     _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Like"));
                     break;
+                case "Block":
+                    _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Block"));
+                    break;
                 case "Create":
-                    _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Like"));
+                    _activityCounter.Add(1, new KeyValuePair<string, object>("type", "Create"));
                     break;
 
             }
