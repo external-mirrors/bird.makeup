@@ -10,13 +10,10 @@ using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Models;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
-using BirdsiteLive.DAL.Models;
-using BirdsiteLive.Domain;
 using BirdsiteLive.Moderation.Actions;
 using BirdsiteLive.Pipeline.Contracts;
 using BirdsiteLive.Pipeline.Models;
 using BirdsiteLive.Pipeline.Processors.SubTasks;
-using BirdsiteLive.Twitter.Models;
 using Microsoft.Extensions.Logging;
 
 namespace BirdsiteLive.Pipeline.Processors

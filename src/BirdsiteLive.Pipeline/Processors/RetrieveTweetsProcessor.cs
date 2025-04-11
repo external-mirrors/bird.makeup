@@ -6,12 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
-using BirdsiteLive.DAL.Contracts;
-using BirdsiteLive.DAL.Models;
 using BirdsiteLive.Pipeline.Contracts;
 using BirdsiteLive.Pipeline.Models;
-using BirdsiteLive.Twitter;
-using BirdsiteLive.Twitter.Models;
 using BirdsiteLive.Common.Settings;
 using Microsoft.Extensions.Logging;
 

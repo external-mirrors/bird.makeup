@@ -4,9 +4,7 @@ using System.Text.RegularExpressions;
 using BirdsiteLive.ActivityPub.Models;
 using BirdsiteLive.Common.Regexes;
 using BirdsiteLive.Common.Settings;
-using BirdsiteLive.Twitter;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
 

@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Models;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
-using BirdsiteLive.DAL.Models;
 using BirdsiteLive.Domain;
-using BirdsiteLive.Twitter.Models;
 using Microsoft.Extensions.Logging;
 
 namespace BirdsiteLive.Pipeline.Processors.SubTasks

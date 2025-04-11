@@ -12,13 +12,10 @@ using BirdsiteLive.ActivityPub.Converters;
 using BirdsiteLive.ActivityPub.Models;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
-using BirdsiteLive.Cryptography;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Domain.BusinessUseCases;
 using BirdsiteLive.Domain.Repository;
-using BirdsiteLive.Domain.Statistics;
 using BirdsiteLive.Domain.Tools;
-using BirdsiteLive.Twitter;
 
 namespace BirdsiteLive.Domain
 {
@@ -52,7 +49,7 @@ namespace BirdsiteLive.Domain
             };
 
         #region Ctor
-        public UserService(InstanceSettings instanceSettings, ICryptoService cryptoService, IActivityPubService activityPubService, IProcessFollowUser processFollowUser, IProcessUndoFollowUser processUndoFollowUser, IStatusExtractor statusExtractor, ITwitterUserService twitterUserService, IModerationRepository moderationRepository, IProcessDeleteUser processDeleteUser, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService)
+        public UserService(InstanceSettings instanceSettings, ICryptoService cryptoService, IActivityPubService activityPubService, IProcessFollowUser processFollowUser, IProcessUndoFollowUser processUndoFollowUser, IStatusExtractor statusExtractor, IModerationRepository moderationRepository, IProcessDeleteUser processDeleteUser, ITwitterUserDal twitterUserDal, ISocialMediaService socialMediaService)
         {
             _instanceSettings = instanceSettings;
             _cryptoService = cryptoService;
