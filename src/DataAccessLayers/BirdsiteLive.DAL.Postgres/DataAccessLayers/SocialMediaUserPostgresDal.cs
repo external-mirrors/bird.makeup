@@ -143,6 +143,24 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             var cache = reader["data"] as string;
             return cache;
         }
+
+        public async Task<string[]> GetAllPostsCacheIdAsync()
+        {
+            var query = $"SELECT id FROM {PostCacheTableName}";
+
+            await using var connection = await DataSource.OpenConnectionAsync();
+            await using var command = new NpgsqlCommand(query, connection) { };
+            var reader = await command.ExecuteReaderAsync();
+
+            var ids = new List<string>();
+            while (await reader.ReadAsync())
+            {
+                ids.Add(reader["id"] as string);
+            }
+            
+            return ids.ToArray();
+        }
+
         public async Task UpdatePostCacheAsync(SocialMediaPost post)
         {
             var query = $"""

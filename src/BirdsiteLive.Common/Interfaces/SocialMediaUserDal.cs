@@ -14,6 +14,7 @@ public interface SocialMediaUserDal
         Task<string?> GetUserCacheAsync(string acct);
         Task UpdatePostCacheAsync(SocialMediaPost post);
         Task<string> GetPostCacheAsync(string post);
+        Task<string[]> GetAllPostsCacheIdAsync();
         Task UpdateUserCacheAsync(SocialMediaUser user);
         Task ClearUserCacheAsync(string user);
         Task UpdateUserLastSyncAsync(SyncUser user);

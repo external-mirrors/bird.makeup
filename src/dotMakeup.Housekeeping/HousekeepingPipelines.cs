@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
@@ -55,6 +56,28 @@ namespace BirdsiteLive.Moderation
 
         public async Task CleanCaches()
         {
+            var posts = await _socialMediaService.UserDal.GetAllPostsCacheIdAsync();
+            foreach (var p in posts)
+            {
+                var postString = await _socialMediaService.UserDal.GetPostCacheAsync(p);
+                var post = JsonSerializer.Deserialize<SocialMediaPost>(postString);
+
+                if (post.CreatedAt > DateTime.Now.AddDays(-14) )
+                {
+                    foreach (var media in post.Media)
+                    {
+                        try
+                        {
+                            await _ipfs.Unpin(media.Url.Replace("https://ipfs.kilogram.makeup/ipfs/", ""));
+                            _logger.LogWarning($"Unpined: {media.Url}");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogCritical(e, $"Error unpinning {media.Url}");
+                        }
+                    }
+                }
+            }
             if (_settings.IpfsApi != null)
                 await _ipfs.GarbageCollection();
         }
