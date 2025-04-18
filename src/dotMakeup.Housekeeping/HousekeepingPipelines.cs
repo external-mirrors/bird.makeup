@@ -59,8 +59,8 @@ namespace BirdsiteLive.Moderation
             var posts = await _socialMediaService.UserDal.GetAllPostsCacheIdAsync();
             foreach (var p in posts)
             {
-                var postString = await _socialMediaService.UserDal.GetPostCacheAsync(p);
-                var post = JsonSerializer.Deserialize<SocialMediaPost>(postString);
+                var post = await _socialMediaService.GetPostAsync(p);
+                if (post is null) continue;
 
                 if (post.CreatedAt > DateTime.Now.AddDays(-14) )
                 {
