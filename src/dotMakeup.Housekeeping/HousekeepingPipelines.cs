@@ -76,6 +76,8 @@ namespace BirdsiteLive.Moderation
                             _logger.LogCritical(e, $"Error unpinning {media.Url}");
                         }
                     }
+
+                    await _socialMediaService.UserDal.DeletePostCacheAsync(p);
                 }
             }
             if (_settings.IpfsApi != null)

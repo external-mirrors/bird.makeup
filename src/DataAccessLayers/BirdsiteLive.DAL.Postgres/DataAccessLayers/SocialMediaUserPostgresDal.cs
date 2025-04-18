@@ -144,8 +144,27 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             return cache;
         }
 
+        public async Task DeletePostCacheAsync(string post)
+        {
+            var query = $"DELETE FROM {PostCacheTableName} WHERE id = $1";
+
+            await using var connection = DataSource.CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand(query, connection) {
+                Parameters =
+                {
+                    new() { Value = post },
+                },
+            };
+            await command.ExecuteNonQueryAsync();
+        }
+
         public async Task<string[]> GetAllPostsCacheIdAsync()
         {
+            // FIX ME, tmp fix for HN
+            if (PostCacheTableName == null)
+                return Array.Empty<string>();
+            
             var query = $"SELECT id FROM {PostCacheTableName}";
 
             await using var connection = await DataSource.OpenConnectionAsync();
