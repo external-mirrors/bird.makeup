@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ipfs-node
+  namespace: default
+spec:
+  serviceName: ipfs-node
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ipfs-node
+  template:
+    metadata:
+      labels:
+        app: ipfs-node
+    spec:
+      containers:
+        - name: ipfs
+          image: ipfs/go-ipfs:v0.34.1
+          args:
+            - daemon
+            - "--migrate=true"
+            - "--offline" # <-- Disable DHT participation
+          ports:
+            - containerPort: 4001 # peers communication (swarm)
+              name: swarm
+            - containerPort: 5001 # API port
+              name: api
+            - containerPort: 8080 # Gateway port (HTTP gateway)
+              name: gateway
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          volumeMounts:
+            - name: ipfs-storage
+              mountPath: /data/ipfs
+  volumeClaimTemplates:
+    - metadata:
+        name: ipfs-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "csi-cinder-classic"
+        resources:
+          requests:
+            storage: 200Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipfs-node
+  namespace: default
+  labels:
+    app: ipfs-node
+spec:
+  ports:
+    - port: 4001
+      name: swarm
+      protocol: TCP
+    - port: 5001
+      name: api
+      protocol: TCP
+    - port: 8080
+      name: gateway
+      protocol: TCP
+  selector:
+    app: ipfs-node

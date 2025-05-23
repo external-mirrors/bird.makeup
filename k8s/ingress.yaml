@@ -17,6 +17,7 @@ metadata:
 spec:
   dnsNames:
     - kilogram.makeup
+    - ipfs.kilogram.makeup
   issuerRef:
     name: letsencrypt
     kind: ClusterIssuer
@@ -49,6 +50,7 @@ spec:
       secretName: ssl-cert-bird-dotmakeup
     - hosts:
         - kilogram.makeup
+        - ipfs.kilogram.makeup
       secretName: ssl-cert-kilogram-dotmakeup
     - hosts:
         - hacker.makeup
@@ -84,3 +86,13 @@ spec:
                 name: dotmakeup-hn
                 port:
                   number: 80
+    - host: ipfs.kilogram.makeup
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ipfs-node
+                port:
+                  number: 8080

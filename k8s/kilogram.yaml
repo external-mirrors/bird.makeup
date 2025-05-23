@@ -49,7 +49,7 @@ spec:
             - name: Instance__Name
               value: "kilogram.makeup"
             - name: Instance__TwitterRequestDelay
-              value: "400000"
+              value: "200000"
             - name: Instance__ResolveMentionsInPosts
               value: "cached"
             - name: Instance__SocialNetworkRequestJitter
@@ -61,7 +61,7 @@ spec:
             - name: Instance__CrawlingSidecarURL
               value: "http://localhost:5000"
             - name: "Instance__IpfsApi"
-              value: "http://100.102.85.102:5001"
+              value: "http://10.3.231.177:5001"
             - name: "Instance__IpfsGateway"
               value: "ipfs.kilogram.makeup"
             - name: Instance__SocialNetwork
