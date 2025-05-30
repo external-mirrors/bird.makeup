@@ -1,4 +1,5 @@
-﻿using BirdsiteLive.Common.Settings;
+﻿using System.Diagnostics.Metrics;
+using BirdsiteLive.Common.Settings;
 using Ipfs.Http;
 
 namespace dotMakeup.ipfs;
@@ -16,6 +17,9 @@ public class DotmakeupIpfs : IIpfsService
     private readonly IHttpClientFactory _httpClientFactory;
     private InstanceSettings _instanceSettings;
     private readonly IpfsClient _ipfs;
+    static Meter _meter = new("DotMakeup", "1.0.0");
+    private ObservableGauge<float> _diskUsageGauge; 
+    private float _diskUsage = 0;
     #region Ctor
     public DotmakeupIpfs(InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory)
     {
@@ -25,6 +29,8 @@ public class DotmakeupIpfs : IIpfsService
         if (_instanceSettings.IpfsApi is not null)
             _ipfs.ApiUri = new Uri(_instanceSettings.IpfsApi);
 
+        _diskUsageGauge = _meter.CreateObservableGauge<float>("dotmakeup_ipfs_disk_usage", () => _diskUsage, "Gigabytes of disk usage" );
+        Task.Run(UpdateStats);
     }
     #endregion
 
@@ -57,7 +63,6 @@ public class DotmakeupIpfs : IIpfsService
         {
             Console.WriteLine("Timeout during warmup of {0}", i.Id);
         }
-        
         return i.Id;
     }
 
@@ -69,5 +74,24 @@ public class DotmakeupIpfs : IIpfsService
     public async Task GarbageCollection()
     {
         await _ipfs.BlockRepository.RemoveGarbageAsync();
+    }
+
+    private async Task UpdateStats()
+    {
+        while (true)
+        {
+            try
+            {
+                var a = await _ipfs.Stats.RepositoryAsync();
+                if (a is null)
+                    return;
+                _diskUsage = a.RepoSize = a.RepoSize / 1024 / 1024 / 1024;
+            }
+            catch (Exception _)
+            {
+                // ignored
+            }
+            await Task.Delay(TimeSpan.FromMinutes(1));
+        }
     }
 }

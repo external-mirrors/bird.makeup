@@ -16,7 +16,6 @@ namespace dotMakeup.Instagram;
 public class InstagramService : ISocialMediaService
 {
         static Meter _meter = new("DotMakeup", "1.0.0");
-        static Counter<int> _newPosts = _meter.CreateCounter<int>("dotmakeup_ig_new_posts_count");
         static Counter<int> _apiCalled = _meter.CreateCounter<int>("dotmakeup_api_called_count");
         
         private readonly IHttpClientFactory _httpClientFactory;
@@ -113,8 +112,6 @@ public class InstagramService : ISocialMediaService
                 }
             }
 
-            _newPosts.Add(newPosts.Count);
-            
             return newPosts.ToArray();
         }
 
