@@ -83,8 +83,8 @@ namespace BirdsiteLive.Twitter
                 var httpResponse = await client.SendAsync(request);
                 if (httpResponse.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    _logger.LogError("Error retrieving tweet {statusId}; refreshing client", statusId);
-                    await _twitterAuthenticationInitializer.RefreshClient(request);
+                    _logger.LogError("Error retrieving tweet {statusId}; trying from syndication", statusId);
+                    return await TweetFromSyndication(statusId);
                 }
                 httpResponse.EnsureSuccessStatusCode();
                 var c = await httpResponse.Content.ReadAsStringAsync();
@@ -551,7 +551,7 @@ namespace BirdsiteLive.Twitter
                 string quoteTweetId = qt.GetProperty("id_str").GetString();
                 string quoteTweetAcct = qt.GetProperty("user").GetProperty("screen_name").GetString();
                 
-                string quoteTweetLink = $"https://{_instanceSettings.Domain}/@{quoteTweetAcct}/{quoteTweetId}";
+                string quoteTweetLink = $"https://{_instanceSettings.Domain}/@{quoteTweetAcct.ToLower()}/{quoteTweetId}";
 
                 messageContent = Regex.Replace(messageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
                 messageContent = Regex.Replace(messageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
@@ -565,6 +565,11 @@ namespace BirdsiteLive.Twitter
             };
 
             var createdaAt = DateTime.Parse(tweet.RootElement.GetProperty("created_at").GetString(), null, System.Globalization.DateTimeStyles.RoundtripKind);
+            
+            if (messageContent.StartsWith(".@"))
+                messageContent = messageContent.Remove(0, 1);
+
+            messageContent = await ExpandShortLinks(messageContent);
             
             return new ExtractedTweet()
             {

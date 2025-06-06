@@ -64,7 +64,7 @@ spec:
             - name: Instance__Name
               value: "bird.makeup"
             - name: Instance__TwitterRequestDelay
-              value: "300"
+              value: "6000"
             - name: Instance__SocialNetwork
               value: "Twitter"
             - name: Instance__ParallelTwitterRequests
