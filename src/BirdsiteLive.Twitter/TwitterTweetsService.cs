@@ -81,11 +81,6 @@ namespace BirdsiteLive.Twitter
             {
                 JsonDocument tweet;
                 var httpResponse = await client.SendAsync(request);
-                if (httpResponse.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    _logger.LogError("Error retrieving tweet {statusId}; trying from syndication", statusId);
-                    return await TweetFromSyndication(statusId);
-                }
                 httpResponse.EnsureSuccessStatusCode();
                 var c = await httpResponse.Content.ReadAsStringAsync();
                 tweet = JsonDocument.Parse(c);
@@ -106,8 +101,7 @@ namespace BirdsiteLive.Twitter
                 _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_tweet"),
                     new KeyValuePair<string, object>("result", "5xx")
                 );
-                await _twitterAuthenticationInitializer.RefreshClient(request);
-                return null;
+                return await TweetFromSyndication(statusId);
             }
         }
 
