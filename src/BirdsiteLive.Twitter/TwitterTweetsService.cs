@@ -113,9 +113,6 @@ namespace BirdsiteLive.Twitter
 
         public async Task<ExtractedTweet[]> GetTimelineAsync(SyncUser user, long fromTweetId = -1)
         {
-
-            var client = await _twitterAuthenticationInitializer.MakeHttpClient();
-
             long userId;
             string username = user.Acct;
             if (user.TwitterUserId == default) 
@@ -130,7 +127,75 @@ namespace BirdsiteLive.Twitter
                 userId = user.TwitterUserId;
             }
 
+            List<ExtractedTweet> extractedTweets;
 
+            int followersThreshold0 = 9999999;
+            int followersThreshold = 9999999;
+            int followersThreshold2 = 9999999;
+            int followersThreshold3 = 9999999;
+            int twitterFollowersThreshold = 9999999;
+            int postNitterDelay = 500;
+            
+            string source;
+            var nitterSettings = await _settings.Get("nitter");
+            if (nitterSettings is not null)
+            {
+                followersThreshold0 = nitterSettings.Value.GetProperty("followersThreshold0").GetInt32();
+                followersThreshold = nitterSettings.Value.GetProperty("followersThreshold").GetInt32();
+                followersThreshold2 = nitterSettings.Value.GetProperty("followersThreshold2").GetInt32();
+                followersThreshold3 = nitterSettings.Value.GetProperty("followersThreshold3").GetInt32();
+                twitterFollowersThreshold = nitterSettings.Value.GetProperty("twitterFollowersThreshold").GetInt32();
+                postNitterDelay = nitterSettings.Value.GetProperty("postnitterdelay").GetInt32();
+            }
+            var twitterUser = await _twitterUserService.GetUserAsync(username);
+            if (user.StatusesCount == -1)
+            {
+                extractedTweets = await TweetFromVanilla(user, userId, fromTweetId);
+                source = "Vanilla";
+            }
+            else if (user.Followers > followersThreshold0)
+            {
+                extractedTweets = await TweetFromSidecar(user, fromTweetId, true);
+                source = "Sidecar (with replies)";
+                await Task.Delay(postNitterDelay);
+            }
+            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold3)
+            {
+                extractedTweets = await TweetFromSidecar(user, fromTweetId, true);
+                source = "Sidecar (with replies)";
+                await Task.Delay(postNitterDelay);
+            }
+            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold2)
+            {
+                extractedTweets = await TweetFromSidecar(user, fromTweetId, false);
+                source = "Sidecar (without replies)";
+                await Task.Delay(postNitterDelay);
+            }
+            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold && twitterUser.FollowersCount > twitterFollowersThreshold)
+            {
+                extractedTweets = await TweetFromNitter(user, fromTweetId, false, false);
+                source = "Nitter";
+                await Task.Delay(postNitterDelay);
+            }
+            else
+            {
+                extractedTweets = await TweetFromVanilla(user, userId, fromTweetId);
+                source = "Vanilla";
+            }
+
+            await _twitterUserDal.UpdateTwitterStatusesCountAsync(username, twitterUser.StatusCount);
+            await _twitterUserDal.UpdateUserExtradataAsync(username, "statusesCount", twitterUser.StatusCount);
+            _newTweets.Add(extractedTweets.Count,
+                new KeyValuePair<string, object>("source", source)
+            );
+            return extractedTweets.ToArray();
+        }
+
+        private async Task<List<ExtractedTweet>> TweetFromVanilla(SyncUser user, long userId, long fromTweetId)
+        {
+            var client = await _twitterAuthenticationInitializer.MakeHttpClient();
+            string username = user.Acct;
+            
             //reqURL =
             //    """https://twitter.com/i/api/graphql/rIIwMe1ObkGh_ByBtTCtRQ/UserTweets?variables={"userId":"44196397","count":20,"includePromotedContent":true,"withQuickPromoteEligibilityTweetFields":true,"withVoice":true,"withV2Timeline":true}&features={"rweb_lists_timeline_redesign_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":false,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_media_download_video_enabled":false,"responsive_web_enhance_cards_enabled":false}""";
             //reqURL = reqURL.Replace("44196397", userId.ToString());
@@ -148,7 +213,7 @@ namespace BirdsiteLive.Twitter
                 {
                     _logger.LogError("Error retrieving timeline of {Username}; refreshing client", username);
                     await _twitterAuthenticationInitializer.RefreshClient(request);
-                    return null;
+                    return [];
                 }
                 httpResponse.EnsureSuccessStatusCode();
                 results = JsonDocument.Parse(c);
@@ -201,59 +266,7 @@ namespace BirdsiteLive.Twitter
             }
             extractedTweets = extractedTweets.OrderByDescending(x => x.Id).Where(x => x.IdLong > fromTweetId).ToList();
 
-            int followersThreshold0 = 9999999;
-            int followersThreshold = 9999999;
-            int followersThreshold2 = 9999999;
-            int followersThreshold3 = 9999999;
-            int twitterFollowersThreshold = 9999999;
-            int postNitterDelay = 500;
-            
-            string source = "Vanilla";
-            var nitterSettings = await _settings.Get("nitter");
-            if (nitterSettings is not null)
-            {
-                followersThreshold0 = nitterSettings.Value.GetProperty("followersThreshold0").GetInt32();
-                followersThreshold = nitterSettings.Value.GetProperty("followersThreshold").GetInt32();
-                followersThreshold2 = nitterSettings.Value.GetProperty("followersThreshold2").GetInt32();
-                followersThreshold3 = nitterSettings.Value.GetProperty("followersThreshold3").GetInt32();
-                twitterFollowersThreshold = nitterSettings.Value.GetProperty("twitterFollowersThreshold").GetInt32();
-                postNitterDelay = nitterSettings.Value.GetProperty("postnitterdelay").GetInt32();
-            }
-            var twitterUser = await _twitterUserService.GetUserAsync(username);
-            if (user.StatusesCount == -1)
-            {
-            }
-            else if (user.Followers > followersThreshold0)
-            {
-                extractedTweets = await TweetFromSidecar(user, fromTweetId, true);
-                source = "Sidecar (with replies)";
-                await Task.Delay(postNitterDelay);
-            }
-            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold3)
-            {
-                extractedTweets = await TweetFromSidecar(user, fromTweetId, true);
-                source = "Sidecar (with replies)";
-                await Task.Delay(postNitterDelay);
-            }
-            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold2)
-            {
-                extractedTweets = await TweetFromSidecar(user, fromTweetId, false);
-                source = "Sidecar (without replies)";
-                await Task.Delay(postNitterDelay);
-            }
-            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold && twitterUser.FollowersCount > twitterFollowersThreshold)
-            {
-                extractedTweets = await TweetFromNitter(user, fromTweetId, false, false);
-                source = "Nitter";
-                await Task.Delay(postNitterDelay);
-            }
-
-            await _twitterUserDal.UpdateTwitterStatusesCountAsync(username, twitterUser.StatusCount);
-            await _twitterUserDal.UpdateUserExtradataAsync(username, "statusesCount", twitterUser.StatusCount);
-            _newTweets.Add(extractedTweets.Count,
-                new KeyValuePair<string, object>("source", source)
-            );
-            return extractedTweets.ToArray();
+            return extractedTweets;
         }
 
         private async Task<List<ExtractedTweet>> TweetFromSidecar(SyncUser user, long fromId, bool withReplies)
