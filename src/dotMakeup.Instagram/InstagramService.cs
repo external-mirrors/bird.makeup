@@ -117,6 +117,7 @@ public class InstagramService : ISocialMediaService
 
         public async Task<SocialMediaUser?> GetUserAsync(string username)
         {
+            //return await CallDirect(username);
             var user = await GetUserAsync(username, false);
             return user;
         }
@@ -256,6 +257,135 @@ public class InstagramService : ISocialMediaService
             _userCache.Set(username, user, _cacheEntryOptions);
 
             return user;
+        }
+        private async Task<InstagramUser> CallDirect(string username)
+        {
+            InstagramUser user = null;
+            var client = _httpClientFactory.CreateClient();
+            string requestUrl = $"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}";
+            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+
+            
+            // Configuration des headers de la requête
+            request.Headers.Add("User-Agent", 
+                "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0");
+            request.Headers.Add("Accept", "*/*");
+            request.Headers.Add("X-IG-App-ID", "936619743392459");
+
+            var response = await client.SendAsync(request);
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                _userCache.Set(username, user, _cacheEntryOptionsError);
+                throw new RateLimitExceededException();
+            }
+            response.EnsureSuccessStatusCode();
+
+            var jsonString = await response.Content.ReadAsStringAsync();
+
+            // Parsing JSON
+            using var jsonDocument = JsonDocument.Parse(jsonString);
+            var root = jsonDocument.RootElement;
+
+            var userJson = root.GetProperty("data").GetProperty("user");
+            string profileUrl = null;
+            foreach (var l in userJson.GetProperty("bio_links").EnumerateArray())
+            {
+                profileUrl = l.GetProperty("url").GetString();
+            }
+            
+            InstagramUser userResult = new InstagramUser()
+            {
+                Description = userJson.GetProperty("biography_with_entities").GetProperty("raw_text").GetString(),
+                Acct = username,
+                ProfileImageUrl = userJson.GetProperty("profile_pic_url_hd").GetString(),
+                Name = userJson.GetProperty("full_name").GetString(),
+                FollowersCount = userJson.GetProperty("edge_followed_by").GetProperty("count").GetInt32(),
+                ProfileUrl = "www.instagram.com/" + username,
+                Url = profileUrl,
+            };
+
+            var postsJson = userJson.GetProperty("edge_owner_to_timeline_media").GetProperty("edges");
+
+            List<InstagramPost> userPosts = new List<InstagramPost>();
+            _apiCalled.Add(1, new KeyValuePair<string, object>("sidecar", $"ig_direct"),
+                new KeyValuePair<string, object>("status", response.StatusCode)
+            );
+            
+            foreach (var post in postsJson.EnumerateArray())
+            {
+                try
+                {
+                    var node = post.GetProperty("node");
+                    var mediaItems = new List<ExtractedMedia>();
+
+                    if (node.GetProperty("is_video").GetBoolean())
+                    {
+                        mediaItems.Add(new ExtractedMedia()
+                        {
+                            Url =  node.GetProperty("video_url").GetString(),
+                            MediaType = "image/jpeg"
+
+                        });
+                    }
+                    else
+                    {
+                        mediaItems.Add(new ExtractedMedia()
+                        {
+                            Url =  node.GetProperty("display_url").GetString(),
+                            MediaType = "image/jpeg"
+                        });
+                    }
+
+                    // carrousel sidecar of images/videos
+                    if (node.TryGetProperty("edge_sidecar_to_children", out JsonElement sidecar))
+                    {
+                        mediaItems.Clear();
+                        foreach (var sideElem in sidecar.GetProperty("edges").EnumerateArray())
+                        {
+                            var sideNode = sideElem.GetProperty("node");
+                            string url = sideNode.TryGetProperty("video_url", out var videoUrlElem)
+                                ? videoUrlElem.GetString()
+                                : sideNode.GetProperty("display_url").GetString();
+                            string type = sideNode.TryGetProperty("video_url", out var _)
+                                ? "video/mp4"
+                                : "image/jpeg";
+                            mediaItems.Add(new ExtractedMedia()
+                            {
+                                Url = url,
+                                MediaType = type
+
+                            });
+                        }
+                    }
+
+                    // Récupérer la légende (caption), tout en gérant le cas où il n'y aurait pas de légende
+                    string caption = "";
+                    var captionEdges = node.GetProperty("edge_media_to_caption").GetProperty("edges");
+                    if (captionEdges.GetArrayLength() > 0)
+                        caption = captionEdges[0].GetProperty("node").GetProperty("text").GetString();
+
+                    var parsedPost = new InstagramPost()
+                    {
+                        Id = node.GetProperty("shortcode").GetString(),
+                        MessageContent = caption,
+                        Author = userResult,
+                        CreatedAt = DateTimeOffset.FromUnixTimeSeconds(node.GetProperty("taken_at_timestamp").GetInt64()).UtcDateTime,
+                        IsPinned = false,
+                        
+                        Media = mediaItems.ToArray(),
+                    };
+                    userPosts.Add(parsedPost);
+                }
+                catch (Exception ex)
+                {
+                    // À adapter selon ta configuration de logging interne (ici juste console exemple minimal)
+                    Console.WriteLine($"Error fetching post: {ex.Message}");
+                }
+            }
+            
+            _userCache.Set(username, user, _cacheEntryOptions);
+
+            return userResult;
         }
 
         private InstagramPost ParsePost(JsonElement postDoc)
