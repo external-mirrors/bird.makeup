@@ -265,8 +265,6 @@ public class InstagramService : ISocialMediaService
             string requestUrl = $"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}";
             var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-            
-            // Configuration des headers de la requête
             request.Headers.Add("User-Agent", 
                 "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0");
             request.Headers.Add("Accept", "*/*");
@@ -282,7 +280,6 @@ public class InstagramService : ISocialMediaService
 
             var jsonString = await response.Content.ReadAsStringAsync();
 
-            // Parsing JSON
             using var jsonDocument = JsonDocument.Parse(jsonString);
             var root = jsonDocument.RootElement;
 
@@ -323,7 +320,7 @@ public class InstagramService : ISocialMediaService
                         mediaItems.Add(new ExtractedMedia()
                         {
                             Url =  node.GetProperty("video_url").GetString(),
-                            MediaType = "image/jpeg"
+                            MediaType = "video/mp4"
 
                         });
                     }
@@ -358,7 +355,6 @@ public class InstagramService : ISocialMediaService
                         }
                     }
 
-                    // Récupérer la légende (caption), tout en gérant le cas où il n'y aurait pas de légende
                     string caption = "";
                     var captionEdges = node.GetProperty("edge_media_to_caption").GetProperty("edges");
                     if (captionEdges.GetArrayLength() > 0)
@@ -378,10 +374,11 @@ public class InstagramService : ISocialMediaService
                 }
                 catch (Exception ex)
                 {
-                    // À adapter selon ta configuration de logging interne (ici juste console exemple minimal)
-                    Console.WriteLine($"Error fetching post: {ex.Message}");
+                    //Console.WriteLine($"Error fetching post: {ex.Message}");
                 }
             }
+
+            userResult.RecentPosts = userPosts;
             
             _userCache.Set(username, user, _cacheEntryOptions);
 
