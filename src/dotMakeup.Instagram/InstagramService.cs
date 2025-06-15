@@ -117,7 +117,6 @@ public class InstagramService : ISocialMediaService
 
         public async Task<SocialMediaUser?> GetUserAsync(string username)
         {
-            //return await CallDirect(username);
             var user = await GetUserAsync(username, false);
             return user;
         }
@@ -127,15 +126,16 @@ public class InstagramService : ISocialMediaService
             JsonElement? accounts = await _settingsDal.Get("ig_allow_list");
             if (accounts is not null && !accounts.Value.EnumerateArray().Any(user => user.GetString() == username))
                 throw new UserNotFoundException();
+            
+            JsonElement? alwaysRefresh = await _settingsDal.Get("ig_always_refresh");
+            if (alwaysRefresh is not null)
+                forceRefresh = true;
 
             InstagramUser user;
             
             if (forceRefresh)
             {
-                if (_settings.CrawlingSidecarURL is not null)
-                    user = await CallSidecar(username, _settings.CrawlingSidecarURL);
-                else
-                    user = await CallSidecar(username, await GetWebSidecar());
+                user = await CallDirect(username);
                 
                 var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, true);
                 user.ProfileImageUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
@@ -261,7 +261,7 @@ public class InstagramService : ISocialMediaService
         private async Task<InstagramUser> CallDirect(string username)
         {
             InstagramUser user = null;
-            var client = _httpClientFactory.CreateClient();
+            var client = _httpClientFactory.CreateClient("WithProxy");
             string requestUrl = $"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}";
             var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 

@@ -79,7 +79,7 @@ public class DotmakeupIpfs : IIpfsService
     public async Task<string[]> AllPinnedHashes()
     {
         var l = await _ipfs.Pin.ListAsync();
-        var hashes = l.Select(x => x.Hash.ToString());
+        var hashes = l.Select(x => x.ToString());
 
         return hashes.ToArray();
     }

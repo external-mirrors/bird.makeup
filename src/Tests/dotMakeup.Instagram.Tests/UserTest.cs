@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
@@ -18,15 +19,20 @@ public class UserTest
         var userDal = new Mock<IInstagramUserDal>();
         var httpFactory = new Mock<IHttpClientFactory>();
         var settingsDal = new Mock<ISettingsDal>();
+        settingsDal.Setup(_ => _.Get("ig_always_refresh"))
+            .ReturnsAsync(JsonDocument.Parse("{}").RootElement);
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+        httpFactory.Setup(_ => _.CreateClient("WithProxy")).Returns(new HttpClient());
         var settings = new InstanceSettings
         {
             Domain = "domain.name",
             SidecarURL = "http://localhost:5001"
         };
 
-        _ipfsService = new DotmakeupIpfs(settings, httpFactory.Object);
-        _instaService = new InstagramService(_ipfsService, userDal.Object, httpFactory.Object, settings, settingsDal.Object);
+        var ipfsService = new Mock<IIpfsService>();
+        ipfsService.Setup(a => a.Mirror(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync("abc");
+        ipfsService.Setup(a => a.GetIpfsPublicLink(It.IsAny<string>())).Returns("http://abc.com");
+        _instaService = new InstagramService(ipfsService.Object, userDal.Object, httpFactory.Object, settings, settingsDal.Object);
     }
     [TestMethod]
     public async Task user_kobe()

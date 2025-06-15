@@ -60,6 +60,24 @@ spec:
               value: "http://100.100.41.58:5000"
             - name: Instance__CrawlingSidecarURL
               value: "http://localhost:5000"
+            - name: "Instance__ProxyURL"
+              valueFrom:
+                secretKeyRef:
+                  name: http-proxy
+                  key: url
+                  optional: true
+            - name: "Instance__ProxyUser"
+              valueFrom:
+                secretKeyRef:
+                  name: http-proxy
+                  key: user
+                  optional: true
+            - name: "Instance__Password"
+              valueFrom:
+                secretKeyRef:
+                  name: http-proxy
+                  key: password
+                  optional: true
             - name: "Instance__IpfsApi"
               value: "http://10.3.231.177:5001"
             - name: "Instance__IpfsGateway"
@@ -69,9 +87,9 @@ spec:
             - name: Instance__ParallelFediversePosts
               value: "10"
             - name: Instance__UserCacheCapacity
-              value: "5000"
+              value: "500"
             - name: Instance__TweetCacheCapacity
-              value: "5000"
+              value: "500"
             - name: Instance__MultiplyNByOrdinal
               value: "true"
             - name: Instance__n_start
