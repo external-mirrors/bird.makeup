@@ -60,12 +60,8 @@ namespace BirdsiteLive.Twitter
         {
             if (!_userCache.TryGetValue(username, out TwitterUser user))
             {
-                var cachedUser = await _twitterUserDal.GetUserCacheAsync(username);
-                if (cachedUser is not null)
-                {
-                    user = JsonSerializer.Deserialize<TwitterUser>(cachedUser);
-                }
-                else
+                user = await _twitterUserDal.GetUserCacheAsync<TwitterUser>(username);
+                if (user is null)
                 {
                     user = await _twitterService.GetUserAsync(username);
                 }

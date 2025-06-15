@@ -102,6 +102,16 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             };
 
         }
+
+        public async Task<T> GetUserCacheAsync<T>(string username) where T : class, SocialMediaUser
+        {
+            var userDoc = await GetUserCacheAsync(username);
+            if (userDoc is null)
+                return null;
+            var user = JsonSerializer.Deserialize<T>(userDoc);
+            return user;
+        }
+        
         public async Task<string> GetUserCacheAsync(string username)
         {
             var query = $"SELECT cache FROM {tableName} WHERE acct = $1";
