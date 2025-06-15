@@ -84,6 +84,7 @@ namespace BirdsiteLive.Moderation
             foreach (var u in await _socialMediaService.UserDal.GetAllUsersAsync())
             {
                 var userDoc = await _socialMediaService.UserDal.GetUserCacheAsync(u.Acct);
+                if (userDoc is null) continue;
                 var user = JsonDocument.Parse(userDoc).RootElement;
                 var media = user.GetProperty("ProfileImageUrl").GetString();
                 var h = media.Replace("https://ipfs.kilogram.makeup/ipfs/", "");
