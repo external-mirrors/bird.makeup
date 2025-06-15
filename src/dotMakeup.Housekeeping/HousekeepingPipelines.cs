@@ -92,7 +92,10 @@ namespace BirdsiteLive.Moderation
             }
 
             var hashes = new HashSet<string>( await hashesP );
+            var totalPins = hashes.Count;
             hashes.ExceptWith(desiredPins);
+            _logger.LogInformation($"Unpinning from ipfs {hashes.Count} pins from {totalPins} total pins, leaving {desiredPins.Count} pins");
+            
             foreach (var h in hashes)
             {
                 try

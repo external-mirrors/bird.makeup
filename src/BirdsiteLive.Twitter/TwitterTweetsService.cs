@@ -104,10 +104,16 @@ namespace BirdsiteLive.Twitter
             catch (Exception e)
             {
                 _logger.LogError(e, "Error retrieving tweet {TweetId}", statusId);
+                ExtractedTweet backupTweet = null;
+                try
+                {
+                    backupTweet = await TweetFromSyndication(statusId);
+                }
+                catch (Exception _) {}
                 _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_tweet"),
-                    new KeyValuePair<string, object>("result", "5xx")
+                    new KeyValuePair<string, object>("result", backupTweet is null ? "5xx" : "2xx_backup")
                 );
-                return await TweetFromSyndication(statusId);
+                return backupTweet;
             }
         }
 
@@ -182,6 +188,8 @@ namespace BirdsiteLive.Twitter
                 extractedTweets = await TweetFromVanilla(user, userId, fromTweetId);
                 source = "Vanilla";
             }
+            
+            extractedTweets = extractedTweets.OrderByDescending(x => x.Id).Where(x => x.IdLong > fromTweetId).ToList();
 
             await _twitterUserDal.UpdateTwitterStatusesCountAsync(username, twitterUser.StatusCount);
             await _twitterUserDal.UpdateUserExtradataAsync(username, "statusesCount", twitterUser.StatusCount);

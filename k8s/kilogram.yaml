@@ -72,7 +72,7 @@ spec:
                   name: http-proxy
                   key: user
                   optional: true
-            - name: "Instance__Password"
+            - name: "Instance__ProxyPassword"
               valueFrom:
                 secretKeyRef:
                   name: http-proxy

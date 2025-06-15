@@ -34,7 +34,7 @@ namespace BirdsiteLive.Twitter
             _cacheEntryOptions = new MemoryCacheEntryOptions()
                 .SetSize(1)
                 //Priority on removing when reaching size limit (memory pressure)
-                .SetPriority(CacheItemPriority.Low)
+                .SetPriority(CacheItemPriority.Normal)
                 // Keep in cache for this time, reset time if accessed.
                 .SetSlidingExpiration(TimeSpan.FromDays(1))
                 // Remove from cache after this time, regardless of sliding expiration
@@ -53,6 +53,10 @@ namespace BirdsiteLive.Twitter
         public async Task<ExtractedTweet[]> GetTimelineAsync(SyncUser user, long id)
         {
             var res = await _twitterService.GetTimelineAsync(user, id);
+            foreach (var t in res)
+            {
+                _tweetCache.Set(t.IdLong, t, _cacheEntryOptions);
+            }
             return res;
         }
         public async Task<ExtractedTweet> GetTweetAsync(long id)

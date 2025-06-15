@@ -97,4 +97,20 @@ public class UserTest
         Assert.AreEqual(user.Url, "https://people.com/music/lisa-marie-presley-was-destroyed-by-son-benjamins-death-grief-essay/");
         Assert.AreEqual(user.RecentPosts.First().Media.Length, 6);
     }
+    [Ignore]
+    [TestMethod]
+    public async Task user_etymologynerd()
+    {
+        InstagramUser user;
+        try
+        {
+            user = (InstagramUser)await _instaService.GetUserAsync("etymologynerd");
+        }
+        catch (Exception _)
+        {
+            Assert.Inconclusive();
+            return;
+        }
+        Assert.IsTrue(user.RecentPosts.ToArray().Length > 1);
+    }
 }

@@ -25,11 +25,11 @@ namespace BirdsiteLive.Twitter
         private readonly MemoryCacheEntryOptions _cacheEntryOptions = new MemoryCacheEntryOptions()
             .SetSize(1)//Size amount
             //Priority on removing when reaching size limit (memory pressure)
-            .SetPriority(CacheItemPriority.Low)
+            .SetPriority(CacheItemPriority.Normal)
             // Keep in cache for this time, reset time if accessed.
-            .SetSlidingExpiration(TimeSpan.FromHours(16))
+            .SetSlidingExpiration(TimeSpan.FromDays(1))
             // Remove from cache after this time, regardless of sliding expiration
-            .SetAbsoluteExpiration(TimeSpan.FromHours(24));
+            .SetAbsoluteExpiration(TimeSpan.FromDays(2));
 
         private readonly MemoryCacheEntryOptions _cacheEntryOptionsError = new MemoryCacheEntryOptions()
             .SetSize(1)//Size amount
