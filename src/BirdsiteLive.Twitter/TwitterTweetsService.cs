@@ -6,6 +6,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Common.Interfaces;
@@ -43,6 +44,10 @@ namespace BirdsiteLive.Twitter
         private readonly IBrowsingContext _context;
         private readonly ISettingsDal _settings;
         private string Useragent = "Bird.makeup ( https://git.sr.ht/~cloutier/bird.makeup ) Bot";
+        private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
+        {
+            Converters = { new TwitterSocialMediaUserConverter() }
+        };
 
         #region Ctor
         public TwitterTweetsService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ICachedTwitterUserService twitterUserService, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory, ISettingsDal settings, ILogger<TwitterTweetsService> logger)
@@ -69,6 +74,7 @@ namespace BirdsiteLive.Twitter
         public async Task<ExtractedTweet> GetTweetAsync(long statusId)
         {
             //return await TweetFromSyndication(statusId);
+            //return await TweetFromSidecar(statusId);
 
             var client = await _twitterAuthenticationInitializer.MakeHttpClient();
 
@@ -149,19 +155,19 @@ namespace BirdsiteLive.Twitter
             }
             else if (user.Followers > followersThreshold0)
             {
-                extractedTweets = await TweetFromSidecar(user, fromTweetId, true);
+                extractedTweets = await TweetsFromSidecar2(user, fromTweetId, true);
                 source = "Sidecar (with replies)";
                 await Task.Delay(postNitterDelay);
             }
             else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold3)
             {
-                extractedTweets = await TweetFromSidecar(user, fromTweetId, true);
+                extractedTweets = await TweetsFromSidecar2(user, fromTweetId, true);
                 source = "Sidecar (with replies)";
                 await Task.Delay(postNitterDelay);
             }
             else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold2)
             {
-                extractedTweets = await TweetFromSidecar(user, fromTweetId, false);
+                extractedTweets = await TweetsFromSidecar2(user, fromTweetId, false);
                 source = "Sidecar (without replies)";
                 await Task.Delay(postNitterDelay);
             }
@@ -263,7 +269,33 @@ namespace BirdsiteLive.Twitter
             return extractedTweets;
         }
 
-        private async Task<List<ExtractedTweet>> TweetFromSidecar(SyncUser user, long fromId, bool withReplies)
+        private async Task<ExtractedTweet> TweetFromSidecar(long tweetid)
+        {
+            try
+            {
+                using var client = _httpClientFactory.CreateClient();
+                using var request = new HttpRequestMessage(HttpMethod.Get,
+                    $"http://localhost:5000/twitter/gettweet/{tweetid}");
+                
+                var httpResponse = await client.SendAsync(request);
+
+                
+                var c = await httpResponse.Content.ReadAsStringAsync();
+                var tweet = JsonSerializer.Deserialize<ExtractedTweet>(c, _serializerOptions);
+
+                tweet = await ExpandShortLinks(tweet);
+                tweet = await CleanupText(tweet);
+                
+                return tweet;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return null;
+            }
+        }
+        
+        private async Task<List<ExtractedTweet>> TweetsFromSidecar(SyncUser user, long fromId, bool withReplies)
         {
             try
             {
@@ -335,6 +367,66 @@ namespace BirdsiteLive.Twitter
                         _logger.LogError($"error fetching tweet {title.GetInt64()} from user {user.Acct}");
                     }
                     await Task.Delay(100);
+                }
+                
+                return tweets;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return new List<ExtractedTweet>();
+            }
+        }
+        private async Task<List<ExtractedTweet>> TweetsFromSidecar2(SyncUser user, long fromId, bool withReplies)
+        {
+            try
+            {
+                var tweets = new List<ExtractedTweet>();
+                string username = String.Empty;
+                string password = String.Empty;
+
+                var candidates = await _twitterUserDal.GetTwitterCrawlUsersAsync(_instanceSettings.MachineName);
+                Random.Shared.Shuffle(candidates);
+                foreach (var account in candidates)
+                {
+                    username = account.Acct;
+                    password = account.Password;
+                }
+
+
+                using var client = _httpClientFactory.CreateClient();
+                string endpoint;
+                if (withReplies)
+                    endpoint = "postbyuserwithreplies";
+                else
+                    endpoint = "postbyuser";
+                using var request = new HttpRequestMessage(HttpMethod.Get,
+                    $"http://localhost:5000/twitter/{endpoint}2/{user.TwitterUserId}");
+                request.Headers.TryAddWithoutValidation("dotmakeup-user", username);
+                request.Headers.TryAddWithoutValidation("dotmakeup-password", password);
+                
+                var httpResponse = await client.SendAsync(request);
+
+                if (httpResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
+                        new KeyValuePair<string, object>("result", "5xx"),
+                        new KeyValuePair<string, object>("endpoint", endpoint)
+                    );
+                    return new List<ExtractedTweet>();
+                }
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
+                    new KeyValuePair<string, object>("result", "2xx"),
+                    new KeyValuePair<string, object>("endpoint", endpoint)
+                );
+                
+                var c = await httpResponse.Content.ReadAsStringAsync();
+                tweets = JsonSerializer.Deserialize<List<ExtractedTweet>>(c, _serializerOptions);
+                var tweetsDocument = JsonDocument.Parse(c);
+                
+                for (var i = 0; i < tweets.Count; i++)
+                {
+                    tweets[i] = await ExpandShortLinks(tweets[i]);
                 }
                 
                 return tweets;
@@ -576,9 +668,8 @@ namespace BirdsiteLive.Twitter
             if (messageContent.StartsWith(".@"))
                 messageContent = messageContent.Remove(0, 1);
 
-            messageContent = await ExpandShortLinks(messageContent);
             
-            return new ExtractedTweet()
+            var extractedTweet = new ExtractedTweet()
             {
                 MessageContent = messageContent.Trim(),
                 Id = statusId.ToString(),
@@ -591,7 +682,10 @@ namespace BirdsiteLive.Twitter
                 CreatedAt = createdaAt,
                 Media = Media.Count() == 0 ? null : Media.ToArray(),
             };
-
+            
+            extractedTweet = await ExpandShortLinks(extractedTweet);
+            
+            return extractedTweet;
         }
 
         private async Task<ExtractedTweet> Extract(JsonElement tweetRes)
@@ -725,7 +819,6 @@ namespace BirdsiteLive.Twitter
                 }
             }
 
-            MessageContent = await ExpandShortLinks(MessageContent);
             bool isQuoteTweet = tweetRes.GetProperty("legacy")
                     .GetProperty("is_quote_status").GetBoolean();
 
@@ -813,6 +906,7 @@ namespace BirdsiteLive.Twitter
                 Author = author,
                 Poll = poll,
             };
+            extractedTweet = await ExpandShortLinks(extractedTweet);
        
             return extractedTweet;
          
@@ -849,7 +943,7 @@ namespace BirdsiteLive.Twitter
             return null;
         }
         
-        public async Task<string> ExpandShortLinks(string input)
+        public async Task<ExtractedTweet> ExpandShortLinks(ExtractedTweet input)
         {
             try
             {
@@ -857,7 +951,7 @@ namespace BirdsiteLive.Twitter
                 string pattern = @"https?://t\.co/[a-zA-Z0-9]+";
                 Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
                 
-                MatchCollection matches = regex.Matches(input);
+                MatchCollection matches = regex.Matches(input.MessageContent);
 
                 using var client = _httpClientFactory.CreateClient();
                 
@@ -865,11 +959,42 @@ namespace BirdsiteLive.Twitter
                 {
                     HttpResponseMessage response = await client.GetAsync(match.ToString(), HttpCompletionOption.ResponseHeadersRead);
                     var longlink = response.RequestMessage.RequestUri.ToString();
-                    input = input.Replace(match.ToString(), longlink);
+                    input.MessageContent = input.MessageContent.Replace(match.ToString(), longlink);
                 }
             } catch (Exception _) {}
             
             return input;
         }
+        public async Task<ExtractedTweet> CleanupText(ExtractedTweet input)
+        {
+            if (input.MessageContent.StartsWith(".@"))
+                input.MessageContent = input.MessageContent.Remove(0, 1);
+            
+            // Regular expression to match media links
+            string pattern = @" https?://x\.com/[a-zA-Z0-9]+/status/[0-9]+/(video|photo)/[0-9]+";
+            Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
+            
+            MatchCollection matches = regex.Matches(input.MessageContent);
+
+            foreach (Match match in matches)
+            {
+                input.MessageContent = input.MessageContent.Replace(match.ToString(), "");
+            }
+            
+            return input;
+        }
+    }
+}
+
+public class TwitterSocialMediaUserConverter : JsonConverter<SocialMediaUser>
+{
+    public override SocialMediaUser? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return JsonSerializer.Deserialize<TwitterUser>(ref reader, options);
+    }
+
+    public override void Write(Utf8JsonWriter writer, SocialMediaUser value, JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, value, value.GetType(), options);
     }
 }

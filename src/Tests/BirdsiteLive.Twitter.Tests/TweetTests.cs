@@ -92,11 +92,12 @@ namespace BirdsiteLive.ActivityPub.Tests
             var tweet = await _tweetService.GetTweetAsync(1593344577385160704);
             if (tweet is null)
                 Assert.Inconclusive();
+            Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
+            Assert.AreEqual(tweet.Media.Length, 1);
+            
             Assert.AreEqual(tweet.MessageContent,
                 "Speaker Nancy Pelosi will go down as one of most accomplished legislators in American history—breaking barriers, opening doors for others, and working every day to serve the American people. I couldn’t be more grateful for her friendship and leadership.");
 
-            Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
-            Assert.AreEqual(tweet.Media.Length, 1);
             Assert.AreEqual(tweet.Media[0].AltText, "President Obama with Speaker Nancy Pelosi in DC.");
         }
 

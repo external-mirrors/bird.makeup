@@ -56,6 +56,9 @@ namespace BirdsiteLive.Moderation
 
         public async Task CleanCaches()
         {
+            if (_settings.IpfsApi == null)
+                return;
+            
             var posts = await _socialMediaService.UserDal.GetAllPostsCacheIdAsync();
             foreach (var p in posts)
             {
