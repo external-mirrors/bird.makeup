@@ -137,7 +137,7 @@ public class InstagramService : ISocialMediaService
                 else
                     user = await CallSidecar(username, await GetWebSidecar());
                 
-                var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, false);
+                var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, true);
                 user.ProfileImageUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
                 
                 await _instagramUserDal.UpdateUserCacheAsync(user);

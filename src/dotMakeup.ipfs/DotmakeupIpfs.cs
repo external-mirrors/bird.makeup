@@ -11,6 +11,7 @@ public interface IIpfsService
     Task Unpin(string hash);
 
     Task GarbageCollection();
+    Task<string[]> AllPinnedHashes();
 }
 public class DotmakeupIpfs : IIpfsService
 {
@@ -74,6 +75,13 @@ public class DotmakeupIpfs : IIpfsService
     public async Task GarbageCollection()
     {
         await _ipfs.BlockRepository.RemoveGarbageAsync();
+    }
+    public async Task<string[]> AllPinnedHashes()
+    {
+        var l = await _ipfs.Pin.ListAsync();
+        var hashes = l.Select(x => x.Hash.ToString());
+
+        return hashes.ToArray();
     }
 
     private async Task UpdateStats()

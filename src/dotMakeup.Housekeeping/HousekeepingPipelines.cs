@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
@@ -7,6 +8,7 @@ using BirdsiteLive.Domain.Repository;
 using BirdsiteLive.Moderation.Processors;
 using dotMakeup.ipfs;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Utilities.Collections;
 
 namespace BirdsiteLive.Moderation
 {
@@ -58,29 +60,47 @@ namespace BirdsiteLive.Moderation
         {
             if (_settings.IpfsApi == null)
                 return;
-            
+
+            var hashesP = _ipfs.AllPinnedHashes();
+            var desiredPins = new HashSet<string>();
             var posts = await _socialMediaService.UserDal.GetAllPostsCacheIdAsync();
             foreach (var p in posts)
             {
                 var post = await _socialMediaService.GetPostAsync(p);
                 if (post is null) continue;
 
-                if (post.CreatedAt > DateTime.Now.AddDays(-14) )
+                if (post.CreatedAt < DateTime.Now.AddDays(-14) )
                 {
                     foreach (var media in post.Media)
                     {
-                        try
-                        {
-                            await _ipfs.Unpin(media.Url.Replace("https://ipfs.kilogram.makeup/ipfs/", ""));
-                            _logger.LogWarning($"Unpined: {media.Url}");
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.LogCritical(e, $"Error unpinning {media.Url}");
-                        }
+                        var h = media.Url.Replace("https://ipfs.kilogram.makeup/ipfs/", "");
+                        desiredPins.Add(h);
                     }
 
                     await _socialMediaService.UserDal.DeletePostCacheAsync(p);
+                }
+            }
+
+            foreach (var u in await _socialMediaService.UserDal.GetAllUsersAsync())
+            {
+                var userDoc = await _socialMediaService.UserDal.GetUserCacheAsync(u.Acct);
+                var user = JsonDocument.Parse(userDoc).RootElement;
+                var media = user.GetProperty("ProfileImageUrl").GetString();
+                var h = media.Replace("https://ipfs.kilogram.makeup/ipfs/", "");
+                desiredPins.Add(h);
+            }
+
+            var hashes = new HashSet<string>( await hashesP );
+            hashes.ExceptWith(desiredPins);
+            foreach (var h in hashes)
+            {
+                try
+                {
+                    await _ipfs.Unpin(h);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogCritical(e, $"Error unpinning {h}");
                 }
             }
             if (_settings.IpfsApi != null)
