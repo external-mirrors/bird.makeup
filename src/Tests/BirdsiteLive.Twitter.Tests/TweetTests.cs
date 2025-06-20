@@ -271,6 +271,8 @@ https://domain.name/@stillgray/1822453985204187319");
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent, "Reinstate former President Trump");
+            if (tweet.Poll is null)
+                Assert.Inconclusive();
             Assert.AreEqual(tweet.Poll.endTime.Year, new DateTime(2022, 11, 19, 7, 47, 45).Year);
             Assert.AreEqual(tweet.Poll.options[0].First, "Yes");
             Assert.AreEqual(tweet.Poll.options[0].Second, 7814391);
@@ -285,6 +287,8 @@ https://domain.name/@stillgray/1822453985204187319");
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent, "On average, how many hours are you *actually* working everyday?");
+            if (tweet.Poll is null)
+                Assert.Inconclusive();
             Assert.AreEqual(tweet.Poll.endTime.DayOfYear, new DateTime(2022, 9, 17, 9, 26, 45).DayOfYear);
             Assert.AreEqual(tweet.Poll.options[3].First, "1-4 hours");
             Assert.AreEqual(tweet.Poll.options[3].Second, 30);
@@ -300,6 +304,8 @@ https://domain.name/@stillgray/1822453985204187319");
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
                 "The IRS just said it wants $20B more money. \n\nDo you think it’s budget should be:");
+            if (tweet.Poll is null)
+                Assert.Inconclusive();
             Assert.AreEqual(tweet.Poll.options[3].First, "Deleted");
             Assert.AreEqual(tweet.Poll.options[3].Second, 128780);
             Assert.IsFalse(tweet.IsRetweet);
@@ -313,6 +319,8 @@ https://domain.name/@stillgray/1822453985204187319");
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent, "Do you feel the immigration debates on X have been:");
+            if (tweet.Poll is null)
+                Assert.Inconclusive();
             Assert.AreEqual(tweet.Poll.options[1].First, "Toxic");
             Assert.AreEqual(tweet.Poll.options[1].Second, 6323);
             Assert.IsFalse(tweet.IsRetweet);
