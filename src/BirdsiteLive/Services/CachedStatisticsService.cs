@@ -42,14 +42,13 @@ namespace BirdsiteLive.Services
 
         private async Task<CachedStatistics> CreateStats()
         {
-            var (twitterSyncLag, twitterUserCount) = await _socialMediaService.UserDal.GetSyncLag();
+            var crawlingSpeed = await _socialMediaService.UserDal.GetCrawlingSpeed();
             var fediverseUsers = await _followersDal.GetFollowersCountAsync();
 
             var stats = new CachedStatistics
             {
                 RefreshedTime = DateTime.UtcNow,
-                SyncLag = twitterSyncLag,
-                TwitterUsers = twitterUserCount,
+                CrawlingSpeed = crawlingSpeed,
                 FediverseUsers = fediverseUsers
             };
         
@@ -60,8 +59,7 @@ namespace BirdsiteLive.Services
     public class CachedStatistics
     {
         public DateTime RefreshedTime { get; set; }
-        public TimeSpan SyncLag { get; set; }
-        public int TwitterUsers { get; set; }
+        public decimal CrawlingSpeed { get; set; }
         public int FediverseUsers { get; set; }
     }
 }

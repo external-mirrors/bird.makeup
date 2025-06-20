@@ -33,7 +33,7 @@ public interface SocialMediaUserDal
         Task UpdateUsersWikidataAsync(Dictionary<string, object> values);
         Task<string> GetUserWikidataAsync(string username);
         Task<string> GetUserExtradataAsync(string username, string key);
-        Task<(TimeSpan, int)> GetSyncLag();
+        Task<decimal> GetCrawlingSpeed();
 }
 
 public class SyncUser

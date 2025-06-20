@@ -4,7 +4,7 @@
     <div class="node-progress-bar">
         <div class="node-progress-bar__label">
             <a asp-controller="About" asp-action="Index">Service load:</a>
-            @Math.Ceiling(ViewData.Model.SyncLag.TotalHours) hours to fetch all users 
+            Currently crawling @Math.Ceiling(ViewData.Model.CrawlingSpeed) users per hour 
          </div>
     </div>
 </div>

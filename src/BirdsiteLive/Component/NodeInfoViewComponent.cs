@@ -35,15 +35,9 @@ namespace BirdsiteLive.Component
                                       twitterAccountPolicy == ModerationTypeEnum.BlackListing,
                 WhitelistingEnabled = followerPolicy == ModerationTypeEnum.WhiteListing ||
                                       twitterAccountPolicy == ModerationTypeEnum.WhiteListing,
-                SyncLag = statistics.SyncLag
+                CrawlingSpeed = statistics.CrawlingSpeed
             };
             
-            //viewModel = new NodeInfoViewModel
-            //{
-            //    BlacklistingEnabled = false,
-            //    WhitelistingEnabled = false,
-            //    InstanceSaturation = 175
-            //};
             return View(viewModel);
         }
     }
@@ -53,6 +47,6 @@ namespace BirdsiteLive.Component
         public bool BlacklistingEnabled { get; set; }
         public bool WhitelistingEnabled { get; set; }
         public int InstanceSaturation { get; set; }
-        public TimeSpan SyncLag { get; set; }
+        public decimal CrawlingSpeed { get; set; }
     }
 }
