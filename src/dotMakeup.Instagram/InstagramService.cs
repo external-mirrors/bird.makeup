@@ -101,7 +101,7 @@ public class InstagramService : ISocialMediaService
                     {
                         foreach (ExtractedMedia m in p.Media)
                         {
-                            var hash = await _ipfs.Mirror(m.Url, _settings.InstagramCrawlingGroup == "Priority");
+                            var hash = await _ipfs.Mirror(m.Url, true);
                             m.Url = _ipfs.GetIpfsPublicLink(hash);
                         }
 

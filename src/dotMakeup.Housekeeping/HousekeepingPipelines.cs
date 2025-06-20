@@ -69,7 +69,7 @@ namespace BirdsiteLive.Moderation
                 var post = await _socialMediaService.GetPostAsync(p);
                 if (post is null) continue;
 
-                if (post.CreatedAt < DateTime.Now.AddDays(-14) )
+                if (post.CreatedAt > DateTime.Now.AddDays(-14) )
                 {
                     foreach (var media in post.Media)
                     {

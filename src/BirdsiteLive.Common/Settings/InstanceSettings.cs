@@ -47,6 +47,5 @@ namespace BirdsiteLive.Common.Settings
         public string IpfsGateway { get; set; } = "ipfs.io";
         public string ProxyUser { get; set; }
         public string ProxyPassword { get; set; }
-        public string InstagramCrawlingGroup { get; set; } = "Priority";
     }
 }
