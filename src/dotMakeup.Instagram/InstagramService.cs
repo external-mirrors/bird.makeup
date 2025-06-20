@@ -193,7 +193,7 @@ public class InstagramService : ISocialMediaService
         private async Task<InstagramUser> CallSidecar(string username, string sidecarURL)
         {
             InstagramUser user = null;
-            var client = _httpClientFactory.CreateClient();
+            using var client = _httpClientFactory.CreateClient();
             string requestUrl;
             string method = "user";
             if (sidecarURL == "http://localhost:5000")
@@ -257,7 +257,7 @@ public class InstagramService : ISocialMediaService
         private async Task<InstagramUser> CallDirect(string username)
         {
             InstagramUser user = null;
-            var client = _httpClientFactory.CreateClient("WithProxy");
+            using var client = _httpClientFactory.CreateClient("WithProxy");
             string requestUrl = $"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}";
             var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 

@@ -52,6 +52,8 @@ spec:
               value: "200000"
             - name: Instance__ResolveMentionsInPosts
               value: "cached"
+            - name: Instance__ResolveMentionsInProfiles
+              value: "false"
             - name: Instance__SocialNetworkRequestJitter
               value: "1000"
             - name: Instance__ParallelTwitterRequests
