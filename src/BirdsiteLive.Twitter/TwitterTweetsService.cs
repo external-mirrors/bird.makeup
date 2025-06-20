@@ -292,7 +292,7 @@ namespace BirdsiteLive.Twitter
                 var tweet = JsonSerializer.Deserialize<ExtractedTweet>(c, _serializerOptions);
 
                 tweet = await ExpandShortLinks(tweet);
-                tweet = await CleanupText(tweet);
+                tweet = CleanupText(tweet);
                 
                 return tweet;
             }
@@ -435,6 +435,7 @@ namespace BirdsiteLive.Twitter
                 for (var i = 0; i < tweets.Count; i++)
                 {
                     tweets[i] = await ExpandShortLinks(tweets[i]);
+                    tweets[i] = CleanupText(tweets[i]);
                 }
                 
                 return tweets;
@@ -973,7 +974,7 @@ namespace BirdsiteLive.Twitter
             
             return input;
         }
-        public async Task<ExtractedTweet> CleanupText(ExtractedTweet input)
+        public ExtractedTweet CleanupText(ExtractedTweet input)
         {
             if (input.MessageContent.StartsWith(".@"))
                 input.MessageContent = input.MessageContent.Remove(0, 1);
