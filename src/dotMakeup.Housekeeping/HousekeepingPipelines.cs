@@ -83,10 +83,9 @@ namespace BirdsiteLive.Moderation
 
             foreach (var u in await _socialMediaService.UserDal.GetAllUsersAsync())
             {
-                var userDoc = await _socialMediaService.UserDal.GetUserCacheAsync(u.Acct);
-                if (userDoc is null) continue;
-                var user = JsonDocument.Parse(userDoc).RootElement;
-                var media = user.GetProperty("ProfileImageUrl").GetString();
+                var user = await _socialMediaService.UserDal.GetUserCacheAsync<SocialMediaUser>(u.Acct);
+                if (user is null) continue;
+                var media = user.ProfileImageUrl;
                 var h = media.Replace("https://ipfs.kilogram.makeup/ipfs/", "");
                 desiredPins.Add(h);
             }

@@ -30,10 +30,10 @@ namespace BirdsiteLive.Domain.Tests.Tools
                 Domain = "domain.name"
             };
             var dal = new Mock<IInstagramUserDal>();
-            dal.Setup(x => x.GetUserCacheAsync(It.Is<string>(acct => acct == "cached")))
-                .Returns(Task.FromResult("{}"));
-            dal.Setup(x => x.GetUserCacheAsync(It.Is<string>(acct => acct != "cached")))
-                .Returns(Task.FromResult<string>(null));
+            dal.Setup(x => x.GetUserCacheAsync<SocialMediaUser>(It.Is<string>(acct => acct == "cached")))
+                .Returns(Task.FromResult(new SocialMediaUser()));
+            dal.Setup(x => x.GetUserCacheAsync<SocialMediaUser>(It.Is<string>(acct => acct != "cached")))
+                .Returns(Task.FromResult<SocialMediaUser>(null));
             var instagram = new InstagramService(null, dal.Object, null, _settings, null);
             var twitter = new TwitterService(null, null, null, _settings);
 

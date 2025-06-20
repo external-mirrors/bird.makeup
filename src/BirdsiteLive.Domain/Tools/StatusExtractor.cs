@@ -111,7 +111,7 @@ namespace BirdsiteLive.Domain.Tools
 
                     if (extractMentions == "cached")
                     {
-                        var user = await _socialMediaService.UserDal.GetUserCacheAsync(mention.ToLower());
+                        var user = await _socialMediaService.UserDal.GetUserCacheAsync<SocialMediaUser>(mention.ToLower());
                         if (user is null)
                             continue;
                     }

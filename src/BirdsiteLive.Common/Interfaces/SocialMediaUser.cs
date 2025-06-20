@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -8,9 +9,9 @@ public enum SocialMediaUserTypes
         User,
         Group
 }
-public interface SocialMediaUser
+public class SocialMediaUser
 {
-        public SocialMediaUserTypes SocialMediaUserType { get; }
+        public SocialMediaUserTypes SocialMediaUserType { get; set; }
         public long Id { get; set; }
         public string Name { get; set; }
         public string Url { get; set; }
@@ -21,5 +22,5 @@ public interface SocialMediaUser
         public bool Protected { get; set; }
         public string Description { get; set; }
         public string Location { get; set; }
-        public IEnumerable<string> PinnedPosts { get; set; }
+        public IEnumerable<string> PinnedPosts { get; set; } = Array.Empty<string>();
 }

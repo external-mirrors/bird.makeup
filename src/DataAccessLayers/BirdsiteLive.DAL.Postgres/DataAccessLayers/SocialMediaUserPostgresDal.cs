@@ -103,7 +103,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
 
         }
 
-        public async Task<T> GetUserCacheAsync<T>(string username) where T : class, SocialMediaUser
+        public async Task<T> GetUserCacheAsync<T>(string username) where T : SocialMediaUser
         {
             var userDoc = await GetUserCacheAsync(username);
             if (userDoc is null)
@@ -112,7 +112,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             return user;
         }
         
-        public async Task<string> GetUserCacheAsync(string username)
+        private async Task<string> GetUserCacheAsync(string username)
         {
             var query = $"SELECT cache FROM {tableName} WHERE acct = $1";
 
