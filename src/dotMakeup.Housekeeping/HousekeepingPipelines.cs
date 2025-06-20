@@ -76,9 +76,12 @@ namespace BirdsiteLive.Moderation
                         var h = media.Url.Replace("https://ipfs.kilogram.makeup/ipfs/", "");
                         desiredPins.Add(h);
                     }
-
+                }
+                else
+                {
                     await _socialMediaService.UserDal.DeletePostCacheAsync(p);
                 }
+
             }
 
             foreach (var u in await _socialMediaService.UserDal.GetAllUsersAsync())
