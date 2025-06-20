@@ -110,6 +110,17 @@ namespace BirdsiteLive.Domain
                 };
                 attachment.Insert(0, locationAttachment);
             }
+            
+            if (twitterUser.Url is not null)
+            {
+                var locationAttachment = new UserAttachment()
+                {
+                    type = "PropertyValue",
+                    name = "🔗",
+                    value = twitterUser.Url,
+                };
+                attachment.Insert(0, locationAttachment);
+            }
 
             var userDal = await _socialMediaService.UserDal.GetUserAsync(twitterUser.Acct);
             if (userDal is not null)

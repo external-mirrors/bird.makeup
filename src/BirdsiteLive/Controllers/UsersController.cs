@@ -86,6 +86,8 @@ namespace BirdsiteLive.Controllers
                 try
                 {
                     user = await _socialMediaService.GetUserAsync(id);
+                    if (user is null)
+                        isSaturated = true;
                 }
                 catch (UserNotFoundException)
                 {
@@ -107,7 +109,7 @@ namespace BirdsiteLive.Controllers
             }
             else
             {
-                notFound = true;
+                isSaturated = true;
             }
 
             var acceptHeaders = Request.Headers["Accept"];
@@ -116,15 +118,15 @@ namespace BirdsiteLive.Controllers
                 var r = acceptHeaders.First();
                 if (r.Contains("application/activity+json") || r.Contains("application/ld+json"))
                 {
-                    if (isSaturated) return new ObjectResult("Too Many Requests") { StatusCode = 429 };
                     if (notFound) return NotFound();
+                    if (isSaturated) return new ObjectResult("Too Many Requests") { StatusCode = 429 };
                     var apUser = await _userService.GetUser(user);
                     return Content(apUser, "application/activity+json; charset=utf-8");
                 }
             }
 
-            if (isSaturated) return View("ApiSaturated");
             if (notFound) return View("UserNotFound");
+            if (isSaturated) return View("ApiSaturated");
 
             Follower[] followers = new Follower[] { };
 
