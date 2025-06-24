@@ -18,14 +18,16 @@ namespace BirdsiteLive.Twitter
         private readonly ITwitterTweetsService _twitterTweetsService;
         private readonly ICachedTwitterUserService _twitterUserService;
         private readonly ITwitterUserDal _userDal;
+        private readonly ISettingsDal _settings;
 
         #region Ctor
-        public TwitterService(ICachedTwitterTweetsService twitterService, ICachedTwitterUserService twitterUserService, ITwitterUserDal userDal, InstanceSettings settings)
+        public TwitterService(ICachedTwitterTweetsService twitterService, ICachedTwitterUserService twitterUserService, ITwitterUserDal userDal, InstanceSettings settings, ISettingsDal settingsDal)
         {
             _twitterTweetsService = twitterService;
             _twitterUserService = twitterUserService;
             _userDal = userDal;
             UserDal = userDal;
+            _settings = settingsDal;
         }
         #endregion
 
@@ -62,7 +64,16 @@ namespace BirdsiteLive.Twitter
                 await _userDal.UpdateTwitterUserAsync(user.Id, long.Parse(tweetId), 0, user.LastSync);
             }
 
-            if (user.Followers > 60)
+            var cacheThreshold = 100;
+            var cacheSettings = await _settings.Get("twitter_user_cache");
+            if (cacheSettings is not null)
+            {
+                if (cacheSettings.Value.TryGetProperty("threshold", out var threshold))
+                {
+                    cacheThreshold = threshold.GetInt32();
+                }
+            }
+            if (user.Followers > cacheThreshold)
                 await _twitterUserService.UpdateUserCache(user);
 
             return tweets;
