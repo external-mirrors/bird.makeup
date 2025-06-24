@@ -58,7 +58,8 @@ namespace BirdsiteLive
                     config.Instrumentations.Remove(Instrumentation.Process);
                     config.Instrumentations.Remove(Instrumentation.NetRuntime);
                     config.Instrumentations.Remove(Instrumentation.HttpClient);
-                    config.ExporterSettings.EnableTraces = Environment.MachineName == "dotmakeup-bird-0";
+                    config.ExporterSettings.EnableTraces = Environment.MachineName == "dotmakeup-kilo-0";
+                    config.ExporterSettings.EnableLogs = Environment.MachineName == "dotmakeup-kilo-0";
                     config.ServiceInstanceId = Environment.MachineName;
                 });
 

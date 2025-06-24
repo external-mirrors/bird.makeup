@@ -97,7 +97,8 @@ namespace BirdsiteLive.Moderation
             var totalPins = hashes.Count;
             hashes.ExceptWith(desiredPins);
             _logger.LogInformation($"Unpinning from ipfs {hashes.Count} pins from {totalPins} total pins, leaving {desiredPins.Count} pins");
-            
+
+            var unpirErrors = 0;
             foreach (var h in hashes)
             {
                 try
@@ -106,11 +107,13 @@ namespace BirdsiteLive.Moderation
                 }
                 catch (Exception e)
                 {
-                    _logger.LogCritical(e, $"Error unpinning {h}");
+                    unpirErrors++;
                 }
             }
-            if (_settings.IpfsApi != null)
-                await _ipfs.GarbageCollection();
+            if (unpirErrors > 0)
+                _logger.LogCritical($"Error unpinning {unpirErrors} pins from ipfs");
+            
+            await _ipfs.GarbageCollection();
         }
 
         private async Task CheckFollowerModerationPolicyAsync()
