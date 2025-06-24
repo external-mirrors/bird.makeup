@@ -144,7 +144,8 @@ public class InstagramService : ISocialMediaService
             }
             else if (!_userCache.TryGetValue(username, out user))
             {
-                user = await _instagramUserDal.GetUserCacheAsync<InstagramUser>(username);
+                if (user is null)
+                    user = await _instagramUserDal.GetUserCacheAsync<InstagramUser>(username);
                 if (user is null)
                 {
                     user = await CallSidecar(username, await GetWebSidecar());
