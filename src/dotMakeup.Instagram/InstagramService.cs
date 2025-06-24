@@ -141,6 +141,7 @@ public class InstagramService : ISocialMediaService
                 user.ProfileImageUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
                 
                 await _instagramUserDal.UpdateUserCacheAsync(user);
+                _userCache.Set(username, user, _cacheEntryOptionsError);
             }
             else if (!_userCache.TryGetValue(username, out user))
             {
@@ -148,8 +149,16 @@ public class InstagramService : ISocialMediaService
                     user = await _instagramUserDal.GetUserCacheAsync<InstagramUser>(username);
                 if (user is null)
                 {
-                    user = await CallSidecar(username, await GetWebSidecar());
-                    await _instagramUserDal.UpdateUserCacheAsync(user);
+                    try
+                    {
+                        user = await CallSidecar(username, await GetWebSidecar());
+                        await _instagramUserDal.UpdateUserCacheAsync(user);
+
+                    }
+                    catch (RateLimitExceededException)
+                    {
+                        _userCache.Set(username, user, _cacheEntryOptionsError);
+                    }
                 }
             }
 
@@ -211,7 +220,6 @@ public class InstagramService : ISocialMediaService
             
             if (httpResponse.StatusCode != HttpStatusCode.OK)
             {
-                _userCache.Set(username, user, _cacheEntryOptionsError);
                 throw new RateLimitExceededException();
             }
 
@@ -248,10 +256,8 @@ public class InstagramService : ISocialMediaService
             }
             catch (KeyNotFoundException _)
             {
-                _userCache.Set(username, user, _cacheEntryOptionsError);
                 throw new UserNotFoundException();
             }
-            _userCache.Set(username, user, _cacheEntryOptions);
 
             return user;
         }
@@ -270,7 +276,6 @@ public class InstagramService : ISocialMediaService
             var response = await client.SendAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                _userCache.Set(username, user, _cacheEntryOptionsError);
                 throw new RateLimitExceededException();
             }
             response.EnsureSuccessStatusCode();
@@ -377,8 +382,6 @@ public class InstagramService : ISocialMediaService
 
             userResult.RecentPosts = userPosts;
             
-            _userCache.Set(username, user, _cacheEntryOptions);
-
             return userResult;
         }
 
