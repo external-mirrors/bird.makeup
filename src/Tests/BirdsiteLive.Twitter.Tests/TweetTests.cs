@@ -58,6 +58,8 @@ namespace BirdsiteLive.ActivityPub.Tests
             Assert.AreEqual(tweet.CreatedAt, new DateTime(2022, 12, 8, 17, 29, 0));
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -72,6 +74,8 @@ namespace BirdsiteLive.ActivityPub.Tests
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.IsNull(tweet.Media[0].AltText);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
         public async Task LeadingDotTextAndSinglePictureTweet()
@@ -85,6 +89,8 @@ namespace BirdsiteLive.ActivityPub.Tests
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.IsNull(tweet.Media[0].AltText);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
         public async Task SimpleTextAndSinglePictureTweet()
@@ -99,6 +105,8 @@ namespace BirdsiteLive.ActivityPub.Tests
                 "Speaker Nancy Pelosi will go down as one of most accomplished legislators in American history—breaking barriers, opening doors for others, and working every day to serve the American people. I couldn’t be more grateful for her friendship and leadership.");
 
             //Assert.AreEqual(tweet.Media[0].AltText, "President Obama with Speaker Nancy Pelosi in DC.");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
         public async Task SimpleTextAndSinglePictureTweet2()
@@ -111,6 +119,8 @@ namespace BirdsiteLive.ActivityPub.Tests
 
             Assert.AreEqual(tweet.MessageContent,
                 "Tracking weird subcultures and fringe conspiracy reactions to current events");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -121,6 +131,8 @@ namespace BirdsiteLive.ActivityPub.Tests
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
                 "#Linux 6.2 Expands Support For More #Qualcomm #Snapdragon SoCs, #Apple M1 Pro/Ultra/Max\n\nhttps://www.phoronix.com/news/Linux-6.2-Arm-SoC-Updates");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -150,16 +162,21 @@ namespace BirdsiteLive.ActivityPub.Tests
             Assert.IsTrue(tweet2.Media[0].Url.StartsWith("https://video.twimg.com/"));
         }
 
-        [Ignore]
         [TestMethod]
         public async Task GifAndQT()
         {
             var tweet = await _tweetService.GetTweetAsync(1612901861874343936);
-            // TODO test QT
+            if (tweet is null)
+                Assert.Inconclusive();
+            
 
             Assert.AreEqual(tweet.Media.Length, 1);
-            Assert.AreEqual(tweet.Media[0].MediaType, "image/gif");
+            Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/"));
+            
+            Assert.AreEqual(tweet.QuotedAccount, "oplabspbc");
+            Assert.AreEqual(tweet.QuotedStatusId, "1612899977961017345");
+            // TODO test QT
         }
 
         [TestMethod]
@@ -173,6 +190,8 @@ namespace BirdsiteLive.ActivityPub.Tests
                 "When you gave them your keys you gave them your coins.\n\nhttps://domain.name/@kadhim/1610706613207285773");
             Assert.AreEqual(tweet.Author.Acct, "ryansadams");
             Assert.IsNull(tweet.Poll);
+            Assert.AreEqual(tweet.QuotedAccount, "kadhim");
+            Assert.AreEqual(tweet.QuotedStatusId, "1610706613207285773");
         }
 
         [TestMethod]
@@ -222,6 +241,8 @@ https://domain.name/@0xbowio/1906779676053209370");
 
 https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.Author.Acct, "trustlessstate");
+            Assert.AreEqual(tweet.QuotedAccount, "stillgray");;
+            Assert.AreEqual(tweet.QuotedStatusId, "1822453985204187319");
         }
 
         [TestMethod]
@@ -235,6 +256,8 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.InReplyToStatusId, 1445468401745289235);
             Assert.IsTrue(tweet.IsReply);
             Assert.IsTrue(tweet.IsThread);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -248,6 +271,8 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.InReplyToStatusId, 1612610060194312193);
             Assert.IsTrue(tweet.IsReply);
             Assert.IsFalse(tweet.IsThread);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -262,6 +287,8 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsTrue(tweet.IsReply);
             Assert.IsNull(tweet.Poll);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -278,6 +305,8 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.Poll.options[0].Second, 7814391);
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -294,6 +323,8 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.Poll.options[3].Second, 30);
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -310,6 +341,8 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.Poll.options[3].Second, 128780);
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -325,6 +358,8 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.AreEqual(tweet.Poll.options[1].Second, 6323);
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -335,6 +370,8 @@ https://domain.name/@stillgray/1822453985204187319");
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.Author.Acct, "elidourado");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -348,6 +385,8 @@ https://domain.name/@stillgray/1822453985204187319");
 
             Assert.AreEqual(tweet.MessageContent,
                 "For another year, Spotify set the record for the highest annual payment to the music industry from any single retailer: over $10 billion. That figure has grown tenfold over the past decade, bringing Spotify's total payouts since founding to $60B. \n\nFor more on how we got there, and what it means, hit the link below.\n\ud83d\udd17 https://newsroom.spotify.com/2025-01-28/on-our-10-billion-milestone-and-a-decade-of-getting-the-world-to-value-music/?utm_campaign=organic-social_all-social_trf_all-en_econ_crossdevice_none_general&utm_medium=organic-social&utm_source=all-socialorganic-social_all-social_trf_all-en_econ_crossdevice_none_general");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [Ignore]
@@ -362,6 +401,8 @@ https://domain.name/@stillgray/1822453985204187319");
 
             Assert.AreEqual(tweet.MessageContent,
                 "The DOGE Team is looking for world-class talent to work long hours identifying/eliminating waste, fraud, and abuse. These are full-time, salaried positions for software engineers, InfoSec engineers, financial analysts, HR professionals, and, in general, all competent/caring people.  Apply here!\n\nhttps://doge.gov/join/");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
         public async Task ShortLink_Expension_3()
@@ -376,6 +417,8 @@ https://domain.name/@stillgray/1822453985204187319");
                 "Based community meetups are happening all over the world:\n\nDubai 2/11\nhttps://lu.ma/8tbivk8o\n\nSeoul 2/13\nhttps://lu.ma/ch9wy5gd"));
             //Assert.AreEqual(tweet.MessageContent,
             //    "Based community meetups are happening all over the world:\n\nDubai 2/11\nhttps://lu.ma/8tbivk8o\n\nSeoul 2/13\nhttps://lu.ma/ch9wy5gd\n\nAddis Ababa 2/14\nhttps://lu.ma/v2tnqtk8\n\nSydney 2/15\nhttps://lu.ma/s127mjn5\n\nHong Kong 2/18\nhttps://lu.ma/based-brunch\n\nZurich 2/20\nhttps://lu.ma/rvsd4s97\n\nArusha 2/20\nhttps://lu.ma/fkrh9jeh\n\nHong Kong 2/20\nhttps://lu.ma/wdvepo9r\n\nTaipei City 2/22\nhttps://lu.ma/ypuh65ad\n\nKabale 2/22\nhttps://lu.ma/i0ekoliq\n\nMalawi 2/26\nhttps://lu.ma/ouzen3rx\n\nDenver | @EthereumDenver  3/1\nhttps://lu.ma/l3cadx8j\n\nKampala 3/22\nhttps://lu.ma/g9yyct7s");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
         public async Task ShortLink_Expension_4()
@@ -388,7 +431,10 @@ https://domain.name/@stillgray/1822453985204187319");
 
             Assert.AreEqual(tweet.MessageContent,
                 "The last three days at Venice...\n\nFebruary 3rd, 2025\n**App UI**\n* Inference - Update error handling on document upload to gracefully handle display of invalid PDF errors.\n\n* Characters - Update the share URL within the character settings screen to use the character's public slug vs. UUID.\n\n* With Enter Submits Chat disabled, permit sending the chat with control-enter. Solves request from user in [Featurebase](https://veniceai.featurebase.app/p/use-ctrlenter-to-submit-prompt)\n\n* Remove Retiring Soon tag from Dolphin. Our intent was to retire this model and replace it with an upcoming Dolphin release but until we have a final ETA from Dolphin, the model will remain.\n\n* Add a spinner to the Thinking... block in Dolphin to make the UI more clear that the LLM is generating content behind the scenes.\n\n* Fixed a bug that made the Copy option on code blocks not possible to click until the entire message completed rendering.\n\n\u2800**Token Dashboard**\n* Add a key to the Network Utilization Graph\n\n* Fix rendering of VCU cards on mobile screens\n\n* Force wallets to connect to the Base network when executing transactions on-chain.\n\n* Add \"Claim and Restake\" button to facilitate claiming and immediately restaking rewards in a single transaction.\n\n* Create [Dune Analytics dashboard](https://dune.com/queries/4661260/7760387) showing network utilization over time as recorded on-chain.\n\n\u2800**API**\n* Fixed issue where the use of max_completion_tokens in combination with the llama-3.1-405b model would result in a 500 response.\n\n* Support light and dark mode, toggle-able in the top right corner.");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
+        [Ignore]
         [TestMethod]
         public async Task ShortLink_Expension_5()
         {
@@ -400,6 +446,8 @@ https://domain.name/@stillgray/1822453985204187319");
 
             Assert.AreEqual(tweet.MessageContent,
                 "Les horreurs de la guerre au Proche-Orient et la violence démesurée envers la population civile dans la bande de Gaza sont choquantes et éprouvantes, mais nous devons choisir le dialogue à Montréal. Les actes d’intimidation et de grabuge qui provoquent un sentiment d’insécurité dans une institution universitaire ne peuvent pas être tolérés. https://t.co/LRkcv7fsWM");
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
         }
     }
 

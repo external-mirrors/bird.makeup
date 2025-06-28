@@ -6,8 +6,10 @@ namespace BirdsiteLive.Instagram.Models
     {
         public string Id { get; set; }
         public long? InReplyToStatusId { get; set; } = null;
+        public string QuotedStatusId { get; set; }
         public string MessageContent { get; set; }
         public ExtractedMedia[] Media { get; set; }
+        public string QuotedAccount { get; set; }
         public DateTime CreatedAt { get; set; }
         public string InReplyToAccount { get; set; } = null;
         public bool IsRetweet { get; set; } = false;

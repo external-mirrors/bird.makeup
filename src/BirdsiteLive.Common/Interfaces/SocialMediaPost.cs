@@ -13,7 +13,9 @@ public interface SocialMediaPost
     public bool IsRetweet { get; set; } 
     public long RetweetId { get; set; } 
     public long? InReplyToStatusId { get; set; }
+    public string QuotedStatusId { get; set; }
     public string InReplyToAccount { get; set; }
+    public string QuotedAccount { get; set; }
     public DateTime CreatedAt { get; set; }
     public ExtractedMedia[] Media { get; set; }
     public Poll? Poll { get; set; }

@@ -13,8 +13,10 @@ namespace BirdsiteLive.Twitter.Models
             get => long.Parse(Id);
         }
         public long? InReplyToStatusId { get; set; }
+        public string QuotedStatusId { get; set; }
         public string MessageContent { get; set; }
         public ExtractedMedia[] Media { get; set; }
+        public string QuotedAccount { get; set; }
         public DateTime CreatedAt { get; set; }
         public string InReplyToAccount { get; set; }
         public bool IsReply { get; set; }

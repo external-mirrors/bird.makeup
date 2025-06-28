@@ -624,7 +624,7 @@ namespace BirdsiteLive.Twitter
                         {
                             returnType = "image/jpeg";
                         }
-                        else if (type == "video")
+                        else if (type == "video" || type == "animated_gif")
                         {
                             returnType = "video/mp4";
                             var bitrate = -1;
@@ -654,12 +654,14 @@ namespace BirdsiteLive.Twitter
 
             JsonElement qt;
             bool isQT = tweet.RootElement.TryGetProperty("quoted_tweet", out qt);
+            string quoteTweetId = null;
+            string quoteTweetAcct = null;
             if (isQT)
             {
-                string quoteTweetId = qt.GetProperty("id_str").GetString();
-                string quoteTweetAcct = qt.GetProperty("user").GetProperty("screen_name").GetString();
+                quoteTweetId = qt.GetProperty("id_str").GetString();
+                quoteTweetAcct = qt.GetProperty("user").GetProperty("screen_name").GetString().ToLower();
                 
-                string quoteTweetLink = $"https://{_instanceSettings.Domain}/@{quoteTweetAcct.ToLower()}/{quoteTweetId}";
+                string quoteTweetLink = $"https://{_instanceSettings.Domain}/@{quoteTweetAcct}/{quoteTweetId}";
 
                 messageContent = Regex.Replace(messageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
                 messageContent = Regex.Replace(messageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
@@ -690,6 +692,8 @@ namespace BirdsiteLive.Twitter
                 Author = author,
                 CreatedAt = createdaAt,
                 Media = Media.Count() == 0 ? null : Media.ToArray(),
+                QuotedAccount = quoteTweetAcct,
+                QuotedStatusId = quoteTweetId,
             };
             
             extractedTweet = await ExpandShortLinks(extractedTweet);
@@ -831,16 +835,18 @@ namespace BirdsiteLive.Twitter
             bool isQuoteTweet = tweetRes.GetProperty("legacy")
                     .GetProperty("is_quote_status").GetBoolean();
 
+            string quoteTweetId = null;
+            string quoteTweetAcct = null;
             if (isQuoteTweet)
             {
 
-                string quoteTweetId = tweetRes.GetProperty("legacy")
+                quoteTweetId = tweetRes.GetProperty("legacy")
                         .GetProperty("quoted_status_id_str").GetString();
                 JsonElement quoteTweetAcctDoc = tweetRes
                     .GetProperty("quoted_status_result").GetProperty("result")
                     .GetProperty("core").GetProperty("user_results").GetProperty("result");
                 TwitterUser QTauthor = _twitterUserService.Extract(quoteTweetAcctDoc);
-                string quoteTweetAcct = QTauthor.Acct;
+                quoteTweetAcct = QTauthor.Acct;
                 //Uri test = new Uri(quoteTweetLink);
                 //string quoteTweetAcct = test.Segments[1].Replace("/", "");
                 //string quoteTweetId = test.Segments[3];
@@ -914,6 +920,8 @@ namespace BirdsiteLive.Twitter
                 OriginalAuthor = OriginalAuthor,
                 Author = author,
                 Poll = poll,
+                QuotedAccount = quoteTweetAcct,
+                QuotedStatusId = quoteTweetId,
             };
             extractedTweet = await ExpandShortLinks(extractedTweet);
        
