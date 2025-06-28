@@ -35,6 +35,9 @@ public class InstagramUserPostgresDal : SocialMediaUserPostgresDal, IInstagramUs
                         id IN (SELECT fid FROM followings WHERE vip = false and followings.count > 2)
                         AND {_settings.InstagramUserTableName}.wikidata is not null
                     )
+                OR ( extract(dow from now()) = 0
+                     AND id IN (SELECT fid FROM followings WHERE followings.count > 0)
+                   )
                 ORDER BY lastsync ASC
                 LIMIT 20
                 ";
