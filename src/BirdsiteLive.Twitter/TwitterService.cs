@@ -60,8 +60,8 @@ namespace BirdsiteLive.Twitter
             }
             if (tweets.Length > 0)
             {
-                var tweetId = tweets.Last().Id;
-                await _userDal.UpdateTwitterUserAsync(user.Id, long.Parse(tweetId), 0, user.LastSync);
+                var mostRecentTweet = tweets.MaxBy(t => t.IdLong).IdLong;
+                await _userDal.UpdateTwitterUserAsync(user.Id, mostRecentTweet, 0, user.LastSync);
             }
 
             var cacheThreshold = 100;

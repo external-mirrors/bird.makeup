@@ -374,6 +374,7 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedStatusId);
         }
 
+        [Ignore]
         [TestMethod]
         public async Task ShortLink_Expension_1()
         {

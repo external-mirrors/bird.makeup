@@ -69,7 +69,7 @@ namespace BirdsiteLive.Domain
             if (post.QuotedAccount is not null && post.QuotedStatusId != null)
             {
                 var quoteUrl = $"https://{_instanceSettings.Domain}/@{post.QuotedAccount}/{post.QuotedStatusId}";
-                extractedTags.content += "\n" + quoteUrl;
+                content += "\n" + quoteUrl;
                 tags.Add(new Tag()
                 {
                     href = $"https://{_instanceSettings.Domain}/users/{post.QuotedAccount}/statuses/{post.QuotedStatusId}",

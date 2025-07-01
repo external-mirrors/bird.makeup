@@ -67,6 +67,8 @@ spec:
               value: "6000"
             - name: Instance__SocialNetwork
               value: "Twitter"
+            - name: Instance__PipelineStartupDelay
+              value: "1200"
             - name: Instance__ParallelTwitterRequests
               value: "1"
             - name: Instance__ParallelFediversePosts
