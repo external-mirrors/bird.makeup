@@ -11,5 +11,7 @@ namespace BirdsiteLive.ActivityPub.Models
         public string rel { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string mediaType { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string approvedBy { get; set; }
     }
 }

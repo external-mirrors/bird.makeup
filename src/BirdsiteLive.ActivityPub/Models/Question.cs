@@ -11,6 +11,9 @@ namespace BirdsiteLive.ActivityPub.Models
         {
             ["toot"] = "http://joinmastodon.org/ns#",
             ["votersCount"] = "toot:votersCount",
+            ["gts"] = "https://gotosocial.org/ns#",
+            ["approvedBy"] = new Dictionary<string, object>()
+                { ["@id"] = "gts:approvedBy", ["@type"] = "@id" },
         };
         [JsonPropertyName("@context")]
         public new object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1", featuredContext};

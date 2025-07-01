@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using BirdsiteLive.ActivityPub;
+using BirdsiteLive.ActivityPub.Converters;
 using BirdsiteLive.ActivityPub.Models;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
@@ -234,6 +235,21 @@ namespace BirdsiteLive.Controllers
 
 
             var jsonApUser = JsonSerializer.Serialize(res);
+            return Content(jsonApUser, "application/activity+json; charset=utf-8");
+        }
+        [Route("/users/{userId}/stamp/{postId}/{remote}")]
+        public async Task<IActionResult> Stamp(string userId, string postId, string remote)
+        {
+
+            var featured = new QuoteAuthorization()
+            {
+                id = $"https://{_instanceSettings.Domain}/users/{userId}/stamps/{postId}/{remote}",
+                attributedTo = UrlFactory.GetActorUrl(_instanceSettings.Domain, userId),
+                interactionTarget = UrlFactory.GetNoteUrl(_instanceSettings.Domain, userId, postId),
+                interactingObject = UrlFactory.DecodeStampRemoteUrl(remote),
+            };
+
+            var jsonApUser = JsonSerializer.Serialize(featured);
             return Content(jsonApUser, "application/activity+json; charset=utf-8");
         }
         [Route("/users/{id}/collections/featured")]

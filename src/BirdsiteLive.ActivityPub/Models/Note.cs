@@ -1,13 +1,20 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 // ReSharper disable InconsistentNaming
 
 namespace BirdsiteLive.ActivityPub.Models
 {
     public class Note
     {
+        private static Dictionary<string, object> extraContext = new Dictionary<string, object>()
+        {
+            ["toot"] = "http://joinmastodon.org/ns#",
+            ["gts"] = "https://gotosocial.org/ns#",
+            ["approvedBy"] = new Dictionary<string, object>()
+                { ["@id"] = "gts:approvedBy", ["@type"] = "@id" },
+        };
         [JsonPropertyName("@context")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string[] context { get; set; } = new[] { "https://www.w3.org/ns/activitystreams" };
+        public new object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
 
         public string id { get; set; }
         public string announceId { get; set; }
