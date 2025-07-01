@@ -665,7 +665,7 @@ namespace BirdsiteLive.Twitter
 
                 messageContent = Regex.Replace(messageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
                 messageContent = Regex.Replace(messageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
-                messageContent = messageContent + "\n\n" + quoteTweetLink;
+                // messageContent = messageContent + "\n\n" + quoteTweetLink;
                 
             }
 
@@ -859,7 +859,7 @@ namespace BirdsiteLive.Twitter
                 MessageContent = MessageContent.Replace($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}", "", StringComparison.OrdinalIgnoreCase);
                 
                 //MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
-                MessageContent = MessageContent + "\n\n" + quoteTweetLink;
+                // MessageContent = MessageContent + "\n\n" + quoteTweetLink;
             }
 
             Poll poll = null;
@@ -996,6 +996,12 @@ namespace BirdsiteLive.Twitter
             foreach (Match match in matches)
             {
                 input.MessageContent = input.MessageContent.Replace(match.ToString(), "");
+            }
+
+            if (input.QuotedAccount is not null && input.QuotedStatusId is not null)
+            {
+                input.MessageContent = Regex.Replace(input.MessageContent, Regex.Escape($"https://twitter.com/{input.QuotedAccount}/status/{input.QuotedStatusId}"), "", RegexOptions.IgnoreCase);
+                input.MessageContent = Regex.Replace(input.MessageContent, Regex.Escape($"https://x.com/{input.QuotedAccount}/status/{input.QuotedStatusId}"), "", RegexOptions.IgnoreCase);
             }
             
             return input;

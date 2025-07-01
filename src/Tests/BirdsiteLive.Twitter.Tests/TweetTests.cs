@@ -187,7 +187,7 @@ namespace BirdsiteLive.ActivityPub.Tests
                 Assert.Inconclusive();
 
             Assert.AreEqual(tweet.MessageContent,
-                "When you gave them your keys you gave them your coins.\n\nhttps://domain.name/@kadhim/1610706613207285773");
+                "When you gave them your keys you gave them your coins.");
             Assert.AreEqual(tweet.Author.Acct, "ryansadams");
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.QuotedAccount, "kadhim");
@@ -201,7 +201,7 @@ namespace BirdsiteLive.ActivityPub.Tests
             if (tweet is null)
                 Assert.Inconclusive();
 
-            Assert.AreEqual(tweet.MessageContent, @"https://domain.name/@weekinethnews/1668684659855880193");
+            Assert.AreEqual(tweet.MessageContent, "");
             Assert.AreEqual(tweet.Author.Acct, "weekinethnews");
             Assert.IsNull(tweet.Poll);
         }

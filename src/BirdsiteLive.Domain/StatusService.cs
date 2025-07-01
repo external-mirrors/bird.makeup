@@ -50,6 +50,20 @@ namespace BirdsiteLive.Domain
             string summary = null;
 
             var extractedTags = await _statusExtractor.Extract(post.MessageContent, _instanceSettings.ResolveMentionsInPosts);
+            var tags = extractedTags.tags.ToList();
+
+            if (post.QuotedAccount is not null && post.QuotedStatusId != null)
+            {
+                var quoteUrl = $"https://{_instanceSettings.Domain}/@{post.QuotedAccount}/{post.QuotedStatusId}";
+                extractedTags.content += "\n" + quoteUrl;
+                tags.Add(new Tag()
+                {
+                    href = $"https://{_instanceSettings.Domain}/users/{post.QuotedAccount}/statuses/{post.QuotedStatusId}",
+                    name = quoteUrl,
+                    type = "Link",
+                    rel = "https://misskey-hub.net/ns#_misskey_quote",
+                });
+            }
 
             // Replace RT by a link
             var content = extractedTags.content;
@@ -83,7 +97,7 @@ namespace BirdsiteLive.Domain
             note.summary = summary;
             note.content = $"<p>{content}</p>";
             note.attachment = Convert(post.Media);
-            note.tag = extractedTags.tags;
+            note.tag = tags.ToArray();
 
             if (note is Question)
             {
