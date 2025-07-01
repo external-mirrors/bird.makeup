@@ -52,26 +52,7 @@ namespace BirdsiteLive.Domain
             var extractedTags = await _statusExtractor.Extract(post.MessageContent, _instanceSettings.ResolveMentionsInPosts);
             var tags = extractedTags.tags.ToList();
 
-            if (post.QuotedAccount is not null && post.QuotedStatusId != null)
-            {
-                var quoteUrl = $"https://{_instanceSettings.Domain}/@{post.QuotedAccount}/{post.QuotedStatusId}";
-                extractedTags.content += "\n" + quoteUrl;
-                tags.Add(new Tag()
-                {
-                    href = $"https://{_instanceSettings.Domain}/users/{post.QuotedAccount}/statuses/{post.QuotedStatusId}",
-                    name = quoteUrl,
-                    type = "Link",
-                    rel = "https://misskey-hub.net/ns#_misskey_quote",
-                });
-            }
-
-            // Replace RT by a link
             var content = extractedTags.content;
-            if (post.IsRetweet)
-            {
-                // content = "RT: " + content;
-                cc = new[] {"https://www.w3.org/ns/activitystreams#Public"};
-            }
             cc = new[] {"https://www.w3.org/ns/activitystreams#Public"};
 
             string inReplyTo = null;
@@ -85,6 +66,22 @@ namespace BirdsiteLive.Domain
             else
                 note = new Note { };
 
+            if (post.QuotedAccount is not null && post.QuotedStatusId != null)
+            {
+                var quoteUrl = $"https://{_instanceSettings.Domain}/@{post.QuotedAccount}/{post.QuotedStatusId}";
+                extractedTags.content += "\n" + quoteUrl;
+                tags.Add(new Tag()
+                {
+                    href = $"https://{_instanceSettings.Domain}/users/{post.QuotedAccount}/statuses/{post.QuotedStatusId}",
+                    name = quoteUrl,
+                    type = "Link",
+                    rel = "https://misskey-hub.net/ns#_misskey_quote",
+                    mediaType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+                });
+                note.quoteUri = quoteUrl;
+                note.quoteUrl = quoteUrl;
+            }
+            
             note.id = noteUrl;
             note.announceId = announceId;
             note.published = post.CreatedAt.ToString("s") + "Z";

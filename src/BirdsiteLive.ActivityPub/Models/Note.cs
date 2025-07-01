@@ -16,6 +16,10 @@ namespace BirdsiteLive.ActivityPub.Models
         public string inReplyTo { get; set; }
         public string published { get; set; }
         public string url { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string quoteUrl { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string quoteUri { get; set; }
         public string attributedTo { get; set; }
         public string[] to { get; set; }
         public string[] cc { get; set; }
