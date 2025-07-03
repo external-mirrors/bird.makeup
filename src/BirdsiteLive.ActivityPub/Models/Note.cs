@@ -8,10 +8,13 @@ namespace BirdsiteLive.ActivityPub.Models
     {
         private static Dictionary<string, object> extraContext = new Dictionary<string, object>()
         {
+            ["quoteUrl"] = "as:quoteUrl",
+            ["quoteUri"] = "http://fedibird.com/ns#quoteUri",
+            ["_misskey_quote"] = "https://misskey-hub.net/ns/#_misskey_quote",
             ["toot"] = "http://joinmastodon.org/ns#",
             ["gts"] = "https://gotosocial.org/ns#",
-            ["approvedBy"] = new Dictionary<string, object>()
-                { ["@id"] = "gts:approvedBy", ["@type"] = "@id" },
+            ["quote"] = new Dictionary<string, object>()
+                { ["@id"] = "https://w3id.org/fep/044f#quote", ["@type"] = "@id" },
         };
         [JsonPropertyName("@context")]
         public new object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
@@ -27,6 +30,10 @@ namespace BirdsiteLive.ActivityPub.Models
         public string quoteUrl { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string quoteUri { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string quote { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string quoteAuthorization { get; set; }
         public string attributedTo { get; set; }
         public string[] to { get; set; }
         public string[] cc { get; set; }

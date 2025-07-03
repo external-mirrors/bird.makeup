@@ -10,7 +10,7 @@ namespace BirdsiteLive.ActivityPub.Models
         private static Dictionary<string, object> extraContext = new Dictionary<string, object>()
         {
             ["toot"] = "http://joinmastodon.org/ns#",
-            ["QuoteAuthorization"] = "toot:QuoteAuthorization",
+            ["QuoteAuthorization"] = "https://w3id.org/fep/044f#QuoteAuthorization",
             ["gts"] = "https://gotosocial.org/ns#",
             ["interactingObject"] = new Dictionary<string, object>()
                 { ["@id"] = "gts:interactingObject", ["@type"] = "@id" },

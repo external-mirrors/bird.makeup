@@ -77,8 +77,9 @@ namespace BirdsiteLive.Domain
                     type = "Link",
                     rel = "https://misskey-hub.net/ns#_misskey_quote",
                     mediaType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-                    approvedBy = UrlFactory.GetStampUrl(_instanceSettings.Domain, post.QuotedAccount, post.QuotedStatusId, noteUrl),
                 });
+                note.quoteAuthorization = UrlFactory.GetStampUrl(_instanceSettings.Domain, post.QuotedAccount, post.QuotedStatusId, noteUrl);
+                note.quote = quoteUrl;
                 note.quoteUri = quoteUrl;
                 note.quoteUrl = quoteUrl;
             }
