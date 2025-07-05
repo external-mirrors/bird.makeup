@@ -12,9 +12,10 @@ namespace BirdsiteLive.ActivityPub.Models
             ["quoteUri"] = "http://fedibird.com/ns#quoteUri",
             ["_misskey_quote"] = "https://misskey-hub.net/ns/#_misskey_quote",
             ["toot"] = "http://joinmastodon.org/ns#",
-            ["gts"] = "https://gotosocial.org/ns#",
             ["quote"] = new Dictionary<string, object>()
                 { ["@id"] = "https://w3id.org/fep/044f#quote", ["@type"] = "@id" },
+            ["quoteAuthorization"] = new Dictionary<string, object>()
+                { ["@id"] = "https://w3id.org/fep/044f#quoteAuthorization", ["@type"] = "@id" },
         };
         [JsonPropertyName("@context")]
         public new object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
