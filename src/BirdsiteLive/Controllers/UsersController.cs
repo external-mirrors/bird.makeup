@@ -255,9 +255,9 @@ namespace BirdsiteLive.Controllers
         [Route("/users/{id}/collections/featured")]
         public async Task<IActionResult> Featured(string id)
         {
-            var user = await _socialMediaService.GetUserAsync(id);
+            var user = await _socialMediaService.UserDal.GetUserCacheAsync<SocialMediaUser>(id);
             if (user == null)
-                return NotFound();
+                user = new SocialMediaUser();
 
             var featured = new Featured()
             {
