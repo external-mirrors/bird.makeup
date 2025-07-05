@@ -151,7 +151,7 @@ public class InstagramService : ISocialMediaService
                 {
                     try
                     {
-                        user = await CallSidecar(username, await GetWebSidecar());
+                        user = await CallSidecar(username, await GetWebSidecar(), new Random().Next(2) + 1);
                         await _instagramUserDal.UpdateUserCacheAsync(user);
 
                     }
@@ -200,13 +200,13 @@ public class InstagramService : ISocialMediaService
             return post;
         }
 
-        private async Task<InstagramUser> CallSidecar(string username, string sidecarURL)
+        private async Task<InstagramUser> CallSidecar(string username, string sidecarURL, int methodChoice)
         {
             InstagramUser user = null;
             using var client = _httpClientFactory.CreateClient();
             string requestUrl;
             string method = "user";
-            if (sidecarURL == "http://localhost:5000")
+            if (methodChoice == 2)
                 method = "user_2";
             requestUrl = $"{sidecarURL}/instagram/{method}/{username}";
             var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
