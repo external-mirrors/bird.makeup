@@ -69,19 +69,21 @@ namespace BirdsiteLive.Domain
             if (post.QuotedAccount is not null && post.QuotedStatusId != null)
             {
                 var quoteUrl = $"https://{_instanceSettings.Domain}/@{post.QuotedAccount}/{post.QuotedStatusId}";
+                var quoteId =
+                    $"https://{_instanceSettings.Domain}/users/{post.QuotedAccount}/statuses/{post.QuotedStatusId}";
                 content += "\n" + quoteUrl;
                 tags.Add(new Tag()
                 {
-                    href = $"https://{_instanceSettings.Domain}/users/{post.QuotedAccount}/statuses/{post.QuotedStatusId}",
+                    href = quoteId,
                     name = quoteUrl,
                     type = "Link",
                     rel = "https://misskey-hub.net/ns#_misskey_quote",
                     mediaType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
                 });
                 note.quoteAuthorization = UrlFactory.GetStampUrl(_instanceSettings.Domain, post.QuotedAccount, post.QuotedStatusId, noteUrl);
-                note.quote = quoteUrl;
-                note.quoteUri = quoteUrl;
-                note.quoteUrl = quoteUrl;
+                note.quote = quoteId;
+                note.quoteUri = quoteId;
+                note.quoteUrl = quoteId;
             }
             
             note.id = noteUrl;
