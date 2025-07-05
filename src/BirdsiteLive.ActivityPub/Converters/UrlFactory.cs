@@ -22,7 +22,7 @@ namespace BirdsiteLive.ActivityPub.Converters
             {
                 hex.AppendFormat("{0:x2}", b); // lowercase hexadecimal
             }
-            return $"https://{domain.ToLowerInvariant()}/users/{username.ToLowerInvariant()}/stamp/{noteId}/{hex}";
+            return $"https://{domain.ToLowerInvariant()}/users/{username.ToLowerInvariant()}/stamps/{noteId}/{hex}";
         }
         public static string DecodeStampRemoteUrl(string hex)
         {
