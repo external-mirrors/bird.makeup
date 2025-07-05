@@ -237,8 +237,8 @@ namespace BirdsiteLive.Controllers
             var jsonApUser = JsonSerializer.Serialize(res);
             return Content(jsonApUser, "application/activity+json; charset=utf-8");
         }
-        [Route("/users/{userId}/stamp/{postId}/{remote}")]
-        public async Task<IActionResult> Stamp(string userId, string postId, string remote)
+        [Route("/users/{userId}/stamps/{postId}/{remote}")]
+        public async Task<IActionResult> Stamps(string userId, string postId, string remote)
         {
 
             var featured = new QuoteAuthorization()
