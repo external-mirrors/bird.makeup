@@ -26,6 +26,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 yield return new object[] { StrategyHints.Syndication };
                 yield return new object[] { StrategyHints.Graphql2024 };
+                yield return new object[] { StrategyHints.Sidecar };
             }
         }
 
@@ -74,9 +75,10 @@ namespace BirdsiteLive.Twitter.Tests
         }
 
         [TestMethod]
-        public async Task LeadingDotTextAndSinglePictureTweet_2()
+        [DynamicData(nameof(Implementations))]
+        public async Task LeadingDotTextAndSinglePictureTweet_2(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1908137050907558326);
+            var tweet = await _tweetService.GetTweetAsync(1908137050907558326, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
@@ -89,9 +91,10 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
-        public async Task LeadingDotTextAndSinglePictureTweet()
+        [DynamicData(nameof(Implementations))]
+        public async Task LeadingDotTextAndSinglePictureTweet(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1905980906189254989);
+            var tweet = await _tweetService.GetTweetAsync(1905980906189254989, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
@@ -104,9 +107,10 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
-        public async Task SimpleTextAndSinglePictureTweet()
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleTextAndSinglePictureTweet(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1593344577385160704);
+            var tweet = await _tweetService.GetTweetAsync(1593344577385160704, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
@@ -120,9 +124,10 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
-        public async Task SimpleTextAndSinglePictureTweet2()
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleTextAndSinglePictureTweet2(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1935683033836773498);
+            var tweet = await _tweetService.GetTweetAsync(1935683033836773498, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
@@ -135,9 +140,10 @@ namespace BirdsiteLive.Twitter.Tests
         }
 
         [TestMethod]
-        public async Task SimpleTextAndSingleLinkTweet()
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleTextAndSingleLinkTweet(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1602618920996945922);
+            var tweet = await _tweetService.GetTweetAsync(1602618920996945922, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
@@ -147,9 +153,10 @@ namespace BirdsiteLive.Twitter.Tests
         }
 
         [TestMethod]
-        public async Task SimpleTextAndSingleVideoTweet()
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleTextAndSingleVideoTweet(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1604231025311129600);
+            var tweet = await _tweetService.GetTweetAsync(1604231025311129600, s);
             if (tweet is null)
                 Assert.Inconclusive();
 

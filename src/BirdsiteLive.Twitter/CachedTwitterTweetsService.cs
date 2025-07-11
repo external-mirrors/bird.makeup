@@ -84,5 +84,10 @@ namespace BirdsiteLive.Twitter
         {
             return _twitterService.ExpandShortLinks(tweet);
         }
+
+        public ExtractedTweet CleanupText(ExtractedTweet tweet)
+        {
+            return _twitterService.CleanupText(tweet);
+        }
     }
 }

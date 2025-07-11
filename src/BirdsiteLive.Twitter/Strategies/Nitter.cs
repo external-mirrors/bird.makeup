@@ -42,10 +42,9 @@ public class Nitter : ITimelineExtractor
         _context = BrowsingContext.New(config);
     }
     
-    public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long fromId, long a)
+    public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long fromId, long a, bool withReplies)
     {
         var lowtrust = false;
-        var withReplies = false;
         // https://status.d420.de/
         var nitterSettings = await _settings.Get("nitter");
         if (nitterSettings is null)

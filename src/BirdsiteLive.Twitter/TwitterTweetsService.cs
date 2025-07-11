@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -16,7 +15,6 @@ using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Twitter.Strategies;
-using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace BirdsiteLive.Twitter
 {
@@ -25,6 +23,7 @@ namespace BirdsiteLive.Twitter
         Task<ExtractedTweet> GetTweetAsync(long statusId);
         Task<ExtractedTweet[]> GetTimelineAsync(SyncUser user, long fromTweetId = -1);
         Task<ExtractedTweet> ExpandShortLinks(ExtractedTweet tweet);
+        ExtractedTweet CleanupText(ExtractedTweet tweet);
     }
     
     public class TwitterTweetsService : ITwitterTweetsService
@@ -40,13 +39,10 @@ namespace BirdsiteLive.Twitter
         private readonly InstanceSettings _instanceSettings;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ISettingsDal _settings;
-        private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
-        {
-            Converters = { new TwitterSocialMediaUserConverter() }
-        };
 
         private readonly ITweetExtractor _tweetFromSyndication;
         private readonly Graphql2024 _tweetFromGraphql2024;
+        private readonly Sidecar _tweetFromSidecar;
 
         #region Ctor
         public TwitterTweetsService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ICachedTwitterUserService twitterUserService, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory, ISettingsDal settings, ILogger<TwitterService> logger)
@@ -62,6 +58,7 @@ namespace BirdsiteLive.Twitter
 
             _tweetFromSyndication = new Syndication(this, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, this, httpClientFactory, instanceSettings, logger);
+            _tweetFromSidecar = new Sidecar(_twitterUserDal, this, httpClientFactory, instanceSettings, logger);
         }
         #endregion
 
@@ -73,11 +70,13 @@ namespace BirdsiteLive.Twitter
 
             if (s == StrategyHints.Graphql2024)
                 return await _tweetFromGraphql2024.GetTweetAsync(statusId);
+            
+            if (s == StrategyHints.Sidecar)
+                return await _tweetFromSidecar.GetTweetAsync(statusId);
             return null;
         }
         public async Task<ExtractedTweet> GetTweetAsync(long statusId)
         {
-            //return await TweetFromSidecar(statusId);
             try
             {
                 var extract = await  _tweetFromGraphql2024.GetTweetAsync(statusId);
@@ -155,30 +154,30 @@ namespace BirdsiteLive.Twitter
             var twitterUser = await _twitterUserService.GetUserAsync(username);
             if (user.StatusesCount == -1)
             {
-                extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId);
+                extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId, false);
                 source = "Vanilla";
             }
             else if (user.Followers > followersThreshold0)
             {
-                extractedTweets = await TweetsFromSidecar2(user, fromTweetId, true);
+                extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, true);
                 source = "Sidecar (with replies)";
                 await Task.Delay(postNitterDelay);
             }
             else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold3)
             {
-                extractedTweets = await TweetsFromSidecar2(user, fromTweetId, true);
+                extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, true);
                 source = "Sidecar (with replies)";
                 await Task.Delay(postNitterDelay);
             }
             else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold2)
             {
-                extractedTweets = await TweetsFromSidecar2(user, fromTweetId, false);
+                extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, false);
                 source = "Sidecar (without replies)";
                 await Task.Delay(postNitterDelay);
             }
             else
             {
-                extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId);
+                extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId, false);
                 source = "Vanilla";
             }
             
@@ -190,101 +189,6 @@ namespace BirdsiteLive.Twitter
                 new KeyValuePair<string, object>("source", source)
             );
             return extractedTweets.ToArray();
-        }
-        
-        private async Task<List<ExtractedTweet>> TweetsFromSidecar2(SyncUser user, long fromId, bool withReplies)
-        {
-            try
-            {
-                var tweets = new List<ExtractedTweet>();
-                string username = String.Empty;
-                string password = String.Empty;
-
-                var candidates = await _twitterUserDal.GetTwitterCrawlUsersAsync(_instanceSettings.MachineName);
-                Random.Shared.Shuffle(candidates);
-                foreach (var account in candidates)
-                {
-                    username = account.Acct;
-                    password = account.Password;
-                }
-
-
-                using var client = _httpClientFactory.CreateClient();
-                string endpoint;
-                if (withReplies)
-                    endpoint = "postbyuserwithreplies";
-                else
-                    endpoint = "postbyuser";
-                using var request = new HttpRequestMessage(HttpMethod.Get,
-                    $"http://localhost:5000/twitter/{endpoint}2/{user.TwitterUserId}");
-                request.Headers.TryAddWithoutValidation("dotmakeup-user", username);
-                request.Headers.TryAddWithoutValidation("dotmakeup-password", password);
-                
-                var httpResponse = await client.SendAsync(request);
-
-                if (httpResponse.StatusCode != HttpStatusCode.OK)
-                {
-                    _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
-                        new KeyValuePair<string, object>("result", "5xx"),
-                        new KeyValuePair<string, object>("endpoint", endpoint)
-                    );
-                    return new List<ExtractedTweet>();
-                }
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
-                    new KeyValuePair<string, object>("result", "2xx"),
-                    new KeyValuePair<string, object>("endpoint", endpoint)
-                );
-                
-                var c = await httpResponse.Content.ReadAsStringAsync();
-                tweets = JsonSerializer.Deserialize<List<ExtractedTweet>>(c, _serializerOptions);
-                var tweetsDocument = JsonDocument.Parse(c);
-                
-                for (var i = 0; i < tweets.Count; i++)
-                {
-                    tweets[i] = await ExpandShortLinks(tweets[i]);
-                    tweets[i] = CleanupText(tweets[i]);
-                }
-                
-                return tweets;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return new List<ExtractedTweet>();
-            }
-        }
-
-
-        private string GetMediaType(string mediaType, string mediaUrl)
-        {
-            switch (mediaType)
-            {
-                case "photo":
-                    var pExt = Path.GetExtension(mediaUrl);
-                    switch (pExt)
-                    {
-                        case ".jpg":
-                        case ".jpeg":
-                            return "image/jpeg";
-                        case ".png":
-                            return "image/png";
-                    }
-                    return null;
-
-                case "animated_gif":
-                    var vExt = Path.GetExtension(mediaUrl);
-                    switch (vExt)
-                    {
-                        case ".gif":
-                            return "image/gif";
-                        case ".mp4":
-                            return "video/mp4";
-                    }
-                    return "image/gif";
-                case "video":
-                    return "video/mp4";
-            }
-            return null;
         }
         
         public async Task<ExtractedTweet> ExpandShortLinks(ExtractedTweet input)
