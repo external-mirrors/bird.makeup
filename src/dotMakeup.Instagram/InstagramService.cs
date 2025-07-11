@@ -362,13 +362,20 @@ public class InstagramService : ISocialMediaService
                     if (captionEdges.GetArrayLength() > 0)
                         caption = captionEdges[0].GetProperty("node").GetProperty("text").GetString();
 
+                    var isPinned = false;
+                    foreach (var pin in node.GetProperty("pinned_for_users").EnumerateArray())
+                    {
+                        var pinUser = pin.GetProperty("username").GetString();
+                        if (pinUser == userResult.Acct)
+                            isPinned = true;
+                    }
                     var parsedPost = new InstagramPost()
                     {
                         Id = node.GetProperty("shortcode").GetString(),
                         MessageContent = caption,
                         Author = userResult,
                         CreatedAt = DateTimeOffset.FromUnixTimeSeconds(node.GetProperty("taken_at_timestamp").GetInt64()).UtcDateTime,
-                        IsPinned = false,
+                        IsPinned = isPinned,
                         
                         Media = mediaItems.ToArray(),
                     };
@@ -380,7 +387,8 @@ public class InstagramService : ISocialMediaService
                 }
             }
 
-            userResult.RecentPosts = userPosts;
+            userResult.RecentPosts = userPosts.Where(x => x.IsPinned == false);
+            userResult.PinnedPosts = userPosts.Where(x => x.IsPinned == true).Select(x => x.Id).ToArray();
             
             return userResult;
         }

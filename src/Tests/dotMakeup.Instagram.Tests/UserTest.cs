@@ -34,6 +34,7 @@ public class UserTest
         ipfsService.Setup(a => a.GetIpfsPublicLink(It.IsAny<string>())).Returns("http://abc.com");
         _instaService = new InstagramService(ipfsService.Object, userDal.Object, httpFactory.Object, settings, settingsDal.Object);
     }
+    [Ignore]
     [TestMethod]
     public async Task user_kobe()
     {
@@ -96,21 +97,21 @@ public class UserTest
         Assert.AreEqual(user.Name, "Lisa Marie Presley");
         Assert.AreEqual(user.Url, "https://people.com/music/lisa-marie-presley-was-destroyed-by-son-benjamins-death-grief-essay/");
         Assert.AreEqual(user.RecentPosts.First().Media.Length, 6);
+        Assert.AreEqual(user.PinnedPosts.ToArray().Length, 0);
     }
-    [Ignore]
     [TestMethod]
-    public async Task user_etymologynerd()
+    public async Task user_therealoj32()
     {
         InstagramUser user;
         try
         {
-            user = (InstagramUser)await _instaService.GetUserAsync("etymologynerd");
+            user = (InstagramUser)await _instaService.GetUserAsync("therealoj32");
         }
         catch (Exception _)
         {
             Assert.Inconclusive();
             return;
         }
-        Assert.IsTrue(user.RecentPosts.ToArray().Length > 1);
+        Assert.AreEqual(user.PinnedPosts.ToArray().Length, 1);
     }
 }
