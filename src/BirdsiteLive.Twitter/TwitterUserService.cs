@@ -37,6 +37,8 @@ namespace BirdsiteLive.Twitter
         private readonly IHttpClientFactory _httpClientFactory;
 
         private readonly Graphql2024 _tweetFromGraphql2024;
+        private readonly Graphql2025 _tweetFromGraphql2025;
+        private readonly Sidecar _tweetFromSidecar;
 
         #region Ctor
         public TwitterUserService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, ISettingsDal settingsDal, IHttpClientFactory httpClientFactory, ILogger<TwitterService> logger)
@@ -49,9 +51,21 @@ namespace BirdsiteLive.Twitter
             _logger = logger;
             
             _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
+            _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
+            _tweetFromSidecar = new Sidecar(_twitterUserDal, null, httpClientFactory, instanceSettings, logger);
         }
         #endregion
 
+        public async Task<TwitterUser> GetUserAsync(string username, StrategyHints s)
+        {
+            if (s == StrategyHints.Graphql2024)
+                return await _tweetFromGraphql2024.GetUserAsync(username);
+            
+            if (s == StrategyHints.Graphql2025)
+                return await _tweetFromGraphql2025.GetUserAsync(username);
+            
+            return null;
+        }
         public async Task<TwitterUser> GetUserAsync(string username)
         {
             try

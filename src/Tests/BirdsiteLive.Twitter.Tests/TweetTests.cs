@@ -26,6 +26,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 yield return new object[] { StrategyHints.Syndication };
                 yield return new object[] { StrategyHints.Graphql2024 };
+                yield return new object[] { StrategyHints.Graphql2025 };
                 yield return new object[] { StrategyHints.Sidecar };
             }
         }

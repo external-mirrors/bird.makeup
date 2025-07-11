@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -17,7 +18,15 @@ namespace BirdsiteLive.Twitter.Tests
     [TestClass]
     public class UserTests
     {
-        private ITwitterUserService _tweetService;
+        public static IEnumerable<object[]> Implementations
+        {
+            get
+            {
+                yield return new object[] { StrategyHints.Graphql2024 };
+                yield return new object[] { StrategyHints.Graphql2025 };
+            }
+        }
+        private TwitterUserService _tweetService;
         [TestInitialize]
         public async Task TestInit()
         {
@@ -42,12 +51,13 @@ namespace BirdsiteLive.Twitter.Tests
         }
 
         [TestMethod]
-        public async Task UserKobe()
+        [DynamicData(nameof(Implementations))]
+        public async Task UserKobe(StrategyHints s)
         {
             SocialMediaUser user;
             try
             {
-                user = await _tweetService.GetUserAsync("kobebryant");
+                user = await _tweetService.GetUserAsync("kobebryant", s);
             }
             catch (Exception e)
             {
@@ -60,12 +70,13 @@ namespace BirdsiteLive.Twitter.Tests
         }
 
         [TestMethod]
-        public async Task UserGrant()
+        [DynamicData(nameof(Implementations))]
+        public async Task UserGrant(StrategyHints s)
         {
             TwitterUser user;
             try
             {
-                user = await _tweetService.GetUserAsync("grantimahara");
+                user = await _tweetService.GetUserAsync("grantimahara", s);
             }
             catch (Exception e)
             {
@@ -79,9 +90,10 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(user.Location, "Los Angeles, CA");
         }
         [TestMethod]
-        public async Task UserGrantBio()
+        [DynamicData(nameof(Implementations))]
+        public async Task UserGrantBio(StrategyHints s)
         {
-            var user = await _tweetService.GetUserAsync("grantimahara");
+            var user = await _tweetService.GetUserAsync("grantimahara", s);
             if (user.Description != "Host of White Rabbit Project on Netflix, former MythBuster and special FX modelmaker.")
                 Assert.Inconclusive();
         }
