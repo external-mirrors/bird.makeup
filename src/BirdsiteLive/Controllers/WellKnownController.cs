@@ -200,6 +200,9 @@ namespace BirdsiteLive.Controllers
 
             if (!string.IsNullOrWhiteSpace(domain) && domain != _settings.Domain)
                 return NotFound();
+            
+            if (name.EndsWith(".rss"))
+                return NotFound();
 
             var user = await _socialMediaService.UserDal.GetUserAsync(name);
             if (user is null)

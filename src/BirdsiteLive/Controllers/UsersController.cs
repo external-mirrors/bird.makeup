@@ -73,6 +73,8 @@ namespace BirdsiteLive.Controllers
         [Route("/users/{id}/remote_follow")]
         public async Task<IActionResult> Index(string id)
         {
+            if (id.EndsWith(".rss"))
+                return NotFound();
             _logger.LogTrace("User Index: {Id}", id);
 
             id = _socialMediaService.MakeUserNameCanonical(id.Trim(new[] { ' ', '@' }));
