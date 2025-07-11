@@ -6,23 +6,22 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers.Base
 {
     public class PostgresTestingBase
     {
-        protected readonly PostgresSettings _settings;
+        protected static readonly PostgresSettings _settings = new PostgresSettings
+        {
+            ConnString = "Host=127.0.0.1;Username=birdsitelive;Password=birdsitelive;Database=birdsitelive;MaxPoolSize=25;",
+            DbVersionTableName = "DbVersionTableName" + RandomGenerator.GetString(4),
+            CachedTweetsTableName = "CachedTweetsTableName" + RandomGenerator.GetString(4),
+            FollowersTableName = "FollowersTableName" + RandomGenerator.GetString(4),
+            TwitterUserTableName = "TwitterUserTableName" + RandomGenerator.GetString(4),
+            InstagramUserTableName = "InstagramUserTableName" + RandomGenerator.GetString(4),
+            CachedInstaPostsTableName = "CachedInstaPosts" + RandomGenerator.GetString(4),
+            WorkersTableName = "workers" + RandomGenerator.GetString(4),
+        };
         protected readonly PostgresTools _tools;
         
         #region Ctor
         public PostgresTestingBase()
         {
-            _settings = new PostgresSettings
-            {
-                ConnString = "Host=127.0.0.1;Username=birdsitelive;Password=birdsitelive;Database=birdsitelive;MaxPoolSize=25;",
-                DbVersionTableName = "DbVersionTableName" + RandomGenerator.GetString(4),
-                CachedTweetsTableName = "CachedTweetsTableName" + RandomGenerator.GetString(4),
-                FollowersTableName = "FollowersTableName" + RandomGenerator.GetString(4),
-                TwitterUserTableName = "TwitterUserTableName" + RandomGenerator.GetString(4),
-                InstagramUserTableName = "InstagramUserTableName" + RandomGenerator.GetString(4),
-                CachedInstaPostsTableName = "CachedInstaPosts" + RandomGenerator.GetString(4),
-                WorkersTableName = "workers" + RandomGenerator.GetString(4),
-            };
             _tools = new PostgresTools(_settings);
         }
         #endregion
