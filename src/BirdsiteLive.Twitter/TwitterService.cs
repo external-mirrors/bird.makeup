@@ -7,6 +7,7 @@ using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.DAL.Models;
+using BirdsiteLive.Domain;
 using BirdsiteLive.Twitter.Models;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -16,18 +17,20 @@ namespace BirdsiteLive.Twitter
     public class TwitterService : ISocialMediaService
     {
         private readonly ITwitterTweetsService _twitterTweetsService;
-        private readonly ICachedTwitterUserService _twitterUserService;
+        private readonly ITwitterUserService _twitterUserService;
         private readonly ITwitterUserDal _userDal;
         private readonly ISettingsDal _settings;
+        private readonly SocialNetworkCache _socialNetworkCache;
 
         #region Ctor
-        public TwitterService(ICachedTwitterTweetsService twitterService, ICachedTwitterUserService twitterUserService, ITwitterUserDal userDal, InstanceSettings settings, ISettingsDal settingsDal)
+        public TwitterService(ITwitterTweetsService twitterService, ITwitterUserService twitterUserService, ITwitterUserDal userDal, InstanceSettings settings, ISettingsDal settingsDal)
         {
             _twitterTweetsService = twitterService;
             _twitterUserService = twitterUserService;
             _userDal = userDal;
             UserDal = userDal;
             _settings = settingsDal;
+            _socialNetworkCache = new SocialNetworkCache(settings);
         }
         #endregion
 
@@ -39,13 +42,13 @@ namespace BirdsiteLive.Twitter
         {
             if (!long.TryParse(id, out var parsedStatusId))
                 return null;
-            var post = await _twitterTweetsService.GetTweetAsync(parsedStatusId);
+            var post = await _socialNetworkCache.GetPost(id, [() => _twitterTweetsService.GetTweetAsync(parsedStatusId)]);
             return post;
         }
 
         public async Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
         {
-            var tweets = new ExtractedTweet[0];
+            var tweets = Array.Empty<ExtractedTweet>();
             
             try
             {
@@ -75,6 +78,9 @@ namespace BirdsiteLive.Twitter
             }
             if (user.Followers > cacheThreshold)
                 await _twitterUserService.UpdateUserCache(user);
+            
+            foreach (var tweet in tweets)
+                _socialNetworkCache.BackfillPostCache(tweet);
 
             return tweets;
         }
@@ -87,7 +93,10 @@ namespace BirdsiteLive.Twitter
         public SocialMediaUserDal UserDal { get; }
         public async Task<SocialMediaUser> GetUserAsync(string user)
         {
-            var res = await _twitterUserService.GetUserAsync(user);
+            var res = await _socialNetworkCache.GetUser(user, [
+                () => _userDal.GetUserCacheAsync<TwitterUser>(user),
+                () => _twitterUserService.GetUserAsync(user),
+            ]);
             return res;
         }
 

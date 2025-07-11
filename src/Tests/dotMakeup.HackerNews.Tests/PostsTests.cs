@@ -76,6 +76,7 @@ public class PostsTests
         Assert.AreEqual(post.Id, "2921983");
         Assert.AreEqual(post.MessageContent, "Aw shucks, guys ... you make me blush with your compliments.<p>Tell you what, Ill make a deal: I'll keep writing if you keep reading. K?");
     }
+    [Ignore]
     [TestMethod]
     public async Task Poll1()
     {

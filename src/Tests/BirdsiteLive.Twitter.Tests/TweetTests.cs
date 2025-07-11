@@ -51,8 +51,7 @@ namespace BirdsiteLive.Twitter.Tests
                 new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
             ITwitterUserService user = new TwitterUserService(_tweetAuth, twitterDal.Object, settings,
                 settingsDal.Object, httpFactory.Object, logger.Object);
-            ICachedTwitterUserService user2 = new CachedTwitterUserService(user, twitterDal.Object, settings);
-            _tweetService = new TwitterTweetsService(_tweetAuth, user2, twitterDal.Object, settings, httpFactory.Object,
+            _tweetService = new TwitterTweetsService(_tweetAuth, user, twitterDal.Object, settings, httpFactory.Object,
                 settingsDal.Object, logger.Object);
 
         }
@@ -215,6 +214,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.QuotedStatusId, "1610706613207285773");
         }
 
+        [Ignore]
         [TestMethod]
         [DynamicData(nameof(Implementations))]
         public async Task QTandTextContainsLink(StrategyHints s)

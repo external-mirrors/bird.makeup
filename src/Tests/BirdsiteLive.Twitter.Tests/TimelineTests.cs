@@ -18,7 +18,7 @@ namespace BirdsiteLive.Twitter.Tests
     public class TimelineTests
     {
         private TwitterTweetsService _tweetService;
-        private ICachedTwitterUserService _twitterUserService;
+        private ITwitterUserService _twitterUserService;
         private ITwitterUserDal _twitterUserDalMoq;
         private ITwitterAuthenticationInitializer _tweetAuth = null;
 
@@ -73,7 +73,6 @@ namespace BirdsiteLive.Twitter.Tests
 
             _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
             ITwitterUserService user = new TwitterUserService(_tweetAuth, _twitterUserDalMoq, settings, settingsDal.Object, httpFactory.Object, logger.Object);
-            _twitterUserService = new CachedTwitterUserService(user, twitterDal.Object, settings);
             _tweetService = new TwitterTweetsService(_tweetAuth, _twitterUserService, twitterDal.Object, settings, httpFactory.Object, settingsDal.Object, logger.Object);
 
         }

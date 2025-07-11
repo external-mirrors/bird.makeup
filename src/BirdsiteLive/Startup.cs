@@ -103,7 +103,6 @@ namespace BirdsiteLive
                 throw new NotImplementedException($"{dbSettings.Type} is not supported");
             }
             
-            services.For<ITwitterUserService>().DecorateAllWith<CachedTwitterUserService>();
             services.For<ITwitterUserService>().Use<TwitterUserService>().Singleton();
 
             services.For<ITwitterAuthenticationInitializer>().Use<TwitterAuthenticationInitializer>().Singleton();
@@ -157,8 +156,6 @@ namespace BirdsiteLive
 
             app.UseAuthorization();
 
-            app.UseSocialNetworkInterceptor();
-            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(

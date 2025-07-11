@@ -33,7 +33,7 @@ namespace BirdsiteLive.Twitter
         static Counter<int> _newTweets = _meter.CreateCounter<int>("dotmakeup_twitter_new_tweets_count");
         
         private readonly ITwitterAuthenticationInitializer _twitterAuthenticationInitializer;
-        private readonly ICachedTwitterUserService _twitterUserService;
+        private readonly ITwitterUserService _twitterUserService;
         private readonly ITwitterUserDal _twitterUserDal;
         private readonly ILogger<TwitterService> _logger;
         private readonly InstanceSettings _instanceSettings;
@@ -46,7 +46,7 @@ namespace BirdsiteLive.Twitter
         private readonly Sidecar _tweetFromSidecar;
 
         #region Ctor
-        public TwitterTweetsService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ICachedTwitterUserService twitterUserService, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory, ISettingsDal settings, ILogger<TwitterService> logger)
+        public TwitterTweetsService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ITwitterUserService twitterUserService, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory, ISettingsDal settings, ILogger<TwitterService> logger)
         {
             _twitterAuthenticationInitializer = twitterAuthenticationInitializer;
             _twitterUserService = twitterUserService;

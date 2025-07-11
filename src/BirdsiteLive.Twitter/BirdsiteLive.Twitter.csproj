@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BirdsiteLive.Common\BirdsiteLive.Common.csproj" />
+    <ProjectReference Include="..\BirdsiteLive.Domain\BirdsiteLive.Domain.csproj" />
     <ProjectReference Include="..\DataAccessLayers\BirdsiteLive.DAL\BirdsiteLive.DAL.csproj" />
   </ItemGroup>
 
