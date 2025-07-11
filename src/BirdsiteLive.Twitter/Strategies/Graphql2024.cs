@@ -172,7 +172,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
             }
         }
-        extractedTweets = extractedTweets.OrderByDescending(x => x.Id).Where(x => x.IdLong > fromTweetId).ToList();
+        extractedTweets = extractedTweets.OrderByDescending(x => x.CreatedAt).Where(x => x.IdLong > fromTweetId).ToList();
 
         return extractedTweets;
     }

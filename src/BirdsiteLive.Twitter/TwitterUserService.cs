@@ -39,6 +39,7 @@ namespace BirdsiteLive.Twitter
         private readonly Graphql2024 _tweetFromGraphql2024;
         private readonly Graphql2025 _tweetFromGraphql2025;
         private readonly Sidecar _tweetFromSidecar;
+        private readonly IUserExtractor[] _userExtractors;
 
         #region Ctor
         public TwitterUserService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, ISettingsDal settingsDal, IHttpClientFactory httpClientFactory, ILogger<TwitterService> logger)
@@ -53,6 +54,7 @@ namespace BirdsiteLive.Twitter
             _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
             _tweetFromSidecar = new Sidecar(_twitterUserDal, null, httpClientFactory, instanceSettings, logger);
+            _userExtractors = [_tweetFromGraphql2024, _tweetFromGraphql2025];
         }
         #endregion
 
@@ -68,22 +70,24 @@ namespace BirdsiteLive.Twitter
         }
         public async Task<TwitterUser> GetUserAsync(string username)
         {
+            var rnd = new Random();
+            var u = _userExtractors[rnd.Next(_userExtractors.Length)];
             try
             {
-                var user = await _tweetFromGraphql2024.GetUserAsync(username);
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account")
+                var user = await u.GetUserAsync(username);
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + u.GetType().Name)
                 , new KeyValuePair<string, object>("result", "2xx") );
                 return user;
             }
             catch (System.Collections.Generic.KeyNotFoundException)
             {
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account")
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + u.GetType().Name)
                 , new KeyValuePair<string, object>("result", "4xx") );
                 throw new UserNotFoundException();
             }
             catch (Exception e)
             {
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account")
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + u.GetType().Name)
                 , new KeyValuePair<string, object>("result", "5xx") );
                 _logger.LogError(e, "Error retrieving user {Username}", username);
                 throw;

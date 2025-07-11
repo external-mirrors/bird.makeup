@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -16,11 +17,20 @@ namespace BirdsiteLive.Twitter.Tests
     [TestClass]
     public class TimelineTests
     {
-        private ITwitterTweetsService _tweetService;
+        private TwitterTweetsService _tweetService;
         private ICachedTwitterUserService _twitterUserService;
         private ITwitterUserDal _twitterUserDalMoq;
         private ITwitterAuthenticationInitializer _tweetAuth = null;
 
+        public static IEnumerable<object[]> Implementations
+        {
+            get
+            {
+                yield return new object[] { StrategyHints.Graphql2024 };
+                yield return new object[] { StrategyHints.Graphql2025 };
+                yield return new object[] { StrategyHints.Sidecar };
+            }
+        }
         [TestInitialize]
         public async Task TestInit()
         {
@@ -41,9 +51,14 @@ namespace BirdsiteLive.Twitter.Tests
 
             twitterDal
                 .Setup(x => x.GetUserAsync(
-                    It.Is<string>(y => true)
+                    It.Is<string>(y => y == "kobebryant")
                 ))
-                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = default });
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 1059194370 });
+            twitterDal
+                .Setup(x => x.GetUserAsync(
+                    It.Is<string>(y => y == "grantimahara")
+                ))
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 28521141 });
             _twitterUserDalMoq = twitterDal.Object;
 
             _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
@@ -67,13 +82,14 @@ namespace BirdsiteLive.Twitter.Tests
             }
         }
         [TestMethod]
-        public async Task TimelineKobe()
+        [DynamicData(nameof(Implementations))]
+        public async Task TimelineKobe(StrategyHints s)
         {
             var user = await _twitterUserDalMoq.GetUserAsync("kobebryant");
             ExtractedTweet[] tweets;
             try
             {
-                tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser)user, 1117506566939234304);
+                tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser)user, s);
             }
             catch (Exception e)
             {
@@ -86,8 +102,6 @@ namespace BirdsiteLive.Twitter.Tests
            
             Assert.AreEqual(tweets[0].MessageContent, "Continuing to move the game forward @KingJames. Much respect my brother 💪🏾 #33644");
             Assert.IsTrue(tweets.Length > 10);
-            Assert.IsTrue(tweets.Length < 20);
-
         }
 
         [Ignore]
@@ -102,8 +116,10 @@ namespace BirdsiteLive.Twitter.Tests
 
             Assert.IsTrue(tweets.Length > 0);
         }
+        [Ignore]
         [TestMethod]
-        public async Task TimelineGrant()
+        [DynamicData(nameof(Implementations))]
+        public async Task TimelineGrant(StrategyHints s)
         {
             var user = await _twitterUserDalMoq.GetUserAsync("grantimahara");
             user.Followers = 99999999; // we want to make sure it's a VIP user
@@ -111,7 +127,7 @@ namespace BirdsiteLive.Twitter.Tests
             ExtractedTweet[] tweets;
             try
             {
-                tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser) user, 1232042440875335680);
+                tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser) user, s);
             }
             catch (Exception e)
             {

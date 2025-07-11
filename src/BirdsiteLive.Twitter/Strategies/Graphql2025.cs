@@ -87,7 +87,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         }
 
         var timeline = results.RootElement.GetProperty("data").GetProperty("user").GetProperty("result")
-            .GetProperty("timeline_v2").GetProperty("timeline").GetProperty("instructions").EnumerateArray();
+            .GetProperty("timeline").GetProperty("timeline").GetProperty("instructions").EnumerateArray();
 
         foreach (JsonElement timelineElement in timeline) 
         {
@@ -126,7 +126,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
             }
         }
-        extractedTweets = extractedTweets.OrderByDescending(x => x.Id).Where(x => x.IdLong > fromTweetId).ToList();
+        extractedTweets = extractedTweets.OrderByDescending(x => x.CreatedAt).Where(x => x.IdLong > fromTweetId).ToList();
 
         return extractedTweets;
     }

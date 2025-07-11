@@ -106,6 +106,20 @@ namespace BirdsiteLive.Twitter
                 return backupTweet;
             }
         }
+
+        public async Task<ExtractedTweet[]> GetTimelineAsync(SyncUser user, StrategyHints s)
+        {
+            if (s == StrategyHints.Graphql2024)
+                return (await _tweetFromGraphql2024.GetTimelineAsync(user, user.TwitterUserId, -1, true)).ToArray();
+            
+            if (s == StrategyHints.Graphql2025)
+                return (await _tweetFromGraphql2025.GetTimelineAsync(user, user.TwitterUserId, -1, true)).ToArray();
+            
+            if (s == StrategyHints.Sidecar)
+                return (await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, -1, true)).ToArray();
+            
+            return null;
+        }
         public async Task<ExtractedTweet[]> GetTimelineAsync(SyncUser user, long fromTweetId = -1)
         {
             long userId;
