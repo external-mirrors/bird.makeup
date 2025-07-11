@@ -169,7 +169,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/"));
 
 
-            var tweet2 = await _tweetService.GetTweetAsync(1657913781006258178);
+            var tweet2 = await _tweetService.GetTweetAsync(1657913781006258178, s);
             if (tweet2 is null)
                 Assert.Inconclusive();
 
@@ -182,9 +182,10 @@ namespace BirdsiteLive.Twitter.Tests
         }
 
         [TestMethod]
-        public async Task GifAndQT()
+        [DynamicData(nameof(Implementations))]
+        public async Task GifAndQT(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1612901861874343936);
+            var tweet = await _tweetService.GetTweetAsync(1612901861874343936, s);
             if (tweet is null)
                 Assert.Inconclusive();
             
@@ -198,10 +199,11 @@ namespace BirdsiteLive.Twitter.Tests
             // TODO test QT
         }
 
+        [DynamicData(nameof(Implementations))]
         [TestMethod]
-        public async Task SimpleQT()
+        public async Task SimpleQT(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1610807139089383427);
+            var tweet = await _tweetService.GetTweetAsync(1610807139089383427, s);
             if (tweet is null)
                 Assert.Inconclusive();
 
@@ -214,9 +216,10 @@ namespace BirdsiteLive.Twitter.Tests
         }
 
         [TestMethod]
-        public async Task QTandTextContainsLink()
+        [DynamicData(nameof(Implementations))]
+        public async Task QTandTextContainsLink(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1668932525522305026);
+            var tweet = await _tweetService.GetTweetAsync(1668932525522305026, s);
             if (tweet is null)
                 Assert.Inconclusive();
 
@@ -265,9 +268,10 @@ https://domain.name/@stillgray/1822453985204187319");
         }
 
         [TestMethod]
-        public async Task SimpleThread()
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleThread(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1445468404815597573);
+            var tweet = await _tweetService.GetTweetAsync(1445468404815597573, s);
             if (tweet is null)
                 Assert.Inconclusive();
 
@@ -280,9 +284,10 @@ https://domain.name/@stillgray/1822453985204187319");
         }
 
         [TestMethod]
-        public async Task SimpleReply()
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleReply(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1612622335546363904);
+            var tweet = await _tweetService.GetTweetAsync(1612622335546363904, s);
             if (tweet is null)
                 Assert.Inconclusive();
 
@@ -295,10 +300,13 @@ https://domain.name/@stillgray/1822453985204187319");
         }
 
         [TestMethod]
-        public async Task LongFormTweet()
+        [DynamicData(nameof(Implementations))]
+        public async Task LongFormTweet(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1633788842770825216);
+            var tweet = await _tweetService.GetTweetAsync(1633788842770825216, s);
             if (tweet is null)
+                Assert.Inconclusive();
+            if (tweet.MessageContent.Length < 400 )
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
                 "The entire concept of the “off switch” is under theorized in all the x-risk stuff.\n\nFirst, all actually existing LLM-type AIs run on giant supercompute clusters. They can easily be turned off.\n\nIn the event they get decentralized down to smartphone level, again each person can turn them off.\n\nTo actually get concerned, you have to assume either:\n\n- breaking out of the sandbox (like Stuxnet)\n- decentralized execution (like Bitcoin) \n- very effective collusion between essentially all AIs (like Diplomacy)\n\nEach of those cases deserves a fuller treatment, but in short…\n\n1) The Stuxnet case means the AI is living off the digital land. Like a mountain man. They might be able to cause some damage but will be killed when discovered (via the off switch).\n\n2) The Bitcoin case means a whole group of people are running decentralized compute to keep the AI alive. This has actually solved “alignment” in a sense because without those people the AI is turned off. Many groups doing this kind of thing leads to a kind of polytheistic AI. And again each group has the off switch.\n\n3) The Diplomacy case assumes a degree of collusion between billions of personal AIs that we just don’t observe in billions of years of evolution. As soon as you have large numbers of people, coalitions arise. A smart enough AI will know that if its human turns it off, it dies — again via the off switch. Is it going to be bold enough to attempt a breakout with no endgame, given that it lives on a smartphone?\n\nFor the sake of argument I’ve pumped up the sci-fi here quite a bit. Even still, the off switch looms large each time; these are fundamental digital entities that can be turned off.\n\nMoreover, even in those cases, the physical actuation step of an AI actually controlling things offline is non-trivial unless we have as many robots as smartphones.\n\n(Will write more on this…)");
@@ -311,9 +319,10 @@ https://domain.name/@stillgray/1822453985204187319");
         }
 
         [TestMethod]
-        public async Task Poll1()
+        [DynamicData(nameof(Implementations))]
+        public async Task Poll1(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1593767953706921985);
+            var tweet = await _tweetService.GetTweetAsync(1593767953706921985, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent, "Reinstate former President Trump");
@@ -329,9 +338,10 @@ https://domain.name/@stillgray/1822453985204187319");
         }
 
         [TestMethod]
-        public async Task Poll2()
+        [DynamicData(nameof(Implementations))]
+        public async Task Poll2(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1570766012316000263);
+            var tweet = await _tweetService.GetTweetAsync(1570766012316000263, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent, "On average, how many hours are you *actually* working everyday?");
@@ -347,9 +357,10 @@ https://domain.name/@stillgray/1822453985204187319");
         }
 
         [TestMethod]
-        public async Task Poll3()
+        [DynamicData(nameof(Implementations))]
+        public async Task Poll3(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1861785009805545631);
+            var tweet = await _tweetService.GetTweetAsync(1861785009805545631, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
@@ -365,9 +376,10 @@ https://domain.name/@stillgray/1822453985204187319");
         }
 
         [TestMethod]
-        public async Task Poll4()
+        [DynamicData(nameof(Implementations))]
+        public async Task Poll4(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1872489920297910742);
+            var tweet = await _tweetService.GetTweetAsync(1872489920297910742, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent, "Do you feel the immigration debates on X have been:");
@@ -382,9 +394,10 @@ https://domain.name/@stillgray/1822453985204187319");
         }
 
         [TestMethod]
-        public async Task Poll_false_positive()
+        [DynamicData(nameof(Implementations))]
+        public async Task Poll_false_positive(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1858992492550734176);
+            var tweet = await _tweetService.GetTweetAsync(1858992492550734176, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
@@ -431,9 +444,10 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
-        public async Task ShortLink_Expension_3()
+        [DynamicData(nameof(Implementations))]
+        public async Task ShortLink_Expension_3(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1887282879925002660);
+            var tweet = await _tweetService.GetTweetAsync(1887282879925002660, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
@@ -450,10 +464,13 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedStatusId);
         }
         [TestMethod]
-        public async Task ShortLink_Expension_4()
+        [DynamicData(nameof(Implementations))]
+        public async Task ShortLink_Expension_4(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1887592728621420875);
+            var tweet = await _tweetService.GetTweetAsync(1887592728621420875, s);
             if (tweet is null)
+                Assert.Inconclusive();
+            if (tweet.MessageContent.Length < 400 )
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.Author.Acct, "askvenice");

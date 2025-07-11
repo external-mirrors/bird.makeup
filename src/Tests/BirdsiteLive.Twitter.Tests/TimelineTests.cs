@@ -59,6 +59,16 @@ namespace BirdsiteLive.Twitter.Tests
                     It.Is<string>(y => y == "grantimahara")
                 ))
                 .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 28521141 });
+            twitterDal
+                .Setup(x => x.GetUserAsync(
+                    It.Is<string>(y => y == "mkbhd")
+                ))
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 29873662 });
+            twitterDal
+                .Setup(x => x.GetUserAsync(
+                    It.Is<string>(y => y == "askvenice")
+                ))
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 1764736490515685376 });
             _twitterUserDalMoq = twitterDal.Object;
 
             _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
@@ -106,13 +116,14 @@ namespace BirdsiteLive.Twitter.Tests
 
         [Ignore]
         [TestMethod]
-        public async Task TimelineMKBHD()
+        [DynamicData(nameof(Implementations))]
+        public async Task TimelineMKBHD(StrategyHints s)
         {
             // Goal of this test is the interaction between old pin and crawling
             var user = await _twitterUserDalMoq.GetUserAsync("mkbhd");
             user.Followers = 99999999; // we want to make sure it's a VIP user
             user.LastTweetPostedId = 1699909873041916323; 
-            var tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser) user, 1699909873041916323);
+            var tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser) user, s);
 
             Assert.IsTrue(tweets.Length > 0);
         }

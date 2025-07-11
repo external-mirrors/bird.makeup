@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -16,6 +17,10 @@ namespace BirdsiteLive.Twitter.Strategies;
 
 public class Sidecar : ITweetExtractor, ITimelineExtractor
 {
+    static Meter _meter = new("DotMakeup", "1.0.0");
+    static Counter<int> _apiCalled = _meter.CreateCounter<int>("dotmakeup_api_called_count");
+    static Counter<int> _newTweets = _meter.CreateCounter<int>("dotmakeup_twitter_new_tweets_count");
+    
     private readonly ITwitterUserDal  _twitterUserDal;
     private readonly ITwitterTweetsService _tweetsService;
     private readonly InstanceSettings _instanceSettings;
@@ -93,8 +98,16 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor
 
             if (httpResponse.StatusCode != HttpStatusCode.OK)
             {
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
+                    new KeyValuePair<string, object>("result", "5xx"),
+                    new KeyValuePair<string, object>("endpoint", endpoint)
+                );
                 return new List<ExtractedTweet>();
             }
+            _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
+                new KeyValuePair<string, object>("result", "2xx"),
+                new KeyValuePair<string, object>("endpoint", endpoint)
+            );
             
             var c = await httpResponse.Content.ReadAsStringAsync();
             tweets = JsonSerializer.Deserialize<List<ExtractedTweet>>(c, _serializerOptions);
