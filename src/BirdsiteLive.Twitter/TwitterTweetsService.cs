@@ -15,10 +15,6 @@ using BirdsiteLive.Twitter.Tools;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using BirdsiteLive.DAL.Contracts;
-using BirdsiteLive.DAL.Models;
-using AngleSharp;
-using AngleSharp.Dom;
-using AngleSharp.Io;
 using BirdsiteLive.Twitter.Strategies;
 using HttpMethod = System.Net.Http.HttpMethod;
 
@@ -43,9 +39,7 @@ namespace BirdsiteLive.Twitter
         private readonly ILogger<TwitterService> _logger;
         private readonly InstanceSettings _instanceSettings;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IBrowsingContext _context;
         private readonly ISettingsDal _settings;
-        private string Useragent = "Bird.makeup ( https://git.sr.ht/~cloutier/bird.makeup ) Bot";
         private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
         {
             Converters = { new TwitterSocialMediaUserConverter() }
@@ -65,13 +59,6 @@ namespace BirdsiteLive.Twitter
             _settings = settings;
             _logger = logger;
             
-            var requester = new DefaultHttpRequester();
-            requester.Headers["User-Agent"] = Useragent;
-            requester.Headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
-            requester.Headers["Accept-Encoding"] = "gzip, deflate";
-            requester.Headers["Accept-Language"] = "en-US,en;q=0.5";
-            var config = Configuration.Default.With(requester).WithDefaultLoader();
-            _context = BrowsingContext.New(config);
 
             _tweetFromSyndication = new Syndication(this, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, this, httpClientFactory, instanceSettings, logger);
@@ -189,12 +176,6 @@ namespace BirdsiteLive.Twitter
                 source = "Sidecar (without replies)";
                 await Task.Delay(postNitterDelay);
             }
-            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold && twitterUser.FollowersCount > twitterFollowersThreshold)
-            {
-                extractedTweets = await TweetFromNitter(user, fromTweetId, false, false);
-                source = "Nitter";
-                await Task.Delay(postNitterDelay);
-            }
             else
             {
                 extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId);
@@ -273,97 +254,6 @@ namespace BirdsiteLive.Twitter
             }
         }
 
-        private async Task<List<ExtractedTweet>> TweetFromNitter(SyncUser user, long fromId, bool withReplies,
-            bool lowtrust)
-        {
-            // https://status.d420.de/
-            var nitterSettings = await _settings.Get("nitter");
-            if (nitterSettings is null)
-                return new List<ExtractedTweet>();
-
-
-            var requester = new DefaultHttpRequester();
-            string useragent;
-            if (lowtrust && nitterSettings.Value.TryGetProperty("useragent", out JsonElement useragentElement))
-                useragent = useragentElement.GetString();
-            else
-                useragent = Useragent;
-            requester.Headers["User-Agent"] = useragent;
-            requester.Headers["Accept"] =
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
-            requester.Headers["Accept-Encoding"] = "gzip, deflate";
-            requester.Headers["Accept-Language"] = "en-US,en;q=0.5";
-            var config = Configuration.Default.With(requester).WithDefaultLoader();
-            var context = BrowsingContext.New(config);
-
-            List<string> domains = new List<string>() { };
-            var prop = (lowtrust) ? "lowtrustendpoints" : "endpoints";
-            foreach (var d in nitterSettings.Value.GetProperty(prop).EnumerateArray())
-            {
-                domains.Add(d.GetString());
-            }
-
-            Random rnd = new Random();
-            int randIndex = rnd.Next(domains.Count);
-            var domain = domains[randIndex];
-            string address;
-            if (withReplies)
-                address = $"https://{domain}/{user.Acct}/with_replies";
-            else
-                address = $"https://{domain}/{user.Acct}";
-            var document = await context.OpenAsync(address);
-
-            var cellSelector = ".tweet-link";
-            var cells = document.QuerySelectorAll(cellSelector);
-            var titles = cells.Select(m => m.GetAttribute("href"));
-
-            _apiCalled.Add(1, new KeyValuePair<string, object>("api", "nitter"),
-                new KeyValuePair<string, object>("success", titles.Any()),
-                new KeyValuePair<string, object>("domain", domain)
-            );
-        
-
-        List<ExtractedTweet> tweets = new List<ExtractedTweet>();
-            string pattern = @".*\/([0-9]+)#m";
-            Regex rg = new Regex(pattern);
-            
-            foreach (string title in titles)
-            {
-                MatchCollection matchedId = rg.Matches(title);
-                var matchString = matchedId[0].Groups[1].Value;
-                var match = Int64.Parse(matchString);
-
-                if (match <= fromId)
-                    continue;
-
-                try
-                {
-                    //var tweet = await TweetFromSyndication(match);
-                    var tweet = await GetTweetAsync(match);
-                    if (tweet.Author.Acct != user.Acct)
-                    {
-                        if (!nitterSettings.Value.GetProperty("allowboosts").GetBoolean() || lowtrust)
-                            continue;
-                        
-                        tweet.IsRetweet = true;
-                        tweet.OriginalAuthor = tweet.Author;
-                        tweet.Author = await _twitterUserService.GetUserAsync(user.Acct);
-                        tweet.RetweetId = tweet.IdLong;
-                        // Sadly not given by Nitter UI
-                        var gen = new TwitterSnowflakeGenerator(1, 1);
-                        tweet.Id = gen.NextId().ToString();
-                    }
-                    tweets.Add(tweet);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError($"error fetching tweet {match} from user {user.Acct}");
-                }
-                await Task.Delay(100);
-            }
-            
-            return tweets;
-        }
 
         private string GetMediaType(string mediaType, string mediaUrl)
         {
