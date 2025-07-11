@@ -1,19 +1,17 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using BirdsiteLive.Twitter;
-using BirdsiteLive.Twitter.Tools;
-using BirdsiteLive.Common.Settings;
-using Moq;
-using BirdsiteLive.DAL.Contracts;
-using BirdsiteLive.DAL.Models;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading.Tasks;
+using BirdsiteLive.Common.Settings;
+using BirdsiteLive.DAL.Contracts;
+using BirdsiteLive.DAL.Models;
 using BirdsiteLive.Twitter.Models;
-using Newtonsoft.Json;
+using BirdsiteLive.Twitter.Tools;
+using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
-namespace BirdsiteLive.ActivityPub.Tests
+namespace BirdsiteLive.Twitter.Tests
 {
     [TestClass]
     public class TimelineTests

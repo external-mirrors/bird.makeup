@@ -1,21 +1,33 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using BirdsiteLive.Twitter;
-using BirdsiteLive.Twitter.Tools;
-using Moq;
-using BirdsiteLive.DAL.Contracts;
-using BirdsiteLive.Common.Settings;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading.Tasks;
+using BirdsiteLive.Common.Settings;
+using BirdsiteLive.DAL.Contracts;
+using BirdsiteLive.Twitter.Models;
+using BirdsiteLive.Twitter.Strategies;
+using BirdsiteLive.Twitter.Tools;
+using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
-namespace BirdsiteLive.ActivityPub.Tests
+namespace BirdsiteLive.Twitter.Tests
 {
+    
     [TestClass]
     public class TweetTests
     {
-        private ITwitterTweetsService _tweetService = null;
+        private TwitterTweetsService _tweetService = null;
         private ITwitterAuthenticationInitializer _tweetAuth = null;
+        
+        public static IEnumerable<object[]> Implementations
+        {
+            get
+            {
+                yield return new object[] { StrategyHints.Syndication };
+                yield return new object[] { StrategyHints.Graphql2024 };
+            }
+        }
 
         [TestInitialize]
         public async Task TestInit()
@@ -47,9 +59,10 @@ namespace BirdsiteLive.ActivityPub.Tests
 
 
         [TestMethod]
-        public async Task SimpleTextTweet()
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleTextTweet(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1600905296892891149);
+            var tweet = await _tweetService.GetTweetAsync(1600905296892891149, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,

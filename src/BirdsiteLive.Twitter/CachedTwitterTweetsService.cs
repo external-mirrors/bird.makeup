@@ -79,5 +79,10 @@ namespace BirdsiteLive.Twitter
 
             _tweetCache.Set(id, tweet, _cacheEntryOptions);
         }
+
+        public Task<ExtractedTweet> ExpandShortLinks(ExtractedTweet tweet)
+        {
+            return _twitterService.ExpandShortLinks(tweet);
+        }
     }
 }
