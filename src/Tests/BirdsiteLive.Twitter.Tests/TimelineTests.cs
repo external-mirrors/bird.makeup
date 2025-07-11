@@ -24,9 +24,7 @@ namespace BirdsiteLive.Twitter.Tests
         [TestInitialize]
         public async Task TestInit()
         {
-            var logger1 = new Mock<ILogger<TwitterAuthenticationInitializer>>(MockBehavior.Strict);
-            var logger2 = new Mock<ILogger<TwitterUserService>>(MockBehavior.Strict);
-            var logger3 = new Mock<ILogger<TwitterTweetsService>>();
+            var logger = new Mock<ILogger<TwitterService>>();
             var twitterDal = new Mock<ITwitterUserDal>();
             var settingsDal = new Mock<ISettingsDal>();
             settingsDal.Setup(_ => _.Get("nitter"))
@@ -48,10 +46,10 @@ namespace BirdsiteLive.Twitter.Tests
                 .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = default });
             _twitterUserDalMoq = twitterDal.Object;
 
-            _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger1.Object);
-            ITwitterUserService user = new TwitterUserService(_tweetAuth, _twitterUserDalMoq, settings, settingsDal.Object, httpFactory.Object, logger2.Object);
+            _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
+            ITwitterUserService user = new TwitterUserService(_tweetAuth, _twitterUserDalMoq, settings, settingsDal.Object, httpFactory.Object, logger.Object);
             _twitterUserService = new CachedTwitterUserService(user, twitterDal.Object, settings);
-            _tweetService = new TwitterTweetsService(_tweetAuth, _twitterUserService, twitterDal.Object, settings, httpFactory.Object, settingsDal.Object, logger3.Object);
+            _tweetService = new TwitterTweetsService(_tweetAuth, _twitterUserService, twitterDal.Object, settings, httpFactory.Object, settingsDal.Object, logger.Object);
 
         }
 
@@ -90,11 +88,6 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsTrue(tweets.Length > 10);
             Assert.IsTrue(tweets.Length < 20);
 
-            
-            Assert.IsTrue(_twitterUserService.UserIsCached("kobebryant"));
-            bool aRetweetedAccountIsCached = _twitterUserService.UserIsCached("djvlad");
-            Assert.IsTrue(aRetweetedAccountIsCached);
-            
         }
 
         [Ignore]

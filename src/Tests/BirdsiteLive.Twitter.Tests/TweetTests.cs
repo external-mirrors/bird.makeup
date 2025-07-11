@@ -35,9 +35,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (_tweetService != null)
                 return;
 
-            var logger1 = new Mock<ILogger<TwitterAuthenticationInitializer>>(MockBehavior.Strict);
-            var logger2 = new Mock<ILogger<TwitterUserService>>(MockBehavior.Strict);
-            var logger3 = new Mock<ILogger<TwitterTweetsService>>();
+            var logger = new Mock<ILogger<TwitterService>>();
             var twitterDal = new Mock<ITwitterUserDal>();
             var settingsDal = new Mock<ISettingsDal>();
             var httpFactory = new Mock<IHttpClientFactory>();
@@ -48,12 +46,12 @@ namespace BirdsiteLive.Twitter.Tests
                 Domain = "domain.name"
             };
             _tweetAuth =
-                new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger1.Object);
+                new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
             ITwitterUserService user = new TwitterUserService(_tweetAuth, twitterDal.Object, settings,
-                settingsDal.Object, httpFactory.Object, logger2.Object);
+                settingsDal.Object, httpFactory.Object, logger.Object);
             ICachedTwitterUserService user2 = new CachedTwitterUserService(user, twitterDal.Object, settings);
             _tweetService = new TwitterTweetsService(_tweetAuth, user2, twitterDal.Object, settings, httpFactory.Object,
-                settingsDal.Object, logger3.Object);
+                settingsDal.Object, logger.Object);
 
         }
 

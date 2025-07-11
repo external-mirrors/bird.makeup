@@ -21,9 +21,7 @@ namespace BirdsiteLive.Twitter.Tests
         [TestInitialize]
         public async Task TestInit()
         {
-            var logger1 = new Mock<ILogger<TwitterAuthenticationInitializer>>(MockBehavior.Strict);
-            var logger2 = new Mock<ILogger<TwitterUserService>>(MockBehavior.Strict);
-            var logger3 = new Mock<ILogger<TwitterUserService>>();
+            var logger = new Mock<ILogger<TwitterService>>();
             var httpFactory = new Mock<IHttpClientFactory>();
             var twitterDal = new Mock<ITwitterUserDal>();
             twitterDal.Setup(_ => _.GetUserAsync("kobebryant"))
@@ -39,8 +37,8 @@ namespace BirdsiteLive.Twitter.Tests
                 .ReturnsAsync(JsonDocument.Parse("""{"accounts": [["xxx", "xxx"]]}""").RootElement);
             httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
             httpFactory.Setup(_ => _.CreateClient("WithProxy")).Returns(new HttpClient());
-            ITwitterAuthenticationInitializer auth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger1.Object);
-            _tweetService = new TwitterUserService(auth, twitterDal.Object, settings, settingsDal.Object, httpFactory.Object, logger2.Object);
+            ITwitterAuthenticationInitializer auth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
+            _tweetService = new TwitterUserService(auth, twitterDal.Object, settings, settingsDal.Object, httpFactory.Object, logger.Object);
         }
 
         [TestMethod]

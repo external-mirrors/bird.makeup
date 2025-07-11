@@ -31,8 +31,6 @@ namespace BirdsiteLive.Twitter
         Task<ExtractedTweet> ExpandShortLinks(ExtractedTweet tweet);
     }
     
-    public enum StrategyHints { Syndication, Graphql2024 }
-
     public class TwitterTweetsService : ITwitterTweetsService
     {
         static Meter _meter = new("DotMakeup", "1.0.0");
@@ -42,7 +40,7 @@ namespace BirdsiteLive.Twitter
         private readonly ITwitterAuthenticationInitializer _twitterAuthenticationInitializer;
         private readonly ICachedTwitterUserService _twitterUserService;
         private readonly ITwitterUserDal _twitterUserDal;
-        private readonly ILogger<TwitterTweetsService> _logger;
+        private readonly ILogger<TwitterService> _logger;
         private readonly InstanceSettings _instanceSettings;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IBrowsingContext _context;
@@ -57,7 +55,7 @@ namespace BirdsiteLive.Twitter
         private readonly Graphql2024 _tweetFromGraphql2024;
 
         #region Ctor
-        public TwitterTweetsService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ICachedTwitterUserService twitterUserService, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory, ISettingsDal settings, ILogger<TwitterTweetsService> logger)
+        public TwitterTweetsService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ICachedTwitterUserService twitterUserService, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory, ISettingsDal settings, ILogger<TwitterService> logger)
         {
             _twitterAuthenticationInitializer = twitterAuthenticationInitializer;
             _twitterUserService = twitterUserService;
@@ -212,115 +210,7 @@ namespace BirdsiteLive.Twitter
             );
             return extractedTweets.ToArray();
         }
-
-        private async Task<ExtractedTweet> TweetFromSidecar(long tweetid)
-        {
-            try
-            {
-                using var client = _httpClientFactory.CreateClient();
-                using var request = new HttpRequestMessage(HttpMethod.Get,
-                    $"http://localhost:5000/twitter/gettweet/{tweetid}");
-                
-                var httpResponse = await client.SendAsync(request);
-
-                
-                var c = await httpResponse.Content.ReadAsStringAsync();
-                var tweet = JsonSerializer.Deserialize<ExtractedTweet>(c, _serializerOptions);
-
-                tweet = await ExpandShortLinks(tweet);
-                tweet = CleanupText(tweet);
-                
-                return tweet;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return null;
-            }
-        }
         
-        private async Task<List<ExtractedTweet>> TweetsFromSidecar(SyncUser user, long fromId, bool withReplies)
-        {
-            try
-            {
-                var tweets = new List<ExtractedTweet>();
-                string username = String.Empty;
-                string password = String.Empty;
-
-                var candidates = await _twitterUserDal.GetTwitterCrawlUsersAsync(_instanceSettings.MachineName);
-                Random.Shared.Shuffle(candidates);
-                foreach (var account in candidates)
-                {
-                    username = account.Acct;
-                    password = account.Password;
-                }
-
-
-                using var client = _httpClientFactory.CreateClient();
-                string endpoint;
-                if (withReplies)
-                    endpoint = "postbyuserwithreplies";
-                else
-                    endpoint = "postbyuser";
-                using var request = new HttpRequestMessage(HttpMethod.Get,
-                    $"http://localhost:5000/twitter/{endpoint}/{user.TwitterUserId}");
-                request.Headers.TryAddWithoutValidation("dotmakeup-user", username);
-                request.Headers.TryAddWithoutValidation("dotmakeup-password", password);
-                
-                var httpResponse = await client.SendAsync(request);
-
-                if (httpResponse.StatusCode != HttpStatusCode.OK)
-                {
-                    _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
-                        new KeyValuePair<string, object>("result", "5xx"),
-                        new KeyValuePair<string, object>("endpoint", endpoint)
-                    );
-                    return new List<ExtractedTweet>();
-                }
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
-                    new KeyValuePair<string, object>("result", "2xx"),
-                    new KeyValuePair<string, object>("endpoint", endpoint)
-                );
-                
-                var c = await httpResponse.Content.ReadAsStringAsync();
-                var tweetsDocument = JsonDocument.Parse(c);
-                
-                foreach (JsonElement title in tweetsDocument.RootElement.EnumerateArray())
-                {
-                    if (title.GetInt64() <= fromId)
-                        continue;
-
-                    try
-                    {
-                        //var tweet = await TweetFromSyndication(match);
-                        var tweet = await GetTweetAsync(title.GetInt64());
-                        if (tweet.Author.Acct != user.Acct)
-                        {
-                            tweet.IsRetweet = true;
-                            tweet.OriginalAuthor = tweet.Author;
-                            tweet.Author = await _twitterUserService.GetUserAsync(user.Acct);
-                            tweet.RetweetId = tweet.IdLong;
-                            // Sadly not given by Nitter UI
-                            var gen = new TwitterSnowflakeGenerator(1, 1);
-                            tweet.Id = gen.NextId().ToString();
-                        }
-                        tweets.Add(tweet);
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError($"error fetching tweet {title.GetInt64()} from user {user.Acct}");
-                    }
-                    await Task.Delay(100);
-                }
-                
-                return tweets;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return new List<ExtractedTweet>();
-            }
-        }
         private async Task<List<ExtractedTweet>> TweetsFromSidecar2(SyncUser user, long fromId, bool withReplies)
         {
             try

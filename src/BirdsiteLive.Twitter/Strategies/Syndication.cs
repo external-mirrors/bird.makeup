@@ -17,9 +17,9 @@ public class Syndication : ITweetExtractor
 {
     private readonly ITwitterTweetsService _tweetsService;
     private readonly InstanceSettings _instanceSettings;
-    private readonly ILogger<TwitterTweetsService> _logger;
+    private readonly ILogger<TwitterService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-    public Syndication(ITwitterTweetsService tweetsService, IHttpClientFactory httpClientFactory, InstanceSettings instanceSettings, ILogger<TwitterTweetsService> logger)
+    public Syndication(ITwitterTweetsService tweetsService, IHttpClientFactory httpClientFactory, InstanceSettings instanceSettings, ILogger<TwitterService> logger)
     {
         _tweetsService = tweetsService;
         _httpClientFactory = httpClientFactory;

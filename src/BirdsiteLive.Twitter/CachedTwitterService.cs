@@ -84,12 +84,6 @@ namespace BirdsiteLive.Twitter
             return _twitterService.UpdateUserCache(user);
         }
 
-        public TwitterUser Extract(JsonElement result)
-        {
-            var extract = _twitterService.Extract(result);
-            _userCache.Set(extract.Acct, extract, _cacheEntryOptions);
-            return extract;
-        }
         public void PurgeUser(string username)
         {
             _userCache.Remove(username);

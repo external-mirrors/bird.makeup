@@ -26,7 +26,7 @@ namespace BirdsiteLive.Twitter.Tools
 
     public class TwitterAuthenticationInitializer : ITwitterAuthenticationInitializer
     {
-        private readonly ILogger<TwitterAuthenticationInitializer> _logger;
+        private readonly ILogger<TwitterService> _logger;
         private static bool _initialized;
         private readonly IHttpClientFactory _httpClientFactory;
         private ConcurrentDictionary<String, String> _token2 = new ConcurrentDictionary<string, string>();
@@ -58,7 +58,7 @@ namespace BirdsiteLive.Twitter.Tools
         #region Ctor
 
         public TwitterAuthenticationInitializer(IHttpClientFactory httpClientFactory, InstanceSettings settings, ISettingsDal settingsDal,
-            ILogger<TwitterAuthenticationInitializer> logger)
+            ILogger<TwitterService> logger)
         {
             _logger = logger;
             _instanceSettings = settings;
