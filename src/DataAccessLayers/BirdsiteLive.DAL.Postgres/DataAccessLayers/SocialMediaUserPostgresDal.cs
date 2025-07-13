@@ -102,6 +102,34 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
 
         }
 
+        public async Task<T> GetPostCacheAsync<T>(string id) where T : class, SocialMediaPost
+        {
+            var postDoc = await GetPostCacheAsync(id);
+            if (postDoc is null)
+                return null;
+            var post = JsonSerializer.Deserialize<T>(postDoc);
+            return post;
+        }
+        public async Task<string> GetPostCacheAsync(string post)
+        {
+            var query = $"SELECT data FROM {PostCacheTableName} WHERE id = $1";
+
+            await using var connection = DataSource.CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand(query, connection) {
+                Parameters =
+                {
+                    new() { Value = post },
+                },
+            };
+            var reader = await command.ExecuteReaderAsync();
+            if (!reader.HasRows)
+                return null;
+            await reader.ReadAsync();
+            
+            var cache = reader["data"] as string;
+            return cache;
+        }
         public async Task<T> GetUserCacheAsync<T>(string username) where T : SocialMediaUser
         {
             var userDoc = await GetUserCacheAsync(username);
@@ -132,26 +160,6 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             return cache;
         }
 
-        public async Task<string> GetPostCacheAsync(string post)
-        {
-            var query = $"SELECT data FROM {PostCacheTableName} WHERE id = $1";
-
-            await using var connection = DataSource.CreateConnection();
-            await connection.OpenAsync();
-            await using var command = new NpgsqlCommand(query, connection) {
-                Parameters =
-                {
-                    new() { Value = post },
-                },
-            };
-            var reader = await command.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return null;
-            await reader.ReadAsync();
-            
-            var cache = reader["data"] as string;
-            return cache;
-        }
 
         public async Task DeletePostCacheAsync(string post)
         {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Exceptions;
@@ -87,6 +88,41 @@ namespace BirdsiteLive.Domain.Tests
             #endregion
         }
         [TestMethod]
+        public async Task TwitterUserFetch_FirstFails_Null()
+        {
+            #region Stubs
+            var username = "MyUserName";
+            TwitterUser user = new TwitterUser()
+            {
+                Id = 12,
+                Acct = username,
+            };
+            var counter = 0;
+            var fFailed =
+                () =>
+                {
+                    counter++;
+                    return Task.FromResult((TwitterUser)null);
+                };
+            var f =
+                () =>
+                {
+                    counter++; 
+                    return Task.FromResult(user);
+                };
+            #endregion
+
+            var service = new SocialNetworkCache(_settings);
+            
+            var u = await service.GetUser(username, [fFailed, f]);
+
+            #region Validations
+            Assert.AreEqual(u.Acct, username);
+            Assert.AreEqual(counter, 2);
+
+            #endregion
+        }
+        [TestMethod]
         public async Task TwitterUserFetch_FirstFails_NotFound()
         {
             #region Stubs
@@ -123,7 +159,7 @@ namespace BirdsiteLive.Domain.Tests
             #endregion
         }
         [TestMethod]
-        public async Task TwitterUserFetch_FirstFails()
+        public async Task TwitterUserFetch_FirstsFails()
         {
             #region Stubs
             var username = "MyUserName";
@@ -140,6 +176,13 @@ namespace BirdsiteLive.Domain.Tests
                     throw new RateLimitExceededException();
                     return Task.FromResult(user);
                 };
+            var fFailed2 =
+                () =>
+                {
+                    counter++;
+                    throw new HttpRequestException();
+                    return Task.FromResult(user);
+                };
             var f =
                 () =>
                 {
@@ -150,11 +193,11 @@ namespace BirdsiteLive.Domain.Tests
 
             var service = new SocialNetworkCache(_settings);
             
-            var u = await service.GetUser(username, [fFailed, f]);
+            var u = await service.GetUser(username, [fFailed, fFailed2, f]);
 
             #region Validations
             Assert.AreEqual(u.Acct, username);
-            Assert.AreEqual(counter, 2);
+            Assert.AreEqual(counter, 3);
 
             #endregion
         }

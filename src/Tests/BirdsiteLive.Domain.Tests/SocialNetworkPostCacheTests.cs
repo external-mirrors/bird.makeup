@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Exceptions;
@@ -108,6 +109,13 @@ namespace BirdsiteLive.Domain.Tests
                     throw new UserNotFoundException();
                     return Task.FromResult(user);
                 };
+            var fFailed2 =
+                () =>
+                {
+                    counter++;
+                    throw new HttpRequestException();
+                    return Task.FromResult(user);
+                };
             var f =
                 () =>
                 {
@@ -118,7 +126,7 @@ namespace BirdsiteLive.Domain.Tests
 
             var service = new SocialNetworkCache(_settings);
             
-            var u = await service.GetPost(id, [fFailed, f]);
+            var u = await service.GetPost(id, [fFailed, fFailed2, f]);
 
             #region Validations
             Assert.IsNull(u);

@@ -6,6 +6,7 @@ using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Common.Exceptions;
+using BirdsiteLive.Domain;
 using BirdsiteLive.Instagram.Models;
 using dotMakeup.ipfs;
 using dotMakeup.Instagram.Models;
@@ -23,26 +24,8 @@ public class InstagramService : ISocialMediaService
         private readonly ISettingsDal _settingsDal;
         private readonly IInstagramUserDal _instagramUserDal;
         private readonly IIpfsService _ipfs;
+        private readonly SocialNetworkCache _socialNetworkCache;
         
-        private readonly MemoryCache _userCache;
-        private readonly MemoryCache _postCache;
-        private readonly MemoryCacheEntryOptions _cacheEntryOptions = new MemoryCacheEntryOptions()
-            .SetSize(1)//Size amount
-            //Priority on removing when reaching size limit (memory pressure)
-            .SetPriority(CacheItemPriority.Low)
-            // Keep in cache for this time, reset time if accessed.
-            .SetSlidingExpiration(TimeSpan.FromHours(16))
-            // Remove from cache after this time, regardless of sliding expiration
-            .SetAbsoluteExpiration(TimeSpan.FromHours(24));
-
-        private readonly MemoryCacheEntryOptions _cacheEntryOptionsError = new MemoryCacheEntryOptions()
-            .SetSize(1)//Size amount
-            //Priority on removing when reaching size limit (memory pressure)
-            .SetPriority(CacheItemPriority.Low)
-            // Keep in cache for this time, reset time if accessed.
-            .SetSlidingExpiration(TimeSpan.FromHours(5))
-            // Remove from cache after this time, regardless of sliding expiration
-            .SetAbsoluteExpiration(TimeSpan.FromHours(30));
 
         private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
         {
@@ -59,14 +42,7 @@ public class InstagramService : ISocialMediaService
             _ipfs = ipfs;
             UserDal = userDal;
             
-            _userCache = new MemoryCache(new MemoryCacheOptions()
-            {
-                SizeLimit = settings.UserCacheCapacity
-            });
-            _postCache = new MemoryCache(new MemoryCacheOptions()
-            {
-                SizeLimit = settings.TweetCacheCapacity
-            });
+            _socialNetworkCache = new SocialNetworkCache(settings);
         }
         #endregion
 
@@ -86,7 +62,7 @@ public class InstagramService : ISocialMediaService
             await UserDal.UpdateUserLastSyncAsync(user);
             
             var newPosts = new List<SocialMediaPost>();
-            var v2 = await GetUserAsync(user.Acct, true);
+            var v2 = await RefreshUserAsync(user.Acct);
             _apiCalled.Add(1, new KeyValuePair<string, object?>("api", "instagram_sidecar_timeline"),
                 new KeyValuePair<string, object?>("result", v2 != null ? "2xx": "5xx")
             );
@@ -117,87 +93,61 @@ public class InstagramService : ISocialMediaService
 
         public async Task<SocialMediaUser?> GetUserAsync(string username)
         {
-            var user = await GetUserAsync(username, false);
+            JsonElement? alwaysRefresh = await _settingsDal.Get("ig_always_refresh");
+            if (alwaysRefresh is not null)
+                return await CallDirect(username);
+            
+            var sidecar = await GetWebSidecar();
+            var user = await _socialNetworkCache.GetUser(username, [
+                () => _instagramUserDal.GetUserCacheAsync<InstagramUser>(username),
+                () => CallSidecar(username, sidecar, new Random().Next(2) + 1),
+                () => CallDirect(username),
+            ]);
             return user;
         }
 
-        private async Task<InstagramUser?> GetUserAsync(string username, bool forceRefresh)
+        private async Task<InstagramUser?> RefreshUserAsync(string username)
         {
-            JsonElement? accounts = await _settingsDal.Get("ig_allow_list");
-            if (accounts is not null && !accounts.Value.EnumerateArray().Any(user => user.GetString() == username))
-                throw new UserNotFoundException();
-            
-            JsonElement? alwaysRefresh = await _settingsDal.Get("ig_always_refresh");
-            if (alwaysRefresh is not null)
-                forceRefresh = true;
-
             InstagramUser user;
             
-            if (forceRefresh)
-            {
-                user = await CallDirect(username);
+            user = await CallDirect(username);
                 
-                var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, true);
-                user.ProfileImageUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
+            var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, true);
+            user.ProfileImageUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
                 
-                await _instagramUserDal.UpdateUserCacheAsync(user);
-                _userCache.Set(username, user, _cacheEntryOptionsError);
-            }
-            else if (!_userCache.TryGetValue(username, out user))
-            {
-                if (user is null)
-                    user = await _instagramUserDal.GetUserCacheAsync<InstagramUser>(username);
-                if (user is null)
-                {
-                    try
-                    {
-                        user = await CallSidecar(username, await GetWebSidecar(), new Random().Next(2) + 1);
-                        await _instagramUserDal.UpdateUserCacheAsync(user);
-
-                    }
-                    catch (RateLimitExceededException)
-                    {
-                        _userCache.Set(username, user, _cacheEntryOptionsError);
-                    }
-                }
-            }
-
+            await _instagramUserDal.UpdateUserCacheAsync(user);
+            
             return user;
         }
 
         public async Task<SocialMediaPost?> GetPostAsync(string id)
         {
-            if (!_postCache.TryGetValue(id, out InstagramPost post))
-            {
-                var dbCache = await _instagramUserDal.GetPostCacheAsync(id);
-                if (dbCache is not null)
-                {
-                    var x = JsonSerializer.Deserialize<InstagramPost>(dbCache, _serializerOptions);
-                    _postCache.Set(id, x, _cacheEntryOptions);
-                    return x;
-                }
-                
-                
-                var client = _httpClientFactory.CreateClient();
-                string requestUrl;
-                requestUrl = (await GetWebSidecar()) + "/instagram/post/" + id;
-                var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-
-                var httpResponse = await client.SendAsync(request);
-
-                if (httpResponse.StatusCode != HttpStatusCode.OK)
-                {
-                    _postCache.Set(id, post, _cacheEntryOptionsError);
-                    return null;
-                }
-                var c = await httpResponse.Content.ReadAsStringAsync();
-                var postDoc = JsonDocument.Parse(c);
-                post = ParsePost(postDoc.RootElement);
-            }
-
-            
-            _postCache.Set(id, post, _cacheEntryOptions);
+            var post = await _socialNetworkCache.GetPost(id, [
+                () => _instagramUserDal.GetPostCacheAsync<InstagramPost>(id),
+                () => CallSidecarForPost(id),
+            ]);
             return post;
+        }
+
+        private async Task<InstagramPost?> CallSidecarForPost(string id)
+        {
+            var client = _httpClientFactory.CreateClient();
+            string requestUrl;
+            requestUrl = (await GetWebSidecar()) + "/instagram/post/" + id;
+            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+
+            var httpResponse = await client.SendAsync(request);
+
+            if (httpResponse.StatusCode != HttpStatusCode.OK)
+            {
+                return null;
+            }
+            var c = await httpResponse.Content.ReadAsStringAsync();
+            var postDoc = JsonDocument.Parse(c);
+            var post = ParsePost(postDoc.RootElement);
+
+            return post;
+
         }
 
         private async Task<InstagramUser> CallSidecar(string username, string sidecarURL, int methodChoice)
@@ -231,7 +181,6 @@ public class InstagramService : ISocialMediaService
             foreach (JsonElement postDoc in userDocument.RootElement.GetProperty("posts").EnumerateArray())
             {
                 var post = ParsePost(postDoc);
-                _postCache.Set(post.Id, post, _cacheEntryOptions);
                 if (post.IsPinned)
                     pinnedPost.Add(post.Id);
                 else
@@ -259,6 +208,8 @@ public class InstagramService : ISocialMediaService
                 throw new UserNotFoundException();
             }
 
+            await _instagramUserDal.UpdateUserCacheAsync(user);
+            
             return user;
         }
         private async Task<InstagramUser> CallDirect(string username)
@@ -389,6 +340,9 @@ public class InstagramService : ISocialMediaService
 
             userResult.RecentPosts = userPosts.Where(x => x.IsPinned == false);
             userResult.PinnedPosts = userPosts.Where(x => x.IsPinned == true).Select(x => x.Id).ToArray();
+            
+            if (user is not null)
+                await _instagramUserDal.UpdateUserCacheAsync(user);
             
             return userResult;
         }

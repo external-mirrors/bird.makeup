@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
@@ -74,6 +75,9 @@ public class SocialNetworkCache
             catch (RateLimitExceededException _)
             {
             }
+            catch (HttpRequestException _)
+            {
+            }
             catch (UserNotFoundException _)
             {
                 return null;
@@ -109,6 +113,9 @@ public class SocialNetworkCache
 
             }
             catch (RateLimitExceededException _)
+            {
+            }
+            catch (HttpRequestException _)
             {
             }
             catch (UserNotFoundException _)
