@@ -53,17 +53,17 @@ namespace BirdsiteLive.Twitter.Tests
                 .Setup(x => x.GetUserAsync(
                     It.Is<string>(y => y == "kobebryant")
                 ))
-                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 1059194370, ExtraData = JsonDocument.Parse("{}").RootElement});
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, Followers = 1059194370, ExtraData = JsonDocument.Parse("{\"TwitterUserIde\":1059194370}").RootElement});
             twitterDal
                 .Setup(x => x.GetUserAsync(
                     It.Is<string>(y => y == "grantimahara")
                 ))
-                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 28521141, ExtraData = JsonDocument.Parse("{}").RootElement});
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, Followers = 99999, ExtraData = JsonDocument.Parse("""{}""").RootElement});
             twitterDal
                 .Setup(x => x.GetUserAsync(
                     It.Is<string>(y => y == "mkbhd")
                 ))
-                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 29873662, ExtraData = JsonDocument.Parse("{}").RootElement});
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 29873662, ExtraData = JsonDocument.Parse("""{}""").RootElement});
             twitterDal
                 .Setup(x => x.GetUserAsync(
                     It.Is<string>(y => y == "askvenice")
@@ -73,7 +73,7 @@ namespace BirdsiteLive.Twitter.Tests
 
             _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
             ITwitterUserService user = new TwitterUserService(_tweetAuth, _twitterUserDalMoq, settings, settingsDal.Object, httpFactory.Object, logger.Object);
-            _tweetService = new TwitterTweetsService(_tweetAuth, _twitterUserService, twitterDal.Object, settings, httpFactory.Object, settingsDal.Object, logger.Object);
+            _tweetService = new TwitterTweetsService(_tweetAuth, user, twitterDal.Object, settings, httpFactory.Object, settingsDal.Object, logger.Object);
 
         }
 

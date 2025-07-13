@@ -180,7 +180,9 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
                 else
                     user.LastSync = DateTime.Now.AddMonths(-1).AddSeconds(i);
                 await dal.UpdateTwitterUserAsync(user);
-                await dal.UpdateTwitterUserIdAsync(acct, i+1);
+                //await dal.UpdateTwitterUserIdAsync(acct, i+1);
+                await dal.UpdateUserExtradataAsync(acct, "TwitterUserId", i+1);
+                
                 await dal.UpdateTwitterStatusesCountAsync(acct, i+3000);
                 await dal.UpdateUserExtradataAsync(user.Acct, "latest_post_date", DateTime.Now);
             }

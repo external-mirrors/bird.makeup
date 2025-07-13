@@ -120,7 +120,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 SET lastsync = NOW()
                 FROM following2
                 WHERE following2.id = {_settings.TwitterUserTableName}.id
-                RETURNING {_settings.TwitterUserTableName}.id, acct, twitterUserId, lastTweetPostedId, {_settings.TwitterUserTableName}.lastSync, fetchingErrorCount, statusescount, followers
+                RETURNING {_settings.TwitterUserTableName}.id, acct, twitterUserId, lastTweetPostedId, {_settings.TwitterUserTableName}.lastSync, fetchingErrorCount, statusescount, followers, extradata
                 ";
 
             await using var connection = DataSource.CreateConnection();
@@ -148,7 +148,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                         FetchingErrorCount = reader["fetchingErrorCount"] as int? ?? default,
                         Followers = reader["followers"] as long? ?? default,
                         StatusesCount = reader["statusescount"] as int? ?? -1,
-                        ExtraData = JsonDocument.Parse("{}").RootElement,
+                        ExtraData = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement,
                     }
                 );
 
