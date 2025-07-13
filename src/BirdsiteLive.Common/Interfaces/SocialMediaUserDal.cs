@@ -39,7 +39,21 @@ public interface SocialMediaUserDal
 public class SyncUser
 {
         public int Id { get; set; }
-        public long TwitterUserId { get; set; }
+        private long _twitterUserId { get; set; }
+        public long TwitterUserId {
+            get
+            {
+                JsonElement id;
+                if (ExtraData.TryGetProperty("TwitterUserId", out id))
+                    return id.GetInt64();
+
+                return _twitterUserId;
+            }
+            set
+            {
+                _twitterUserId = value;
+            }
+        }
         public string Acct { get; set; }
         public string FediAcct { get; set; }
 

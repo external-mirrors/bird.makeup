@@ -116,7 +116,7 @@ namespace BirdsiteLive.Twitter
             }
             else
             {
-                _logger.LogError(e, "Error updating user cache for {Username}", user.Acct);
+                _logger.LogError("Error updating user cache for {Username}", user.Acct);
             }
 
         }

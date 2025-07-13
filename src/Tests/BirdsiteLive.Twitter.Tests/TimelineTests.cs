@@ -53,22 +53,22 @@ namespace BirdsiteLive.Twitter.Tests
                 .Setup(x => x.GetUserAsync(
                     It.Is<string>(y => y == "kobebryant")
                 ))
-                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 1059194370 });
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 1059194370, ExtraData = JsonDocument.Parse("{}").RootElement});
             twitterDal
                 .Setup(x => x.GetUserAsync(
                     It.Is<string>(y => y == "grantimahara")
                 ))
-                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 28521141 });
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 28521141, ExtraData = JsonDocument.Parse("{}").RootElement});
             twitterDal
                 .Setup(x => x.GetUserAsync(
                     It.Is<string>(y => y == "mkbhd")
                 ))
-                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 29873662 });
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 29873662, ExtraData = JsonDocument.Parse("{}").RootElement});
             twitterDal
                 .Setup(x => x.GetUserAsync(
                     It.Is<string>(y => y == "askvenice")
                 ))
-                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 1764736490515685376 });
+                .ReturnsAsync((string username) => new SyncTwitterUser { Acct = username, TwitterUserId = 1764736490515685376, ExtraData = JsonDocument.Parse("{}").RootElement});
             _twitterUserDalMoq = twitterDal.Object;
 
             _tweetAuth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);
@@ -89,6 +89,27 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 Assert.Inconclusive();
             }
+        }
+        [TestMethod]
+        public async Task TimelineKobeVanilla()
+        {
+            var user = await _twitterUserDalMoq.GetUserAsync("kobebryant");
+            ExtractedTweet[] tweets;
+            try
+            {
+                tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser)user);
+            }
+            catch (Exception e)
+            {
+                Assert.Inconclusive();
+                return;
+            }
+            
+            if (tweets.Length == 0)
+                Assert.Inconclusive();
+           
+            Assert.AreEqual(tweets[0].MessageContent, "Continuing to move the game forward @KingJames. Much respect my brother 💪🏾 #33644");
+            Assert.IsTrue(tweets.Length > 10);
         }
         [TestMethod]
         [DynamicData(nameof(Implementations))]

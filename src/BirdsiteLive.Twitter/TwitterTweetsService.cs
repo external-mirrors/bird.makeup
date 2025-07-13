@@ -129,6 +129,7 @@ namespace BirdsiteLive.Twitter
                 var user2 = await _twitterUserService.GetUserAsync(username);
                 userId = user2.Id;
                 await _twitterUserDal.UpdateTwitterUserIdAsync(username, user2.Id);
+                await _twitterUserDal.UpdateUserExtradataAsync(username, "TwitterUserId", user2.Id);
                 user.TwitterUserId = userId;
             }
             else 

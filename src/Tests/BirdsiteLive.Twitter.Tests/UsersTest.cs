@@ -35,9 +35,11 @@ namespace BirdsiteLive.Twitter.Tests
             var httpFactory = new Mock<IHttpClientFactory>();
             var twitterDal = new Mock<ITwitterUserDal>();
             twitterDal.Setup(_ => _.GetUserAsync("kobebryant"))
-                .ReturnsAsync(new SyncTwitterUser() { Followers = 1, TwitterUserId = 1059194370 });
+                .ReturnsAsync(new SyncTwitterUser() { Followers = 1, TwitterUserId = 1059194370, ExtraData = JsonDocument.Parse("{}").RootElement });
             twitterDal.Setup(_ => _.GetUserAsync("grantimahara"))
-                .ReturnsAsync(new SyncTwitterUser() { Followers = 9999, TwitterUserId = 28521141 });
+                .ReturnsAsync(new SyncTwitterUser() { Followers = 9999, ExtraData = JsonDocument.Parse("""{"TwitterUserId": 28521141}""").RootElement });
+            twitterDal.Setup(_ => _.GetUserAsync("terriblemaps"))
+                .ReturnsAsync(new SyncTwitterUser() { Followers = 9999, TwitterUserId = 1663172653, ExtraData = JsonDocument.Parse("{}").RootElement});
             var settings = new InstanceSettings
             {
                 Domain = "domain.name"
@@ -55,7 +57,7 @@ namespace BirdsiteLive.Twitter.Tests
         [DynamicData(nameof(Implementations))]
         public async Task UserKobe(StrategyHints s)
         {
-            SocialMediaUser user;
+            TwitterUser user;
             try
             {
                 user = await _tweetService.GetUserAsync("kobebryant", s);
@@ -68,6 +70,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (user is null)
                 Assert.Inconclusive();
             Assert.AreEqual(user.Name, "Kobe Bryant");
+            Assert.AreEqual(user.Id, 1059194370);;
             Assert.AreEqual(user.Acct, "kobebryant");
             Assert.AreEqual(user.Location, null);
         }
@@ -103,6 +106,17 @@ namespace BirdsiteLive.Twitter.Tests
                 Assert.Inconclusive();
             if (user.Description != "Host of White Rabbit Project on Netflix, former MythBuster and special FX modelmaker.")
                 Assert.Inconclusive();
+        }
+        [Ignore]
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
+        public async Task UserFailed(StrategyHints s)
+        {
+            var username = "terriblemaps";
+            var user = await _tweetService.GetUserAsync(username, s);
+            if (user is null)
+                Assert.Inconclusive();
+            Assert.AreEqual(user.Acct, username);
         }
 
     }
