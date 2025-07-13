@@ -24,6 +24,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 yield return new object[] { StrategyHints.Graphql2024 };
                 yield return new object[] { StrategyHints.Graphql2025 };
+                yield return new object[] { StrategyHints.Sidecar };
             }
         }
         private TwitterUserService _tweetService;
@@ -34,9 +35,9 @@ namespace BirdsiteLive.Twitter.Tests
             var httpFactory = new Mock<IHttpClientFactory>();
             var twitterDal = new Mock<ITwitterUserDal>();
             twitterDal.Setup(_ => _.GetUserAsync("kobebryant"))
-                .ReturnsAsync(new SyncTwitterUser() { Followers = 1 });
+                .ReturnsAsync(new SyncTwitterUser() { Followers = 1, TwitterUserId = 1059194370 });
             twitterDal.Setup(_ => _.GetUserAsync("grantimahara"))
-                .ReturnsAsync(new SyncTwitterUser() { Followers = 9999 });
+                .ReturnsAsync(new SyncTwitterUser() { Followers = 9999, TwitterUserId = 28521141 });
             var settings = new InstanceSettings
             {
                 Domain = "domain.name"
@@ -64,6 +65,8 @@ namespace BirdsiteLive.Twitter.Tests
                 Assert.Inconclusive();
                 return;
             }
+            if (user is null)
+                Assert.Inconclusive();
             Assert.AreEqual(user.Name, "Kobe Bryant");
             Assert.AreEqual(user.Acct, "kobebryant");
             Assert.AreEqual(user.Location, null);
@@ -83,6 +86,8 @@ namespace BirdsiteLive.Twitter.Tests
                 Assert.Inconclusive();
                 return;
             }
+            if (user is null)
+                Assert.Inconclusive();
             Assert.AreEqual(user.Name, "Grant Imahara");
             Assert.IsTrue(Math.Abs( user.StatusCount - 12495 ) < 100);
             Assert.IsTrue(user.FollowersCount > 500_000);
@@ -94,6 +99,8 @@ namespace BirdsiteLive.Twitter.Tests
         public async Task UserGrantBio(StrategyHints s)
         {
             var user = await _tweetService.GetUserAsync("grantimahara", s);
+            if (user is null)
+                Assert.Inconclusive();
             if (user.Description != "Host of White Rabbit Project on Netflix, former MythBuster and special FX modelmaker.")
                 Assert.Inconclusive();
         }

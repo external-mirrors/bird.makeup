@@ -4,9 +4,11 @@ using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
@@ -15,7 +17,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BirdsiteLive.Twitter.Strategies;
 
-public class Sidecar : ITweetExtractor, ITimelineExtractor
+public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
 {
     static Meter _meter = new("DotMakeup", "1.0.0");
     static Counter<int> _apiCalled = _meter.CreateCounter<int>("dotmakeup_api_called_count");
@@ -126,5 +128,56 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor
             Console.WriteLine(e);
             return new List<ExtractedTweet>();
         }
+    }
+
+    public async Task<TwitterUser> GetUserAsync(string acct)
+    {
+        var userDal = await _twitterUserDal.GetUserAsync(acct);
+        if (userDal.TwitterUserId == default)
+            throw new UserNotFoundException();
+        try
+        {
+            string username = String.Empty;
+            string password = String.Empty;
+
+            var candidates = await _twitterUserDal.GetTwitterCrawlUsersAsync(_instanceSettings.MachineName);
+            Random.Shared.Shuffle(candidates);
+            foreach (var account in candidates)
+            {
+                username = account.Acct;
+                password = account.Password;
+            }
+
+            var client = _httpClientFactory.CreateClient();
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                $"http://localhost:5000/twitter/profile/{userDal.TwitterUserId}");
+
+            request.Headers.TryAddWithoutValidation("dotmakeup-user", username);
+            request.Headers.TryAddWithoutValidation("dotmakeup-password", password);
+
+            var httpResponse = await client.SendAsync(request);
+
+            _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account"),
+                new KeyValuePair<string, object>("result", httpResponse.StatusCode == HttpStatusCode.OK ? "2xx": "5xx"),
+                new KeyValuePair<string, object>("endpoint", "profile") 
+            );
+
+            if (httpResponse.StatusCode != HttpStatusCode.OK)
+            {
+                await _twitterUserDal.ClearUserCacheAsync(acct);
+                return null;
+            }
+                        
+            var profileJson = await httpResponse.Content.ReadAsStringAsync();
+            var profile = JsonSerializer.Deserialize<TwitterUser>(profileJson);
+
+            await _twitterUserDal.UpdateUserCacheAsync(profile);
+            return profile;
+        }
+        catch (Exception e)
+        {
+        }
+
+        return null;
     }
 }

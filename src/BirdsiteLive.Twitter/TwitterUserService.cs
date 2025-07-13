@@ -66,6 +66,9 @@ namespace BirdsiteLive.Twitter
             if (s == StrategyHints.Graphql2025)
                 return await _tweetFromGraphql2025.GetUserAsync(username);
             
+            if (s == StrategyHints.Sidecar)
+                return await _tweetFromSidecar.GetUserAsync(username);
+            
             return null;
         }
         public async Task<TwitterUser> GetUserAsync(string username)
@@ -97,52 +100,25 @@ namespace BirdsiteLive.Twitter
 
         async public Task UpdateUserCache(SyncUser user)
         {
-            if (user.TwitterUserId == default)
-                return;
-
+            TwitterUser updatedUser = null;
             try
             {
-                string username = String.Empty;
-                string password = String.Empty;
-
-                var candidates = await _twitterUserDal.GetTwitterCrawlUsersAsync(_instanceSettings.MachineName);
-                Random.Shared.Shuffle(candidates);
-                foreach (var account in candidates)
-                {
-                    username = account.Acct;
-                    password = account.Password;
-                }
-
-                var client = _httpClientFactory.CreateClient();
-                var request = new HttpRequestMessage(HttpMethod.Get,
-                    $"http://localhost:5000/twitter/profile/{user.TwitterUserId}");
-
-                request.Headers.TryAddWithoutValidation("dotmakeup-user", username);
-                request.Headers.TryAddWithoutValidation("dotmakeup-password", password);
-
-                var httpResponse = await client.SendAsync(request);
-
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account"),
-                    new KeyValuePair<string, object>("result", httpResponse.StatusCode == HttpStatusCode.OK ? "2xx": "5xx"),
-                    new KeyValuePair<string, object>("endpoint", "profile") 
-                );
-
-                if (httpResponse.StatusCode != HttpStatusCode.OK)
-                {
-                    await _twitterUserDal.ClearUserCacheAsync(user.Acct);
-                    return;
-                }
-                        
-                var profileJson = await httpResponse.Content.ReadAsStringAsync();
-                var profile = JsonSerializer.Deserialize<TwitterUser>(profileJson);
-
-                await _twitterUserDal.UpdateUserCacheAsync(profile);
+                updatedUser = await _tweetFromSidecar.GetUserAsync(user.Acct);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Error updating user cache for {Username}", user.Acct);
             }
-            
+
+            if (updatedUser is not null)
+            {
+                await _twitterUserDal.UpdateUserCacheAsync(updatedUser);
+            }
+            else
+            {
+                _logger.LogError(e, "Error updating user cache for {Username}", user.Acct);
+            }
+
         }
 
         public bool IsUserApiRateLimited()
