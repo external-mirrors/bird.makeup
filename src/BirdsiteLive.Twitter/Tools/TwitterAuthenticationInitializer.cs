@@ -32,7 +32,7 @@ namespace BirdsiteLive.Twitter.Tools
         private ConcurrentDictionary<String, String> _token2 = new ConcurrentDictionary<string, string>();
         static Random rnd = new Random();
         private RateLimiter _rateLimiter;
-        private const int _targetClients = 3;
+        private const int _targetClients = 10;
         private InstanceSettings _instanceSettings;
         private ISettingsDal _settingsDal;
         private WebProxy _proxy;

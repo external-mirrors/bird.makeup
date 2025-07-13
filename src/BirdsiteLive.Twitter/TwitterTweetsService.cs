@@ -157,7 +157,6 @@ namespace BirdsiteLive.Twitter
                 twitterFollowersThreshold = nitterSettings.Value.GetProperty("twitterFollowersThreshold").GetInt32();
                 postNitterDelay = nitterSettings.Value.GetProperty("postnitterdelay").GetInt32();
             }
-            var twitterUser = await _twitterUserService.GetUserAsync(username);
             if (user.StatusesCount == -1)
             {
                 extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId, false);
@@ -169,28 +168,32 @@ namespace BirdsiteLive.Twitter
                 source = "Sidecar (with replies)";
                 await Task.Delay(postNitterDelay);
             }
-            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold3)
-            {
-                extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, true);
-                source = "Sidecar (with replies)";
-                await Task.Delay(postNitterDelay);
-            }
-            else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold2)
-            {
-                extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, false);
-                source = "Sidecar (without replies)";
-                await Task.Delay(postNitterDelay);
-            }
             else
             {
-                extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId, false);
-                source = "Vanilla";
+                var twitterUser = await _twitterUserService.GetUserAsync(username);
+                if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold3)
+                {
+                    extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, true);
+                    source = "Sidecar (with replies)";
+                    await Task.Delay(postNitterDelay);
+                }
+                else if (user.StatusesCount != twitterUser.StatusCount && user.Followers > followersThreshold2)
+                {
+                    extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, false);
+                    source = "Sidecar (without replies)";
+                    await Task.Delay(postNitterDelay);
+                }
+                else
+                {
+                    extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId, false);
+                    source = "Vanilla";
+                }
+                await _twitterUserDal.UpdateTwitterStatusesCountAsync(username, twitterUser.StatusCount);
+                await _twitterUserDal.UpdateUserExtradataAsync(username, "statusesCount", twitterUser.StatusCount);
             }
             
             extractedTweets = extractedTweets.OrderByDescending(x => x.Id).Where(x => x.IdLong > fromTweetId).ToList();
 
-            await _twitterUserDal.UpdateTwitterStatusesCountAsync(username, twitterUser.StatusCount);
-            await _twitterUserDal.UpdateUserExtradataAsync(username, "statusesCount", twitterUser.StatusCount);
             _newTweets.Add(extractedTweets.Count,
                 new KeyValuePair<string, object>("source", source)
             );
