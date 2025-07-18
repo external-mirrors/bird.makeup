@@ -47,7 +47,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
         
         public async Task<decimal> GetCrawlingSpeed()
         {
-            var query = $"SELECT COUNT(*) / EXTRACT(hours from NOW() - MIN(lastsync)) as speed FROM {tableName} WHERE lastsync > NOW() - INTERVAL '12 hours'";
+            var query = $"SELECT COUNT(*) / (EXTRACT(hours from NOW() - MIN(lastsync)) + 1) as speed FROM {tableName} WHERE lastsync > NOW() - INTERVAL '12 hours'";
 
             await using var connection = DataSource.CreateConnection();
             await connection.OpenAsync();

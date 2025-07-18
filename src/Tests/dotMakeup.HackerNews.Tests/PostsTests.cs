@@ -1,4 +1,7 @@
+using System.Text.Json;
+using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
+using BirdsiteLive.DAL.Contracts;
 using Moq;
 
 namespace dotMakeup.HackerNews.Tests;
@@ -7,6 +10,22 @@ namespace dotMakeup.HackerNews.Tests;
 public class PostsTests
 {
     private InstanceSettings _settings = new InstanceSettings();
+    
+    [TestMethod]
+    public async Task Frontpage()
+    {
+        var httpFactory = new Mock<IHttpClientFactory>();
+        httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+        var userDal = new Mock<IHackerNewsUserDal>();
+        var userService = new HnService(httpFactory.Object, userDal.Object, _settings);
+        var posts = await userService.GetNewPosts( new SyncUser() { Acct = "frontpage", ExtraData = JsonDocument.Parse("{}").RootElement});
+        
+        Assert.AreEqual(posts.Length, 10);
+        foreach (var p in posts)
+        {
+            Assert.IsNotNull(p.Author);
+        }
+    }
     [TestMethod]
     public async Task Story1()
     {
@@ -76,7 +95,6 @@ public class PostsTests
         Assert.AreEqual(post.Id, "2921983");
         Assert.AreEqual(post.MessageContent, "Aw shucks, guys ... you make me blush with your compliments.<p>Tell you what, Ill make a deal: I'll keep writing if you keep reading. K?");
     }
-    [Ignore]
     [TestMethod]
     public async Task Poll1()
     {

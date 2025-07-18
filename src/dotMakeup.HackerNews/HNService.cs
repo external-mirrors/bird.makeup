@@ -5,6 +5,7 @@ using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
+using BirdsiteLive.Domain;
 using dotMakeup.HackerNews.Models;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -14,16 +15,7 @@ namespace dotMakeup.HackerNews;
 public class HnService : ISocialMediaService
 {
     private IHttpClientFactory _httpClientFactory;
-    private readonly MemoryCache _userCache;
-    private readonly MemoryCache _postCache;
-    private readonly MemoryCacheEntryOptions _cacheEntryOptions = new MemoryCacheEntryOptions()
-        .SetSize(1)//Size amount
-        //Priority on removing when reaching size limit (memory pressure)
-        .SetPriority(CacheItemPriority.Low)
-        // Keep in cache for this time, reset time if accessed.
-        .SetSlidingExpiration(TimeSpan.FromHours(16))
-        // Remove from cache after this time, regardless of sliding expiration
-        .SetAbsoluteExpiration(TimeSpan.FromHours(24));
+    private readonly SocialNetworkCache _socialNetworkCache;
 
     private readonly HNUser _frontpage = new HNUser()
     {
@@ -37,14 +29,7 @@ public class HnService : ISocialMediaService
             _httpClientFactory = httpClientFactory;
             UserDal = hackerNewsUsersDal;
             
-            _userCache = new MemoryCache(new MemoryCacheOptions()
-            {
-                SizeLimit = settings.UserCacheCapacity
-            });
-            _postCache = new MemoryCache(new MemoryCacheOptions()
-            {
-                SizeLimit = settings.TweetCacheCapacity
-            });
+            _socialNetworkCache = new SocialNetworkCache(settings);
     }
 
     public string ServiceName { get; } = "Hacker News";
@@ -63,12 +48,9 @@ public class HnService : ISocialMediaService
         
         HNUser user;
 
-        if (!_userCache.TryGetValue(username, out user))
-        {
-            user = await _getUserAsync(username);
-            _userCache.Set(username, user, _cacheEntryOptions);
-        }
-        
+        user = await _socialNetworkCache.GetUser(username, [
+            () => _getUserAsync(username),
+        ]);
         return user;
     }
     private async Task<HNUser> _getUserAsync(string username)
@@ -117,11 +99,7 @@ public class HnService : ISocialMediaService
     {
         HNPost post;
 
-        if (!_postCache.TryGetValue(id, out post))
-        {
-            post = await _getPostAsync(id);
-            _userCache.Set(id, post, _cacheEntryOptions);
-        }
+        post = await _socialNetworkCache.GetPost(id, [() => _getPostAsync(id)]);
         
         return post;
         

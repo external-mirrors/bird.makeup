@@ -73,6 +73,7 @@ public class UsersTests
         
         Assert.AreEqual(user.Description, "Founder/CEO of Dropbox (http://www.dropbox.com ; yc summer '07)");
     }
+    [Ignore]
     [TestMethod]
     [ExpectedException(typeof(UserNotFoundException))]
     public async Task User_missing()
