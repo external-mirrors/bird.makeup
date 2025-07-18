@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics.Metrics;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
 using BirdsiteLive.Common.Exceptions;
@@ -14,6 +15,8 @@ namespace dotMakeup.HackerNews;
 // https://github.com/HackerNews/API
 public class HnService : ISocialMediaService
 {
+    static Meter _meter = new("DotMakeup", "1.0.0");
+    static Counter<int> _frontpagePosts = _meter.CreateCounter<int>("dotmakeup_hn_frontpage_posts");
     private IHttpClientFactory _httpClientFactory;
     private readonly SocialNetworkCache _socialNetworkCache;
 
@@ -261,6 +264,8 @@ public class HnService : ISocialMediaService
             if (posts.Count >= 10)
                 break;
         }
+        
+        _frontpagePosts.Add(posts.Count);
         
         return posts.ToArray();
     }
