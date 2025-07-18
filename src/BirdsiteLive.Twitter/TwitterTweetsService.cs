@@ -228,7 +228,7 @@ namespace BirdsiteLive.Twitter
                 input.MessageContent = input.MessageContent.Remove(0, 1);
             
             // Regular expression to match media links
-            string pattern = @" https?://x\.com/[a-zA-Z0-9]+/status/[0-9]+/(video|photo)/[0-9]+";
+            string pattern = @"https?://x\.com/[a-zA-Z0-9_]+/status/[0-9]+/(video|photo)/[0-9]+";
             Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
             
             MatchCollection matches = regex.Matches(input.MessageContent);

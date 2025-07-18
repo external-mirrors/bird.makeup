@@ -32,7 +32,7 @@ namespace BirdsiteLive.Twitter.Tools
         private ConcurrentDictionary<String, String> _token2 = new ConcurrentDictionary<string, string>();
         static Random rnd = new Random();
         private RateLimiter _rateLimiter;
-        private const int _targetClients = 10;
+        private const int TargetClients = 15;
         private InstanceSettings _instanceSettings;
         private ISettingsDal _settingsDal;
         private WebProxy _proxy;
@@ -147,7 +147,7 @@ namespace BirdsiteLive.Twitter.Tools
 
         public async Task<HttpClient> MakeHttpClient()
         {
-            if (_token2.Count < _targetClients)
+            if (_token2.Count < TargetClients)
                 await RefreshCred();
             return _httpClientFactory.CreateClient();
         }
