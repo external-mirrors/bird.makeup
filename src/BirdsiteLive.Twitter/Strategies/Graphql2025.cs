@@ -41,7 +41,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         using var request = _twitterAuthenticationInitializer.MakeHttpRequest(new HttpMethod("GET"), endpoint.Replace("askvenice", username), true);
 
         var httpResponse = await client.SendAsync(request);
-        if (httpResponse.StatusCode == HttpStatusCode.Unauthorized)
+        if (httpResponse.StatusCode == HttpStatusCode.Unauthorized || httpResponse.StatusCode == HttpStatusCode.Forbidden)
         {
             _logger.LogError("Error retrieving user {Username}, Refreshing client", username);
             await _twitterAuthenticationInitializer.RefreshClient(request);
