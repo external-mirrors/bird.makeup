@@ -53,6 +53,7 @@ namespace BirdsiteLive
                     ))
                 .WithMetrics(config => config.AddMeter("DotMakeup"))
                 .WithMetrics(config => config.AddMeter("Microsoft.AspNetCore.Hosting"))
+                .WithLogging()
                 .UseGrafana(config =>
                 {
                     config.Instrumentations.Remove(Instrumentation.Process);

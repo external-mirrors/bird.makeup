@@ -5,6 +5,7 @@ using BirdsiteLive.ActivityPub;
 using BirdsiteLive.Common.Interfaces;
 using System.Diagnostics.Metrics;
 using BirdsiteLive.ActivityPub.Models;
+using Microsoft.Extensions.Logging;
 
 namespace BirdsiteLive.Domain.Statistics
 {

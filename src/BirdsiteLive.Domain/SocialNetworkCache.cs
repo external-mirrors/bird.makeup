@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.Metrics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Exceptions;
@@ -10,6 +11,9 @@ namespace BirdsiteLive.Domain;
 
 public class SocialNetworkCache
 {
+    static Meter _meter = new("DotMakeup", "1.0.0");
+    private ObservableGauge<long> _userCount; 
+    
     private readonly InstanceSettings _instanceSettings;
     private readonly MemoryCache _userCache;
     private readonly MemoryCache _postCache;
@@ -43,6 +47,7 @@ public class SocialNetworkCache
             SizeLimit = instanceSettings.TweetCacheCapacity,
             TrackStatistics = true
         });
+        _userCount = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _getUserCount(), "Number of entry in user cache" );
     }
 
     public void BackfillUserCache<T>(T user) where T : SocialMediaUser
@@ -124,5 +129,13 @@ public class SocialNetworkCache
             }
         }
         return null;
+    }
+    
+    private long _getUserCount()
+    {
+        var cache = _userCache.GetCurrentStatistics();
+        if (cache is null)
+            return 0;
+        return cache.CurrentEntryCount;
     }
 }
