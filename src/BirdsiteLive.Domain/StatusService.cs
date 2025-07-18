@@ -71,18 +71,17 @@ namespace BirdsiteLive.Domain
                 //var quoteUrl = $"https://{_instanceSettings.Domain}/@{post.QuotedAccount}/{post.QuotedStatusId}";
                 var quoteId =
                     $"https://{_instanceSettings.Domain}/users/{post.QuotedAccount}/statuses/{post.QuotedStatusId}";
-                //content += "\n" + quoteUrl;
-                //tags.Add(new Tag()
-                //{
-                //    href = quoteId,
-                //    name = quoteUrl,
-                //    type = "Link",
-                //    rel = "https://misskey-hub.net/ns#_misskey_quote",
-                //    mediaType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-                //});
+                content += "<span class=\"quote-inline\"><br/><a href=\"" + quoteId + "\">" + quoteId + "</a></span>";
+                tags.Add(new Tag()
+                {
+                    href = quoteId,
+                    name = quoteId,
+                    type = "Link",
+                    rel = "https://misskey-hub.net/ns#_misskey_quote",
+                    mediaType = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+                });
                 note.quoteAuthorization = UrlFactory.GetStampUrl(_instanceSettings.Domain, post.QuotedAccount, post.QuotedStatusId, noteUrl);
                 note.quote = quoteId;
-                note.quoteUri = quoteId;
                 note.quoteUrl = quoteId;
             }
             

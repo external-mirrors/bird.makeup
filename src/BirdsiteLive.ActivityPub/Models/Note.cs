@@ -9,8 +9,6 @@ namespace BirdsiteLive.ActivityPub.Models
         private static Dictionary<string, object> extraContext = new Dictionary<string, object>()
         {
             ["quoteUrl"] = "as:quoteUrl",
-            ["quoteUri"] = "http://fedibird.com/ns#quoteUri",
-            ["_misskey_quote"] = "https://misskey-hub.net/ns/#_misskey_quote",
             ["toot"] = "http://joinmastodon.org/ns#",
             ["quote"] = new Dictionary<string, object>()
                 { ["@id"] = "https://w3id.org/fep/044f#quote", ["@type"] = "@id" },
@@ -29,8 +27,6 @@ namespace BirdsiteLive.ActivityPub.Models
         public string url { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string quoteUrl { get; set; }
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string quoteUri { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string quote { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
