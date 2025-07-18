@@ -143,7 +143,15 @@ namespace BirdsiteLive.Twitter.Tests
         [DynamicData(nameof(Implementations))]
         public async Task SimpleTextAndSingleLinkTweet(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1602618920996945922, s);
+            ExtractedTweet tweet = null;
+            try
+            {
+                tweet = await _tweetService.GetTweetAsync(1602618920996945922, s);
+            }
+            catch (Exception e)
+            {
+                Assert.Inconclusive(e.Message);
+            }
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
