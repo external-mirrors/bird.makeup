@@ -9,6 +9,7 @@ namespace BirdsiteLive.ActivityPub.Models
         public Note()
         {
             context  = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
+            type = "Note";
         }
         private static Dictionary<string, object> extraContext = new Dictionary<string, object>()
         {

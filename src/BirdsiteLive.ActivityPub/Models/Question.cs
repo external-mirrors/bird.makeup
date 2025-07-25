@@ -10,13 +10,13 @@ namespace BirdsiteLive.ActivityPub.Models
         public Question()
         {
            context = new object[] { "https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1", featuredContext};
+           type = "Question";
         }
         private static Dictionary<string, object> featuredContext = new Dictionary<string, object>()
         {
             ["toot"] = "http://joinmastodon.org/ns#",
             ["votersCount"] = "toot:votersCount",
         };
-        public new string type { get; } = "Question";
         public long votersCount { get; set; }
         public string endTime { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
