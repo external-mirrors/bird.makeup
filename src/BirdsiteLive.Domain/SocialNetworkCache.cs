@@ -13,6 +13,11 @@ public class SocialNetworkCache
 {
     static Meter _meter = new("DotMakeup", "1.0.0");
     private ObservableGauge<long> _userCount; 
+    private ObservableGauge<long> _userCacheHit; 
+    private ObservableGauge<long> _userCacheMiss; 
+    private ObservableGauge<long> _postCount; 
+    private ObservableGauge<long> _postCacheHit; 
+    private ObservableGauge<long> _postCacheMiss; 
     
     private readonly InstanceSettings _instanceSettings;
     private readonly MemoryCache _userCache;
@@ -47,7 +52,12 @@ public class SocialNetworkCache
             SizeLimit = instanceSettings.TweetCacheCapacity,
             TrackStatistics = true
         });
-        _userCount = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _getUserCount(), "Number of entry in user cache" );
+        _userCount = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()!.CurrentEntryCount, "Number of entries in user cache" );
+        _userCacheHit = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()!.TotalHits, "Number of user cache hits" );
+        _userCacheMiss = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()!.TotalMisses, "Number of user cache misses" );
+        _postCount = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()!.CurrentEntryCount, "Number of entries in post cache" );
+        _postCacheHit = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()!.TotalHits, "Number of post cache hits" );
+        _postCacheMiss = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()!.TotalMisses, "Number of user cache misses" );
     }
 
     public void BackfillUserCache<T>(T user) where T : SocialMediaUser
@@ -85,13 +95,26 @@ public class SocialNetworkCache
             }
             catch (UserNotFoundException _)
             {
-                return null;
+                throw;
             }
         }
         return null;
     }
+
     public void BackfillPostCache<T>(T post) where T : SocialMediaPost
     {
+        if (_userCache.TryGetValue(post.Author.Acct, out var cachedObj))
+        {
+            // Try to get the result from the cached task regardless of its generic type
+            if (cachedObj is Task cachedTask && cachedTask.IsCompletedSuccessfully)
+            {
+                var result = cachedTask.GetType().GetProperty("Result")?.GetValue(cachedTask);
+                if (result is SocialMediaUser cachedUser)
+                {
+                    post.Author = cachedUser;
+                }
+            }
+        }
         _postCache.Set(post.Id, Task.FromResult(post), _cacheEntryOptions);
     }
 
@@ -125,17 +148,9 @@ public class SocialNetworkCache
             }
             catch (UserNotFoundException _)
             {
-                return null;
+                throw;
             }
         }
         return null;
-    }
-    
-    private long _getUserCount()
-    {
-        var cache = _userCache.GetCurrentStatistics();
-        if (cache is null)
-            return 0;
-        return cache.CurrentEntryCount;
     }
 }

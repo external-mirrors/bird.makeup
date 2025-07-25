@@ -37,6 +37,7 @@ namespace BirdsiteLive.Domain.Tests
             var user = new ExtractedTweet()
             {
                 Id = id,
+                Author = new TwitterUser() {Acct = "test"},
                 MessageContent = message
             };
             var counter = 0;
@@ -57,6 +58,45 @@ namespace BirdsiteLive.Domain.Tests
             Assert.AreEqual(u.Id, id);
             Assert.AreEqual(u.MessageContent, message);
             Assert.AreEqual(counter, 0);
+
+            #endregion
+        }
+        [TestMethod]
+        public async Task Backfill_user()
+        {
+            #region Stubs
+            var id = "vsoisdc";
+            var message = "hello";
+            var user = new TwitterUser()
+            {
+                Acct = "test"
+            };
+            var post = new ExtractedTweet()
+            {
+                Id = id,
+                Author = new TwitterUser() {Acct = "test"},
+                MessageContent = message
+            };
+            var counter = 0;
+            var f =
+                () =>
+                {
+                    counter++; 
+                    return Task.FromResult(post);
+                };
+            #endregion
+
+            var service = new SocialNetworkCache(_settings);
+            
+            service.BackfillUserCache(user);
+            service.BackfillPostCache(post);
+            var u = await service.GetPost(id, [f, f]);
+
+            #region Validations
+            Assert.AreEqual(u.Id, id);
+            Assert.AreEqual(u.MessageContent, message);
+            Assert.AreEqual(counter, 0);
+            Assert.IsTrue(Object.ReferenceEquals(post.Author, user));
 
             #endregion
         }
@@ -91,6 +131,7 @@ namespace BirdsiteLive.Domain.Tests
             #endregion
         }
         [TestMethod]
+        [ExpectedException(typeof(UserNotFoundException))]
         public async Task TwitterUserFetch_FirstFails_NotFound()
         {
             #region Stubs

@@ -123,6 +123,7 @@ namespace BirdsiteLive.Domain.Tests
             #endregion
         }
         [TestMethod]
+        [ExpectedException(typeof(UserNotFoundException))]
         public async Task TwitterUserFetch_FirstFails_NotFound()
         {
             #region Stubs
