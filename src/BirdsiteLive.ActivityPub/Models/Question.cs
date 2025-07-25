@@ -7,13 +7,15 @@ namespace BirdsiteLive.ActivityPub.Models
     // useful doc: https://humberto.io/blog/mastodon_poll_in_activitypub/
     public class Question : Note
     {
+        public Question()
+        {
+           context = new object[] { "https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1", featuredContext};
+        }
         private static Dictionary<string, object> featuredContext = new Dictionary<string, object>()
         {
             ["toot"] = "http://joinmastodon.org/ns#",
             ["votersCount"] = "toot:votersCount",
         };
-        [JsonPropertyName("@context")]
-        public new object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1", featuredContext};
         public new string type { get; } = "Question";
         public long votersCount { get; set; }
         public string endTime { get; set; }

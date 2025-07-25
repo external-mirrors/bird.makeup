@@ -80,7 +80,7 @@ namespace BirdsiteLive.Controllers
                 type = "Create",
                 actor = actor,
                 published = nowString,
-                to = new[] { to },
+                to = [ to ],
                 //cc = new [] { "https://www.w3.org/ns/activitystreams#Public" },
                 apObject = new Note()
                 {
@@ -92,7 +92,7 @@ namespace BirdsiteLive.Controllers
                     attributedTo = actor,
 
                     // Unlisted
-                    to = new[] { to },
+                    to = [ to ],
                     cc = new[] { "https://www.w3.org/ns/activitystreams#Public" },
 
                     //// Public

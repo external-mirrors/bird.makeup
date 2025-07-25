@@ -91,7 +91,7 @@ namespace BirdsiteLive.Domain
             note.url = noteUrl;
             note.attributedTo = actorUrl;
             note.inReplyTo = inReplyTo;
-            note.to = new[] { to };
+            note.to = [ to ];
             note.cc = cc;
             note.sensitive = false;
             note.summary = summary;
@@ -154,7 +154,7 @@ namespace BirdsiteLive.Domain
                 actor = actor,
                 published = nowString,
 
-                to = new[] {$"{actor}/followers"},
+                to = [ $"{actor}/followers" ],
                 cc = note.cc,
                 apObject = note
             };

@@ -4,8 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace BirdsiteLive.ActivityPub.Models
 {
-    public class Note
+    public class Note : Activity
     {
+        public Note()
+        {
+            context  = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
+        }
         private static Dictionary<string, object> extraContext = new Dictionary<string, object>()
         {
             ["quoteUrl"] = "as:quoteUrl",
@@ -15,12 +19,8 @@ namespace BirdsiteLive.ActivityPub.Models
             ["quoteAuthorization"] = new Dictionary<string, object>()
                 { ["@id"] = "https://w3id.org/fep/044f#quoteAuthorization", ["@type"] = "@id" },
         };
-        [JsonPropertyName("@context")]
-        public new object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
 
-        public string id { get; set; }
         public string announceId { get; set; }
-        public string type { get; } = "Note";
         public string summary { get; set; }
         public string inReplyTo { get; set; }
         public string published { get; set; }
@@ -32,7 +32,6 @@ namespace BirdsiteLive.ActivityPub.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string quoteAuthorization { get; set; }
         public string attributedTo { get; set; }
-        public string[] to { get; set; }
         public string[] cc { get; set; }
         public bool sensitive { get; set; }
         //public string conversation { get; set; }

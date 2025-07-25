@@ -7,6 +7,17 @@ namespace BirdsiteLive.ActivityPub.Tests
     [TestClass]
     public class ApDeserializerTests
     {
+	    [TestMethod]
+	    public void FollowDeserializationTest_Lemmy()
+	    {
+		    var json = "{\n  \"actor\": \"http://ds9.lemmy.ml/u/lemmy_alpha\",\n  \"to\": [\"http://enterprise.lemmy.ml/c/main\"],\n  \"object\": \"http://enterprise.lemmy.ml/c/main\",\n  \"type\": \"Follow\",\n  \"id\": \"http://ds9.lemmy.ml/activities/follow/6abcd50b-b8ca-4952-86b0-a6dd8cc12866\"\n}";
+
+		    var data = ApDeserializer.ProcessActivity(json) as ActivityFollow;
+
+		    Assert.AreEqual("http://ds9.lemmy.ml/activities/follow/6abcd50b-b8ca-4952-86b0-a6dd8cc12866", data.id);
+		    Assert.AreEqual("Follow", data.type);
+		    Assert.AreEqual("http://enterprise.lemmy.ml/c/main", data.apObject);
+	    }
         [TestMethod]
         public void FollowDeserializationTest()
         {
@@ -181,6 +192,7 @@ namespace BirdsiteLive.ActivityPub.Tests
 				""";
 
             var actor = JsonSerializer.Deserialize<Actor>(json);
+            Assert.IsNotNull(actor);
         }
     }
 }

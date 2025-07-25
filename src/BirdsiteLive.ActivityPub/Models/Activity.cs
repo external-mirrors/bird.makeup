@@ -1,17 +1,26 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
+using BirdsiteLive.ActivityPub.Converters;
 
 namespace BirdsiteLive.ActivityPub
 {
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class Activity
     {
         [JsonIgnore]
-        public string context { get; set; }
+        public object context { get; set; }
         // Avoids deserialization of @context, as it may be a JSON object instead of a string (e.g., on Firefish)
         [JsonPropertyName("@context")]
-        public string SerializedContext => context;
+        //[JsonPropertyOrder(1)]
+        public object SerializedContext => context;
         public string id { get; set; }
+        //[JsonPropertyOrder(2)]
         public string type { get; set; }
         public string actor { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonConverter(typeof(StringOrStringArrayConverter))]
+        public List<string> to { get; set; }
 
 
         //[JsonPropertyName("object")]
