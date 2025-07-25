@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BirdsiteLive.Common.Interfaces;
+using BirdsiteLive.Common.Models;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.DAL.Models;
 
@@ -91,8 +92,8 @@ public class WikidataService
         Console.WriteLine("Done with Wikidata Query");
 
         var qcodeUpdates = new Dictionary<string, WikidataEntry>();
-        var twitterUpdates = new Dictionary<string, object>();
-        var instagramUpdates = new Dictionary<string, object>();
+        var twitterUpdates = new Dictionary<string, WikidataEntry>();
+        var instagramUpdates = new Dictionary<string, WikidataEntry>();
 
         foreach (JsonElement n in res.RootElement.GetProperty("results").GetProperty("bindings").EnumerateArray())
         {

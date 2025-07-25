@@ -14,7 +14,7 @@ secrets:
 tasks:
   - test: |
       sudo systemctl start docker
-      sudo docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=birdsitelive -e POSTGRES_USER=birdsitelive -e POSTGRES_DB=birdsitelive postgres:15
+      sudo docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=birdsitelive -e POSTGRES_USER=birdsitelive -e POSTGRES_DB=birdsitelive postgres:15 -N 500
       cd bird.makeup/src
       dotnet test
   - publish-x64: |

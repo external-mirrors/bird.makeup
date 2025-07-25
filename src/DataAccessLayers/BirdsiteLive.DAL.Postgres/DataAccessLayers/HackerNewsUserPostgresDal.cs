@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
+using BirdsiteLive.Common.Models;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.DAL.Models;
 using BirdsiteLive.DAL.Postgres.Settings;
@@ -27,7 +28,7 @@ public class HackerNewsUserPostgresDal : SocialMediaUserPostgresDal, IHackerNews
         public override async Task<SyncUser[]> GetNextUsersToCrawlAsync(int nStart, int nEnd, int m)
         {
             string query = @$"
-                SELECT id, acct, lastsync, extradata
+                SELECT id, acct, lastsync, extradata, wikidata
                 FROM {tableName}
                 ORDER BY
                     CASE
@@ -53,12 +54,16 @@ public class HackerNewsUserPostgresDal : SocialMediaUserPostgresDal, IHackerNews
             while (await reader.ReadAsync())
             {
                 var extradata = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement;
+                WikidataEntry wikidata = null;
+                if ((reader["wikidata"] as string) is not null)
+                    wikidata = JsonSerializer.Deserialize<WikidataEntry>(reader["wikidata"] as string);
                 results.Add(new SyncUser
                     {
                         Id = reader["id"] as int? ?? default,
                         Acct = reader["acct"] as string,
                         LastSync = reader["lastSync"] as DateTime? ?? default,
                         ExtraData = extradata,
+                        Wikidata = wikidata,
                     }
                 );
 

@@ -92,11 +92,15 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
                 return null;
             
             var extradata = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement;
+            WikidataEntry wikidata = null;
+            if ((reader["wikidata"] as string) is not null)
+                wikidata = JsonSerializer.Deserialize<WikidataEntry>(reader["wikidata"] as string);
             return new SyncUser
             {
                 Id = reader["id"] as int? ?? default,
                 Acct = reader["acct"] as string,
                 Followers = reader["followersCount"] as long? ?? default,
+                Wikidata = wikidata,
                 ExtraData = extradata,
             };
 
@@ -439,7 +443,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
 
             await command.ExecuteNonQueryAsync();
         }
-        public async Task UpdateUsersWikidataAsync(Dictionary<string, object> values)
+        public async Task UpdateUsersWikidataAsync(Dictionary<string, WikidataEntry> values)
         {
             
             await using var connection = DataSource.CreateConnection();

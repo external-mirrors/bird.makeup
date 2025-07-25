@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
+using BirdsiteLive.Common.Models;
 using BirdsiteLive.DAL.Models;
 using BirdsiteLive.DAL.Postgres.DataAccessLayers;
 using BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers.Base;
@@ -176,7 +177,12 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
                 user.LastTweetPostedId = i+10;
                 user.FetchingErrorCount = i+200;
                 if (i == 42)
+                {
                     user.LastSync = DateTime.Now.AddYears(-1);
+                    Dictionary<string, WikidataEntry> values = new Dictionary<string, WikidataEntry>();
+                    values.Add(acct, new WikidataEntry() { QCode = "Q123"});
+                    await dal.UpdateUsersWikidataAsync(values);
+                }
                 else
                     user.LastSync = DateTime.Now.AddMonths(-1).AddSeconds(i);
                 await dal.UpdateTwitterUserAsync(user);
@@ -197,7 +203,7 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
             var fdal = new FollowersPostgresDal(_settings);
             await fdal.CreateFollowerAsync(facct, host, inboxRoute, sharedInboxRoute, actorId, following);
 
-            var result = await dal.GetAllTwitterUsersWithFollowersAsync(1, 0, 10, 10);
+            var result = await dal.GetAllTwitterUsersWithFollowersAsync(5, 0, 10, 10);
 
             SyncTwitterUser user1 = result.ElementAt(0);
             Assert.AreEqual(user1.Acct, "myid42");
@@ -211,7 +217,10 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
             Assert.AreEqual(user1.LastTweetPostedId, user2.LastTweetPostedId);
             Assert.AreEqual(user1.FetchingErrorCount, user2.FetchingErrorCount);
             Assert.AreEqual(user1.TwitterUserId, user2.TwitterUserId);
+            Assert.AreEqual(user1.Wikidata.QCode, user2.Wikidata.QCode);
 
+            SyncTwitterUser otherUser = result.ElementAt(3);
+            Assert.IsNull(otherUser.Wikidata);
         }
 
         [TestMethod]

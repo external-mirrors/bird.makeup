@@ -30,7 +30,7 @@ public interface SocialMediaUserDal
         Task<Follower[]> GetFollowersAsync(int id);
         Task UpdateUserExtradataAsync(string username, string key, string subkey, object value);
         Task UpdateUserExtradataAsync(string username, string key, object value);
-        Task UpdateUsersWikidataAsync(Dictionary<string, object> values);
+        Task UpdateUsersWikidataAsync(Dictionary<string, WikidataEntry> values);
         Task<string> GetUserWikidataAsync(string username);
         Task<string> GetUserExtradataAsync(string username, string key);
         Task<decimal> GetCrawlingSpeed();
@@ -60,6 +60,7 @@ public class SyncUser
         public long LastTweetPostedId { get; set; }
 
         public DateTime LastSync { get; set; }
+        public WikidataEntry Wikidata { get; set; }
 
         public DateTime LastPost
         {

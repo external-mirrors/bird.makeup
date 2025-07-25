@@ -99,7 +99,7 @@ namespace BirdsiteLive.Domain
                         $"<a href=\"https://www.patreon.com/birddotmakeup\" rel=\"me nofollow noopener noreferrer\" target=\"_blank\"><span class=\"invisible\">https://</span><span class=\"ellipsis\">www.patreon.com/birddotmakeup</span></a>"
                 }
             };
-
+            
             if (twitterUser.Location is not null)
             {
                 var locationAttachment = new UserAttachment()
@@ -134,6 +134,65 @@ namespace BirdsiteLive.Domain
                         type = "PropertyValue",
                         name = name,
                         value = value,
+                    };
+                    attachment = attachment.Append( locationAttachment).ToList();
+                }
+            }
+
+            if (userDal is not null && userDal.Wikidata is not null)
+            {
+                if (userDal.Wikidata.FediHandle is not null && userDal.Wikidata.FediHandle.Count > 0)
+                {
+                    var fediHandle = userDal.Wikidata.FediHandle.ElementAt(0);
+
+                    var input = fediHandle.TrimStart('@');
+                    string[] parts = input.Split('@');
+                    if (parts.Length == 2)
+                    {
+
+                        string username = parts[0];
+                        string domain = parts[1];
+
+                        var locationAttachment = new UserAttachment()
+                        {
+                            type = "PropertyValue",
+                            name = "⁂",
+                            value = MakeUserLink(domain, username),
+                        };
+                        attachment.Add(locationAttachment);
+                    }
+                }
+                if (userDal.Wikidata.HandleIG is not null && userDal.Wikidata.HandleIG.Count > 0 && _socialMediaService.ServiceName != "Instagram")
+                {
+                    var handle = userDal.Wikidata.HandleIG.ElementAt(0);
+                    var locationAttachment = new UserAttachment()
+                    {
+                        type = "PropertyValue",
+                        name = "Instagram",
+                        value = MakeUserLink("kilogram.makeup", handle),
+                    };
+                    attachment = attachment.Append( locationAttachment).ToList();
+                }
+                
+                if (userDal.Wikidata.HandleTwitter is not null && userDal.Wikidata.HandleTwitter.Count > 0 && _socialMediaService.ServiceName != "Twitter")
+                {
+                    var handle = userDal.Wikidata.HandleTwitter.ElementAt(0);
+                    var locationAttachment = new UserAttachment()
+                    {
+                        type = "PropertyValue",
+                        name = "Twitter",
+                        value = MakeUserLink("bird.makeup", handle),
+                    };
+                    attachment = attachment.Append( locationAttachment).ToList();
+                }
+                if (userDal.Wikidata.HandleHN is not null && userDal.Wikidata.HandleHN.Count > 0 && _socialMediaService.ServiceName != "Hacker News")
+                {
+                    var handle = userDal.Wikidata.HandleHN.ElementAt(0);
+                    var locationAttachment = new UserAttachment()
+                    {
+                        type = "PropertyValue",
+                        name = "Hacker News",
+                        value = MakeUserLink("hacker.makeup", handle),
                     };
                     attachment = attachment.Append( locationAttachment).ToList();
                 }
@@ -345,6 +404,11 @@ namespace BirdsiteLive.Domain
             var remoteUser2 = await _activityPubService.GetUser(localActor, actor);
             return CryptoService.ValidateSignature(remoteUser2, rawSig, method, path, queryString, requestHeaders,
                 body);
+        }
+        private static string MakeUserLink(string host, string username)
+        {
+           return 
+                $"<span class=\"h-card\" translate=\"no\"><a href=\"https://{host}/users/{username}\" class=\"u-url mention\">@<span>{username}@{host}</span></a></span>";
         }
     }
 

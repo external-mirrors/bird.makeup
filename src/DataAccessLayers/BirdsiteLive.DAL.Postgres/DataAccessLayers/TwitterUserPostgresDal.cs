@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
+using BirdsiteLive.Common.Models;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.DAL.Models;
 using BirdsiteLive.DAL.Postgres.Settings;
@@ -43,7 +44,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
         }
         private async Task<SyncTwitterUser> GetUserAsync(string acct, int? id)
         {
-            var query = $@"SELECT id, acct, twitterUserId, lastTweetPostedId, lastSync, fetchingErrorCount, statusescount, extradata,
+            var query = $@"SELECT id, acct, twitterUserId, lastTweetPostedId, lastSync, fetchingErrorCount, statusescount, extradata, wikidata,
                 ( SELECT COUNT(*) FROM {_settings.FollowersTableName} WHERE followings @> ARRAY[{tableName}.id]) as followersCount 
                 FROM {tableName} WHERE acct = $1 OR id = $2";
 
@@ -64,6 +65,9 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 return null;
             
             var extradata = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement;
+            WikidataEntry wikidata = null;
+            if ((reader["wikidata"] as string) is not null)
+                wikidata = JsonSerializer.Deserialize<WikidataEntry>(reader["wikidata"] as string);
             return new SyncTwitterUser
             {
                 Id = reader["id"] as int? ?? default,
@@ -75,6 +79,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 StatusesCount = reader["statusescount"] as int? ?? -1,
                 Followers = reader["followersCount"] as long? ?? default,
                 ExtraData = extradata,
+                Wikidata = wikidata,
             };
 
         }
@@ -120,7 +125,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 SET lastsync = NOW()
                 FROM following2
                 WHERE following2.id = {_settings.TwitterUserTableName}.id
-                RETURNING {_settings.TwitterUserTableName}.id, acct, twitterUserId, lastTweetPostedId, {_settings.TwitterUserTableName}.lastSync, fetchingErrorCount, statusescount, followers, extradata
+                RETURNING {_settings.TwitterUserTableName}.id, acct, twitterUserId, lastTweetPostedId, {_settings.TwitterUserTableName}.lastSync, fetchingErrorCount, statusescount, followers, extradata, wikidata
                 ";
 
             await using var connection = DataSource.CreateConnection();
@@ -138,6 +143,9 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
             var results = new List<SyncTwitterUser>();
             while (await reader.ReadAsync())
             {
+                WikidataEntry wikidata = null;
+                if ((reader["wikidata"] as string) is not null)
+                    wikidata = JsonSerializer.Deserialize<WikidataEntry>(reader["wikidata"] as string);
                 results.Add(new SyncTwitterUser
                     {
                         Id = reader["id"] as int? ?? default,
@@ -149,6 +157,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                         Followers = reader["followers"] as long? ?? default,
                         StatusesCount = reader["statusescount"] as int? ?? -1,
                         ExtraData = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement,
+                        Wikidata = wikidata,
                     }
                 );
 

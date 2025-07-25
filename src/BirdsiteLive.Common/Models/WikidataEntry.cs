@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace BirdsiteLive.Wikidata;
+namespace BirdsiteLive.Common.Models;
 
 public class WikidataEntry
 {

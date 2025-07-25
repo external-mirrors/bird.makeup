@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 using BirdsiteLive.Common.Interfaces;
+using BirdsiteLive.Common.Models;
 using BirdsiteLive.DAL.Models;
 using BirdsiteLive.DAL.Postgres.DataAccessLayers;
 using BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers.Base;
@@ -76,12 +77,11 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         }
 
         [TestMethod]
-        public async Task CreateAndDeleteUser()
+        [DynamicData(nameof(Implementations))]
+        public async Task CreateAndDeleteUser(SocialMediaUserPostgresDal dal)
         {
             var acct = "myacct";
             var lastTweetId = 1548L;
-
-            var dal = new HackerNewsUserPostgresDal(_settings);
 
             await dal.CreateUserAsync(acct);
             var result = await dal.GetUserAsync(acct);
@@ -122,6 +122,42 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         public async Task DeleteUser_NotAcct_byId(SocialMediaUserPostgresDal dal)
         {
             await dal.DeleteUserAsync(default(int));
+        }
+        
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
+        public async Task Wikidata_Insert(SocialMediaUserPostgresDal dal)
+        {
+            var acct = "myacct";
+            var lastTweetId = 1548L;
+            var wiki = new WikidataEntry()
+            {
+                QCode = "Q123"
+            };
+
+            await dal.CreateUserAsync(acct);
+            var result = await dal.GetUserAsync(acct);
+            Assert.IsNotNull(result);
+
+            var update = new Dictionary<string, WikidataEntry>();
+            update[acct] = wiki;
+            await dal.UpdateUsersWikidataAsync(update);
+            result = await dal.GetUserAsync(acct);
+            Assert.AreEqual(result.Wikidata.QCode, "Q123");
+        }
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
+        public async Task Wikidata_Empty(SocialMediaUserPostgresDal dal)
+        {
+            var acct = "myacct";
+            var lastTweetId = 1548L;
+
+            await dal.CreateUserAsync(acct);
+            var result = await dal.GetUserAsync(acct);
+            Assert.IsNotNull(result);
+
+            result = await dal.GetUserAsync(acct);
+            Assert.IsNull(result.Wikidata);
         }
         
     }
