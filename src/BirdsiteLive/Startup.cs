@@ -21,6 +21,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Grafana.OpenTelemetry;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 
 namespace BirdsiteLive
@@ -50,9 +51,18 @@ namespace BirdsiteLive
                     serviceName: "dotmakeup", 
                     autoGenerateServiceInstanceId: false,
                     serviceInstanceId: Environment.MachineName
+                    //serviceNamespace: Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork 
                     ))
-                .WithMetrics(config => config.AddMeter("DotMakeup"))
-                .WithMetrics(config => config.AddMeter("Microsoft.AspNetCore.Hosting"))
+                .WithMetrics(config =>
+                {
+                    config.AddMeter("Microsoft.AspNetCore.Hosting");
+                    config.AddMeter("DotMakeup");
+                    config.AddView("http.server.request.duration",
+                        new ExplicitBucketHistogramConfiguration
+                        {
+                            Boundaries = new double[] { 0.01, 0.1, 1, 10 }
+                        });
+                })
                 .WithLogging()
                 .UseGrafana(config =>
                 {
