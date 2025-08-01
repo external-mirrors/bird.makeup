@@ -37,7 +37,7 @@ public class Syndication : ITweetExtractor
         using var request = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri($"https://cdn.syndication.twimg.com/tweet-result?id={statusId}&lang=en&token=3ykp5xr72qv"),
+            RequestUri = new Uri($"https://cdn.syndication.twimg.com/tweet-result?features=tfw_legacy_timeline_sunset:true&id={statusId}&lang=en&token=3ykp5xr72qv"),
         };
         //request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36");
         request.Headers.Add("User-Agent", "farts");
@@ -54,9 +54,18 @@ public class Syndication : ITweetExtractor
         var c = await httpResponse.Content.ReadAsStringAsync();
         tweet = JsonDocument.Parse(c);
 
-        
+
+        string username;
         string messageContent = tweet.RootElement.GetProperty("text").GetString();
-        string username = tweet.RootElement.GetProperty("user").GetProperty("screen_name").GetString().ToLower();
+        try
+        {
+            username = tweet.RootElement.GetProperty("user").GetProperty("screen_name").GetString().ToLower();
+        }
+        catch (KeyNotFoundException _)
+        {
+            return null;
+        }
+        
         List<ExtractedMedia> Media = new();
 
         JsonElement replyTo;
