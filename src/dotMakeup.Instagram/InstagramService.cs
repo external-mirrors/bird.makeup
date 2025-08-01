@@ -101,6 +101,7 @@ public class InstagramService : ISocialMediaService
             var user = await _socialNetworkCache.GetUser(username, [
                 () => _instagramUserDal.GetUserCacheAsync<InstagramUser>(username),
                 () => CallSidecar(username, sidecar, new Random().Next(2) + 1),
+                () => CallSidecar(username, _settings.SidecarURL, 1),
                 () => CallDirect(username),
             ]);
             return user;

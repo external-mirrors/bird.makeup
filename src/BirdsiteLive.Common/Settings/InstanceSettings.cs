@@ -19,6 +19,7 @@ namespace BirdsiteLive.Common.Settings
 
         public int UserCacheCapacity { get; set; } = 40_000;
         public int TweetCacheCapacity { get; set; } = 20_000;
+        public int PostCacheRetentionDays { get; set; } = 28;
         public int m { get; set; } = 1;
         public int n_start { get; set; } = 0;
         public int n_end { get; set; } = 1;
