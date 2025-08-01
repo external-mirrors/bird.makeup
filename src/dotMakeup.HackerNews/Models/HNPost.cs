@@ -18,4 +18,6 @@ public class HNPost : SocialMediaPost
     public ExtractedMedia[] Media { get; set; }
     public Poll? Poll { get; set; }
     public long? Score { get; set; }
+    public long LikeCount { get; set; } = 0;
+    public long ShareCount { get; set; } = 0;
 }

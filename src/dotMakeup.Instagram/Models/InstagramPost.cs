@@ -18,5 +18,7 @@ namespace BirdsiteLive.Instagram.Models
         public SocialMediaUser OriginalAuthor { get; set; } = null;
         public SocialMediaUser Author { get; set; }
         public Poll? Poll { get; set; } = null;
+        public long LikeCount { get; set; } = 0;
+        public long ShareCount { get; set; } = 0;
     }
 }

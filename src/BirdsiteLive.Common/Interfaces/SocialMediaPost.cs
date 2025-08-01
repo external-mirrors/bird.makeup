@@ -19,6 +19,8 @@ public interface SocialMediaPost
     public DateTime CreatedAt { get; set; }
     public ExtractedMedia[] Media { get; set; }
     public Poll? Poll { get; set; }
+    public long LikeCount { get; set; }
+    public long ShareCount { get; set; }
 }
 public class Poll
 {

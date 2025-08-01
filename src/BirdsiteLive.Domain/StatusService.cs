@@ -123,6 +123,16 @@ namespace BirdsiteLive.Domain
                     ((Question)note).closed = nowString;
                 ((Question)note).answers = options.ToArray();
             }
+
+            if (post.LikeCount != default)
+            {
+                note.likes = new Collection()
+                {
+                    id = $"{noteUrl}/likes",
+                    totalItems = post.LikeCount,
+                    context = null,
+                };
+            }
             
             return note;
         }

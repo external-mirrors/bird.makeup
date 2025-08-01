@@ -330,6 +330,25 @@ namespace BirdsiteLive.Controllers
             }
         }
 
+        [Route("/users/{id}/statuses/{statusId}/likes")]
+        [HttpGet]
+        public async Task<IActionResult> Likes(string id, string statusId)
+        {
+            var tweet = await _socialMediaService.GetPostAsync(statusId);
+            if (tweet == null)
+                return NotFound();
+
+            var r = Request.Headers["Accept"].First();
+            if (!r.Contains("json")) return NotFound();
+
+            var followers = new Collection
+            {
+                id = $"https://{_instanceSettings.Domain}/users/{id}/statuses/{statusId}/likes",
+                totalItems = tweet.LikeCount
+            };
+            var jsonApUser = JsonSerializer.Serialize(followers);
+            return Content(jsonApUser, "application/activity+json; charset=utf-8");
+        }
         [Route("/users/{id}/followers")]
         [HttpGet]
         public IActionResult Followers(string id)
@@ -337,7 +356,7 @@ namespace BirdsiteLive.Controllers
             var r = Request.Headers["Accept"].First();
             if (!r.Contains("json")) return NotFound();
 
-            var followers = new EmptyCollection
+            var followers = new Collection
             {
                 id = $"https://{_instanceSettings.Domain}/users/{id}/followers"
             };
@@ -351,7 +370,7 @@ namespace BirdsiteLive.Controllers
             var r = Request.Headers["Accept"].First();
             if (!r.Contains("json")) return NotFound();
 
-            var followers = new EmptyCollection
+            var followers = new Collection
             {
                 id = $"https://{_instanceSettings.Domain}/users/{id}/outbox"
             };

@@ -193,6 +193,7 @@ public class HnService : ISocialMediaService
             InReplyToStatusId = inReplyToId,
             InReplyToAccount = inReplyToaccount,
             Score = score,
+            LikeCount = score ?? 0,
             Poll = poll,
         };
         return post;
