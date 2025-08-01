@@ -67,7 +67,7 @@ public class InstagramService : ISocialMediaService
                 new KeyValuePair<string, object?>("result", v2 != null ? "2xx": "5xx")
             );
             if (v2 == null)
-                return Array.Empty<SocialMediaPost>();
+                return [];
             
             foreach (var p in v2.RecentPosts)
             {
@@ -314,6 +314,13 @@ public class InstagramService : ISocialMediaService
                     if (captionEdges.GetArrayLength() > 0)
                         caption = captionEdges[0].GetProperty("node").GetProperty("text").GetString();
 
+                    long likes = 0;
+                    try
+                    {
+                        likes = node.GetProperty("edge_liked_by").GetProperty("count").GetInt64();
+                    }
+                    catch (Exception _) { }
+
                     var isPinned = false;
                     foreach (var pin in node.GetProperty("pinned_for_users").EnumerateArray())
                     {
@@ -328,6 +335,7 @@ public class InstagramService : ISocialMediaService
                         Author = userResult,
                         CreatedAt = DateTimeOffset.FromUnixTimeSeconds(node.GetProperty("taken_at_timestamp").GetInt64()).UtcDateTime,
                         IsPinned = isPinned,
+                        LikeCount = likes,
                         
                         Media = mediaItems.ToArray(),
                     };

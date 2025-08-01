@@ -201,7 +201,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             return ids.ToArray();
         }
 
-        public async Task UpdatePostCacheAsync(SocialMediaPost post)
+        public async Task UpdatePostCacheAsync<T>(T post) where T : class, SocialMediaPost
         {
             var query = $"""
                 INSERT INTO {PostCacheTableName} (id, acct, data, lastsync)
