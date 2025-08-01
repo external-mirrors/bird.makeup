@@ -74,9 +74,9 @@ spec:
             - name: Instance__ParallelFediversePosts
               value: "10"
             - name: Instance__UserCacheCapacity
-              value: "10000"
+              value: "15000"
             - name: Instance__TweetCacheCapacity
-              value: "10000"
+              value: "20000"
             - name: Instance__MultiplyNByOrdinal
               value: "true"
             - name: Instance__n_start

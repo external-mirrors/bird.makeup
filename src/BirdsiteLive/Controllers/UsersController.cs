@@ -330,6 +330,25 @@ namespace BirdsiteLive.Controllers
             }
         }
 
+        [Route("/users/{id}/statuses/{statusId}/shares")]
+        [HttpGet]
+        public async Task<IActionResult> Shares(string id, string statusId)
+        {
+            var tweet = await _socialMediaService.GetPostAsync(statusId);
+            if (tweet == null)
+                return NotFound();
+
+            var r = Request.Headers["Accept"].First();
+            if (!r.Contains("json")) return NotFound();
+
+            var followers = new Collection
+            {
+                id = $"https://{_instanceSettings.Domain}/users/{id}/statuses/{statusId}/shares",
+                totalItems = tweet.ShareCount
+            };
+            var jsonApUser = JsonSerializer.Serialize(followers);
+            return Content(jsonApUser, "application/activity+json; charset=utf-8");
+        }
         [Route("/users/{id}/statuses/{statusId}/likes")]
         [HttpGet]
         public async Task<IActionResult> Likes(string id, string statusId)

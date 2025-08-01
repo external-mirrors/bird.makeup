@@ -133,6 +133,15 @@ namespace BirdsiteLive.Domain
                     context = null,
                 };
             }
+            if (post.ShareCount != default)
+            {
+                note.likes = new Collection()
+                {
+                    id = $"{noteUrl}/shares",
+                    totalItems = post.ShareCount,
+                    context = null,
+                };
+            }
             
             return note;
         }

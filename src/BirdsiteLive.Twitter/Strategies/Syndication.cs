@@ -54,6 +54,11 @@ public class Syndication : ITweetExtractor
         var c = await httpResponse.Content.ReadAsStringAsync();
         tweet = JsonDocument.Parse(c);
 
+        long favoriteCount = 0;
+        if (tweet.RootElement.TryGetProperty("favorite_count", out var favoriteCountElement))
+        {
+            favoriteCount = favoriteCountElement.GetInt64();
+        }
 
         string username;
         string messageContent = tweet.RootElement.GetProperty("text").GetString();
@@ -194,6 +199,7 @@ public class Syndication : ITweetExtractor
             Media = Media.Count() == 0 ? null : Media.ToArray(),
             QuotedAccount = quoteTweetAcct,
             QuotedStatusId = quoteTweetId,
+            LikeCount = favoriteCount,
         };
         
         extractedTweet = await _tweetsService.ExpandShortLinks(extractedTweet);

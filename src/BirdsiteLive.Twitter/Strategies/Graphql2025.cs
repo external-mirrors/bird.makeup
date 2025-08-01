@@ -356,6 +356,11 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                 poll = null;
         }
 
+        long likeCount = tweetRes.GetProperty("legacy")
+            .GetProperty("favorite_count").GetInt64();;
+        
+        long shareCount = tweetRes.GetProperty("legacy")
+            .GetProperty("retweet_count").GetInt64();;
         
         var extractedTweet = new ExtractedTweet
         {
@@ -375,6 +380,8 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             Poll = poll,
             QuotedAccount = quoteTweetAcct,
             QuotedStatusId = quoteTweetId,
+            LikeCount = likeCount,
+            ShareCount = shareCount,
         };
         extractedTweet = await _tweetsService.ExpandShortLinks(extractedTweet);
    

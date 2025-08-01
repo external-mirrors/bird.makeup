@@ -72,6 +72,8 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsFalse(tweet.IsReply);
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
+            Assert.IsTrue(tweet.ShareCount == 0 || tweet.ShareCount > 1000);
+            Assert.IsTrue(tweet.ShareCount == 0 || tweet.ShareCount < 10000);
         }
 
         [TestMethod]
@@ -221,6 +223,22 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.QuotedAccount, "kadhim");
             Assert.AreEqual(tweet.QuotedStatusId, "1610706613207285773");
+        }
+        
+        [DynamicData(nameof(Implementations))]
+        [TestMethod]
+        public async Task QT_with_trails(StrategyHints s)
+        {
+            var tweet = await _tweetService.GetTweetAsync(1952032830508191916, s);
+            if (tweet is null)
+                Assert.Inconclusive();
+
+            Assert.AreEqual(tweet.Author.Acct, "trustlessstate");
+            Assert.IsNull(tweet.Poll);
+            Assert.AreEqual(tweet.QuotedAccount, "0xjaehaerys");
+            Assert.AreEqual(tweet.QuotedStatusId, "1944859201291083887");
+            Assert.IsTrue(tweet.LikeCount > 20);
+            Assert.IsTrue(tweet.LikeCount < 20000);
         }
 
         [Ignore]
