@@ -39,16 +39,10 @@ namespace BirdsiteLive.Controllers
                     var body = await reader.ReadToEndAsync();
 
                     _logger.LogTrace("Inbox: {Body}", body);
-                    //System.IO.File.WriteAllText($@"C:\apdebug\inbox\{Guid.NewGuid()}.json", body);
 
                     var activity = ApDeserializer.ProcessActivity(body);
                     _statisticsHandler.RegisterNewInboundActivity(activity);
                     var signature = HeaderHandler.RequestHeaders(r.Headers)["signature"];
-                    _logger.LogTrace("Signature: {Signature}", signature);
-                    _logger.LogTrace($"Date: {HeaderHandler.RequestHeaders(r.Headers)["date"]}");
-                    _logger.LogTrace($"Digest: {HeaderHandler.RequestHeaders(r.Headers)["digest"]}");
-                    _logger.LogTrace($"Host: {HeaderHandler.RequestHeaders(r.Headers)["host"]}");
-                    _logger.LogTrace($"c-t: {HeaderHandler.RequestHeaders(r.Headers)["content-type"]}");
                     
                     switch (activity?.type)
                     {

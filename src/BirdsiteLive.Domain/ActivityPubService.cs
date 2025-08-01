@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -108,6 +109,7 @@ namespace BirdsiteLive.Domain
                     id = activity.id,
                     type = activity.type,
                     actor = activity.actor,
+                    to = activity.to,
                     apObject = activity.apObject
                 }
             };

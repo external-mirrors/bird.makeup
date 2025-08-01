@@ -90,9 +90,63 @@ namespace BirdsiteLive.Domain.Tests
             string s = JsonSerializer.Serialize(req);
             
             Assert.AreEqual(req.actor, activityRes.actor);
+            Assert.IsNull(req.apObject.to);
 
             #endregion
         }
+        [TestMethod]
+        public async Task AcceptFollow_Lemmy()
+        {
+ 
+
+            var logger1 = new Mock<ILogger<ActivityPubService>>();
+            var httpFactory = new Mock<IHttpClientFactory>();
+            var keyFactory = new Mock<IMagicKeyFactory>();
+            var cryptoService = new CryptoService(keyFactory.Object);
+            httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+            var service = new ActivityPubService(cryptoService, _settings, httpFactory.Object, logger1.Object);
+
+            var json = """
+                       {
+                         "actor": "http://ds9.lemmy.ml/u/lemmy_alpha",
+                         "to": ["http://enterprise.lemmy.ml/c/main"],
+                         "object": "http://enterprise.lemmy.ml/c/main",
+                         "type": "Follow",
+                         "id": "http://ds9.lemmy.ml/activities/follow/6abcd50b-b8ca-4952-86b0-a6dd8cc12866"
+                       }
+                       """;
+            var activity = ApDeserializer.ProcessActivity(json) as ActivityFollow;
+
+            var jsonres =
+                """
+                {
+                  "object" : {
+                    "object" : "http://enterprise.lemmy.ml/c/main",
+                    "id" : "http://ds9.lemmy.ml/activities/follow/6abcd50b-b8ca-4952-86b0-a6dd8cc12866",
+                    "type" : "Follow",
+                    "actor" : "http://ds9.lemmy.ml/u/lemmy_alpha",
+                    "to" : [ "http://enterprise.lemmy.ml/c/main" ]
+                  },
+                  "@context" : "https://www.w3.org/ns/activitystreams",
+                  "id" : "http://enterprise.lemmy.ml/c/main#accepts/follows/3cdeacb3-f026-40ff-a3a6-2c520d242f57",
+                  "type" : "Accept",
+                  "actor" : "http://enterprise.lemmy.ml/c/main",
+                  "to" : [ "http://ds9.lemmy.ml/u/lemmy_alpha" ]
+                }
+                """;
+            var activityRes = ApDeserializer.ProcessActivity(jsonres) as ActivityAcceptFollow;
+            #region Validations
+
+            var req = service.BuildAcceptFollow(activity);
+            
+            string s = JsonSerializer.Serialize(req);
+            
+            Assert.AreEqual(req.actor, activityRes.actor);
+            Assert.AreEqual(req.apObject.to[0], "http://enterprise.lemmy.ml/c/main");
+
+            #endregion
+        }
+
 
     }
 }
