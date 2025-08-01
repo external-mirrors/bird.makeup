@@ -19,7 +19,7 @@ namespace BirdsiteLive.Domain
     public interface IActivityPubService
     {
         Task<Actor> GetUser(string actor, string objectId);
-        Task<HttpStatusCode> PostDataAsync<T>(T data, string targetHost, string actorUrl, string inbox = null);
+        Task<HttpStatusCode> PostDataAsync<T>(T data, string targetHost, string actorUrl, string inbox = null) where T : Activity;
         Task PostNewActivity(ActivityCreateNote note, string username, string noteId, string targetHost,
             string targetInbox);
 
@@ -151,10 +151,11 @@ namespace BirdsiteLive.Domain
             return httpRequestMessage;
         }
 
-        public async Task<HttpStatusCode> PostDataAsync<T>(T data, string targetHost, string actorUrl, string inbox = null)
+        public async Task<HttpStatusCode> PostDataAsync<T>(T data, string targetHost, string actorUrl, string inbox = null) where T : Activity
         {
             var httpRequestMessage = await BuildRequest(data, targetHost, actorUrl, HttpMethod.Post, inbox);
 
+            _logger.LogTrace($"Sending AP message to actor {actorUrl}: {data}");
             var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(2);
             
