@@ -155,7 +155,12 @@ namespace BirdsiteLive.Domain
         {
             var httpRequestMessage = await BuildRequest(data, targetHost, actorUrl, HttpMethod.Post, inbox);
 
-            _logger.LogTrace($"Sending AP message to actor {actorUrl}: {data}");
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                var content = await httpRequestMessage.Content.ReadAsStringAsync();
+                _logger.LogTrace("Sending AP message to actor {TargetHost}. Content: {Content}", 
+                    targetHost, content);
+            }
             var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(2);
             
