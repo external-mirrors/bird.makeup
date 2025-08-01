@@ -43,5 +43,7 @@ namespace BirdsiteLive.ActivityPub.Models
         //public Dictionary<string, string> replies;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Collection likes { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Collection shares { get; set; }
     }
 }

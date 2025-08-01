@@ -135,7 +135,7 @@ namespace BirdsiteLive.Domain
             }
             if (post.ShareCount != default)
             {
-                note.likes = new Collection()
+                note.shares = new Collection()
                 {
                     id = $"{noteUrl}/shares",
                     totalItems = post.ShareCount,
