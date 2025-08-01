@@ -101,6 +101,7 @@ namespace BirdsiteLive.Domain
                 context = "https://www.w3.org/ns/activitystreams",
                 id = $"{activity.apObject}#accepts/follows/{Guid.NewGuid()}",
                 type = "Accept",
+                to = [ activity.actor ],
                 actor = activity.apObject,
                 apObject = new ActivityFollow()
                 {
