@@ -6,6 +6,7 @@ using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Instagram.Models;
 using dotMakeup.Instagram.Models;
+using dotMakeup.ipfs;
 
 namespace dotMakeup.Instagram.Strategies;
 
@@ -15,10 +16,12 @@ public class Direct : IUserExtractor
     static Counter<int> _apiCalled = _meter.CreateCounter<int>("dotmakeup_api_called_count");
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IInstagramUserDal _dal;
-    public Direct(IHttpClientFactory httpClientFactory, IInstagramUserDal userDal)
+    private readonly IIpfsService _ipfs;
+    public Direct(IHttpClientFactory httpClientFactory, IInstagramUserDal userDal, IIpfsService ipfs)
     {
         _httpClientFactory = httpClientFactory;
         _dal = userDal;
+        _ipfs = ipfs;
     }
     public async Task<InstagramUser> GetUserAsync(string username)
     {
@@ -154,8 +157,14 @@ public class Direct : IUserExtractor
             }
         }
 
+        var pinnedPosts = userPosts.Where(x => x.IsPinned);
+        foreach (var post in pinnedPosts)
+        {
+            await _ipfs.Mirror(post, true);
+        }
+
         userResult.RecentPosts = userPosts.Where(x => x.IsPinned == false);
-        userResult.PinnedPosts = userPosts.Where(x => x.IsPinned == true).Select(x => x.Id).ToArray();
+        userResult.PinnedPosts = pinnedPosts.Select(x => x.Id).ToArray();
         
         if (user is not null)
             await _dal.UpdateUserCacheAsync(user);

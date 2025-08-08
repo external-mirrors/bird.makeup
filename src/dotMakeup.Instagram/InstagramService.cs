@@ -49,7 +49,7 @@ public class InstagramService : ISocialMediaService
             _socialNetworkCache = new SocialNetworkCache(settings);
             _sidecar = new Sidecar(httpClientFactory, userDal, settingsDal, settings, _ipfs);
             _sidecarPremium = new Sidecar(httpClientFactory, userDal, settingsDal, settings, _ipfs, true);
-            _direct = new Direct(httpClientFactory, userDal);
+            _direct = new Direct(httpClientFactory, userDal, _ipfs);
         }
         #endregion
 
