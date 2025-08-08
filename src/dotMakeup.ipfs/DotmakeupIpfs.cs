@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.Metrics;
+using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using Ipfs.Http;
 
@@ -8,6 +9,7 @@ public interface IIpfsService
 {
     string GetIpfsPublicLink(string hash);
     Task<string> Mirror(string upstream, bool pin);
+    Task<SocialMediaPost> Mirror(SocialMediaPost post, bool pin);
     Task Unpin(string hash);
 
     Task GarbageCollection();
@@ -65,6 +67,19 @@ public class DotmakeupIpfs : IIpfsService
             Console.WriteLine("Timeout during warmup of {0}", i.Id);
         }
         return i.Id;
+    }
+
+    public async Task<SocialMediaPost> Mirror(SocialMediaPost post, bool pin)
+    {
+        if (_instanceSettings.IpfsApi is not null) 
+        {
+            foreach (ExtractedMedia m in post.Media) {
+                var hash = await Mirror(m.Url, pin);
+                m.Url = GetIpfsPublicLink(hash);
+            } 
+        }
+
+        return post;
     }
 
     public async Task Unpin(string hash)

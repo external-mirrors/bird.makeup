@@ -7,6 +7,7 @@ using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Instagram.Models;
 using dotMakeup.Instagram.Models;
+using dotMakeup.ipfs;
 
 namespace dotMakeup.Instagram.Strategies;
 
@@ -18,15 +19,17 @@ public class Sidecar : IUserExtractor, IPostExtractor
     private readonly IInstagramUserDal _dal;
     private readonly ISettingsDal _settingsDal;
     private readonly InstanceSettings _settings;
+    private readonly IIpfsService _ipfs;
     
     private readonly bool _isPremium;
 
-    public Sidecar(IHttpClientFactory httpClientFactory, IInstagramUserDal userDal, ISettingsDal settingsDal, InstanceSettings instanceSettings, bool isPremium = false)
+    public Sidecar(IHttpClientFactory httpClientFactory, IInstagramUserDal userDal, ISettingsDal settingsDal, InstanceSettings instanceSettings, IIpfsService ipfsService, bool isPremium = false)
     {
         _httpClientFactory = httpClientFactory;
         _dal = userDal;
         _settingsDal = settingsDal;
         _settings = instanceSettings;
+        _ipfs = ipfsService;
         _isPremium = isPremium;
     }
     
@@ -47,7 +50,10 @@ public class Sidecar : IUserExtractor, IPostExtractor
         var postDoc = JsonDocument.Parse(c);
         var post = ParsePost(postDoc.RootElement);
 
-        return post;
+        var mirrored = await _ipfs.Mirror(post, true);
+        await _dal.UpdatePostCacheAsync(mirrored);
+        
+        return (InstagramPost)mirrored;
 
     }
     public async Task<InstagramUser> GetUserAsync(string username)

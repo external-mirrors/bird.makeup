@@ -47,8 +47,8 @@ public class InstagramService : ISocialMediaService
             UserDal = userDal;
             
             _socialNetworkCache = new SocialNetworkCache(settings);
-            _sidecar = new Sidecar(httpClientFactory, userDal, settingsDal, settings);
-            _sidecarPremium = new Sidecar(httpClientFactory, userDal, settingsDal, settings, true);
+            _sidecar = new Sidecar(httpClientFactory, userDal, settingsDal, settings, _ipfs);
+            _sidecarPremium = new Sidecar(httpClientFactory, userDal, settingsDal, settings, _ipfs, true);
             _direct = new Direct(httpClientFactory, userDal);
         }
         #endregion
@@ -80,16 +80,8 @@ public class InstagramService : ISocialMediaService
             {
                 if (p.CreatedAt > user.LastPost)
                 {
-                    if (_settings.IpfsApi is not null)
-                    {
-                        foreach (ExtractedMedia m in p.Media)
-                        {
-                            var hash = await _ipfs.Mirror(m.Url, true);
-                            m.Url = _ipfs.GetIpfsPublicLink(hash);
-                        }
-
-                        await _instagramUserDal.UpdatePostCacheAsync(p);
-                    }
+                    var mirrored = await _ipfs.Mirror(p, true);
+                    await _instagramUserDal.UpdatePostCacheAsync(mirrored);
                     
                     newPosts.Add(p);
                 }
