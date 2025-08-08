@@ -161,6 +161,7 @@ public class Direct : IUserExtractor
         foreach (var post in pinnedPosts)
         {
             await _ipfs.Mirror(post, true);
+            await _dal.UpdatePostCacheAsync<InstagramPost>(post);
         }
 
         userResult.RecentPosts = userPosts.Where(x => x.IsPinned == false);
