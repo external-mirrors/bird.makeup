@@ -68,7 +68,6 @@ namespace BirdsiteLive.Domain
 
             if (post.QuotedAccount is not null && post.QuotedStatusId != null)
             {
-                //var quoteUrl = $"https://{_instanceSettings.Domain}/@{post.QuotedAccount}/{post.QuotedStatusId}";
                 var quoteId =
                     $"https://{_instanceSettings.Domain}/users/{post.QuotedAccount}/statuses/{post.QuotedStatusId}";
                 content += "<span class=\"quote-inline\"><br/><a href=\"" + quoteId + "\">" + quoteId + "</a></span>";

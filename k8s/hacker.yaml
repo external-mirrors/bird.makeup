@@ -44,6 +44,8 @@ spec:
             - secretRef:
                 name: grafana
           env:
+            - name: Logging__LogLevel__Default
+              value: "Trace"
             - name: Instance__domain
               value: "hacker.makeup"
             - name: Instance__Name
