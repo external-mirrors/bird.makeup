@@ -10,6 +10,7 @@ using BirdsiteLive.Domain;
 using BirdsiteLive.Instagram.Models;
 using dotMakeup.ipfs;
 using dotMakeup.Instagram.Models;
+using dotMakeup.Instagram.Strategies;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace dotMakeup.Instagram;
@@ -25,7 +26,10 @@ public class InstagramService : ISocialMediaService
         private readonly IInstagramUserDal _instagramUserDal;
         private readonly IIpfsService _ipfs;
         private readonly SocialNetworkCache _socialNetworkCache;
-        
+
+        private readonly Sidecar _sidecar;
+        private readonly Sidecar _sidecarPremium;
+        private readonly Direct _direct;
 
         private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
         {
@@ -43,6 +47,9 @@ public class InstagramService : ISocialMediaService
             UserDal = userDal;
             
             _socialNetworkCache = new SocialNetworkCache(settings);
+            _sidecar = new Sidecar(httpClientFactory, userDal, settingsDal, settings);
+            _sidecarPremium = new Sidecar(httpClientFactory, userDal, settingsDal, settings, true);
+            _direct = new Direct(httpClientFactory, userDal);
         }
         #endregion
 
@@ -93,16 +100,11 @@ public class InstagramService : ISocialMediaService
 
         public async Task<SocialMediaUser?> GetUserAsync(string username)
         {
-            JsonElement? alwaysRefresh = await _settingsDal.Get("ig_always_refresh");
-            if (alwaysRefresh is not null)
-                return await CallDirect(username);
-            
-            var sidecar = await GetWebSidecar();
             var user = await _socialNetworkCache.GetUser(username, [
                 () => _instagramUserDal.GetUserCacheAsync<InstagramUser>(username),
-                () => CallSidecar(username, sidecar, new Random().Next(2) + 1),
-                () => CallSidecar(username, _settings.SidecarURL, 1),
-                () => CallDirect(username),
+                () => _sidecar.GetUserAsync(username), 
+                () => _sidecarPremium.GetUserAsync(username), 
+                () => _direct.GetUserAsync(username),
             ]);
             return user;
         }
@@ -111,7 +113,7 @@ public class InstagramService : ISocialMediaService
         {
             InstagramUser user;
             
-            user = await CallDirect(username);
+            user = await _direct.GetUserAsync(username);
                 
             var profileUrlHash = await _ipfs.Mirror(user.ProfileImageUrl, true);
             user.ProfileImageUrl = _ipfs.GetIpfsPublicLink(profileUrlHash);
@@ -125,301 +127,10 @@ public class InstagramService : ISocialMediaService
         {
             var post = await _socialNetworkCache.GetPost(id, [
                 () => _instagramUserDal.GetPostCacheAsync<InstagramPost>(id),
-                () => CallSidecarForPost(id),
+                () => _sidecar.GetPostAsync(id),
             ]);
             return post;
         }
 
-        private async Task<InstagramPost?> CallSidecarForPost(string id)
-        {
-            var client = _httpClientFactory.CreateClient();
-            string requestUrl;
-            requestUrl = (await GetWebSidecar()) + "/instagram/post/" + id;
-            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-
-            var httpResponse = await client.SendAsync(request);
-
-            if (httpResponse.StatusCode != HttpStatusCode.OK)
-            {
-                return null;
-            }
-            var c = await httpResponse.Content.ReadAsStringAsync();
-            var postDoc = JsonDocument.Parse(c);
-            var post = ParsePost(postDoc.RootElement);
-
-            return post;
-
-        }
-
-        private async Task<InstagramUser> CallSidecar(string username, string sidecarURL, int methodChoice)
-        {
-            InstagramUser user = null;
-            using var client = _httpClientFactory.CreateClient();
-            string requestUrl;
-            string method = "user";
-            if (methodChoice == 2)
-                method = "user_2";
-            requestUrl = $"{sidecarURL}/instagram/{method}/{username}";
-            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-
-            var httpResponse = await client.SendAsync(request);
-
-            _apiCalled.Add(1, new KeyValuePair<string, object>("sidecar", $"ig_{method}"),
-                new KeyValuePair<string, object>("status", httpResponse.StatusCode),
-                new KeyValuePair<string, object>("domain", sidecarURL)
-            );
-            
-            if (httpResponse.StatusCode != HttpStatusCode.OK)
-            {
-                throw new RateLimitExceededException();
-            }
-
-            var c = await httpResponse.Content.ReadAsStringAsync();
-            var userDocument = JsonDocument.Parse(c);
-
-            List<string> pinnedPost = new List<string>();
-            List<InstagramPost> recentPost = new List<InstagramPost>();
-            foreach (JsonElement postDoc in userDocument.RootElement.GetProperty("posts").EnumerateArray())
-            {
-                var post = ParsePost(postDoc);
-                if (post.IsPinned)
-                    pinnedPost.Add(post.Id);
-                else
-                    recentPost.Add(post);
-            }
-
-
-            try
-            {
-                user = new InstagramUser()
-                {
-                    Description = userDocument.RootElement.GetProperty("bio").GetString(),
-                    Acct = username,
-                    ProfileImageUrl = userDocument.RootElement.GetProperty("profilePic").GetString(),
-                    Name = userDocument.RootElement.GetProperty("name").GetString(),
-                    PinnedPosts = pinnedPost,
-                    RecentPosts = recentPost,
-                    ProfileUrl = "www.instagram.com/" + username,
-                    Url = userDocument.RootElement.GetProperty("Url").GetString(),
-                };
-
-            }
-            catch (KeyNotFoundException _)
-            {
-                throw new UserNotFoundException();
-            }
-
-            await _instagramUserDal.UpdateUserCacheAsync(user);
-            
-            return user;
-        }
-        private async Task<InstagramUser> CallDirect(string username)
-        {
-            InstagramUser user = null;
-            using var client = _httpClientFactory.CreateClient("WithProxy");
-            string requestUrl = $"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}";
-            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-
-            request.Headers.Add("User-Agent", 
-                "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0");
-            request.Headers.Add("Accept", "*/*");
-            request.Headers.Add("X-IG-App-ID", "936619743392459");
-
-            var response = await client.SendAsync(request);
-            if (response.StatusCode != HttpStatusCode.OK)
-            {
-                throw new RateLimitExceededException();
-            }
-            response.EnsureSuccessStatusCode();
-
-            var jsonString = await response.Content.ReadAsStringAsync();
-
-            using var jsonDocument = JsonDocument.Parse(jsonString);
-            var root = jsonDocument.RootElement;
-
-            var userJson = root.GetProperty("data").GetProperty("user");
-            string profileUrl = null;
-            foreach (var l in userJson.GetProperty("bio_links").EnumerateArray())
-            {
-                profileUrl = l.GetProperty("url").GetString();
-            }
-            
-            InstagramUser userResult = new InstagramUser()
-            {
-                Description = userJson.GetProperty("biography_with_entities").GetProperty("raw_text").GetString(),
-                Acct = username,
-                ProfileImageUrl = userJson.GetProperty("profile_pic_url_hd").GetString(),
-                Name = userJson.GetProperty("full_name").GetString(),
-                FollowersCount = userJson.GetProperty("edge_followed_by").GetProperty("count").GetInt32(),
-                ProfileUrl = "www.instagram.com/" + username,
-                Url = profileUrl,
-            };
-
-            var postsJson = userJson.GetProperty("edge_owner_to_timeline_media").GetProperty("edges");
-
-            List<InstagramPost> userPosts = new List<InstagramPost>();
-            _apiCalled.Add(1, new KeyValuePair<string, object>("sidecar", $"ig_direct"),
-                new KeyValuePair<string, object>("status", response.StatusCode)
-            );
-            
-            foreach (var post in postsJson.EnumerateArray())
-            {
-                try
-                {
-                    var node = post.GetProperty("node");
-                    var mediaItems = new List<ExtractedMedia>();
-
-                    if (node.GetProperty("is_video").GetBoolean())
-                    {
-                        mediaItems.Add(new ExtractedMedia()
-                        {
-                            Url =  node.GetProperty("video_url").GetString(),
-                            MediaType = "video/mp4"
-
-                        });
-                    }
-                    else
-                    {
-                        mediaItems.Add(new ExtractedMedia()
-                        {
-                            Url =  node.GetProperty("display_url").GetString(),
-                            MediaType = "image/jpeg"
-                        });
-                    }
-
-                    // carrousel sidecar of images/videos
-                    if (node.TryGetProperty("edge_sidecar_to_children", out JsonElement sidecar))
-                    {
-                        mediaItems.Clear();
-                        foreach (var sideElem in sidecar.GetProperty("edges").EnumerateArray())
-                        {
-                            var sideNode = sideElem.GetProperty("node");
-                            string url = sideNode.TryGetProperty("video_url", out var videoUrlElem)
-                                ? videoUrlElem.GetString()
-                                : sideNode.GetProperty("display_url").GetString();
-                            string type = sideNode.TryGetProperty("video_url", out var _)
-                                ? "video/mp4"
-                                : "image/jpeg";
-                            mediaItems.Add(new ExtractedMedia()
-                            {
-                                Url = url,
-                                MediaType = type
-
-                            });
-                        }
-                    }
-
-                    string caption = "";
-                    var captionEdges = node.GetProperty("edge_media_to_caption").GetProperty("edges");
-                    if (captionEdges.GetArrayLength() > 0)
-                        caption = captionEdges[0].GetProperty("node").GetProperty("text").GetString();
-
-                    long likes = 0;
-                    try
-                    {
-                        likes = node.GetProperty("edge_liked_by").GetProperty("count").GetInt64();
-                    }
-                    catch (Exception _) { }
-
-                    var isPinned = false;
-                    foreach (var pin in node.GetProperty("pinned_for_users").EnumerateArray())
-                    {
-                        var pinUser = pin.GetProperty("username").GetString();
-                        if (pinUser == userResult.Acct)
-                            isPinned = true;
-                    }
-                    var parsedPost = new InstagramPost()
-                    {
-                        Id = node.GetProperty("shortcode").GetString(),
-                        MessageContent = caption,
-                        Author = userResult,
-                        CreatedAt = DateTimeOffset.FromUnixTimeSeconds(node.GetProperty("taken_at_timestamp").GetInt64()).UtcDateTime,
-                        IsPinned = isPinned,
-                        LikeCount = likes,
-                        
-                        Media = mediaItems.ToArray(),
-                    };
-                    userPosts.Add(parsedPost);
-                }
-                catch (Exception ex)
-                {
-                    //Console.WriteLine($"Error fetching post: {ex.Message}");
-                }
-            }
-
-            userResult.RecentPosts = userPosts.Where(x => x.IsPinned == false);
-            userResult.PinnedPosts = userPosts.Where(x => x.IsPinned == true).Select(x => x.Id).ToArray();
-            
-            if (user is not null)
-                await _instagramUserDal.UpdateUserCacheAsync(user);
-            
-            return userResult;
-        }
-
-        private InstagramPost ParsePost(JsonElement postDoc)
-        {
-                List<ExtractedMedia> media = new List<ExtractedMedia>();
-                foreach (JsonElement m in postDoc.GetProperty("media").EnumerateArray())
-                {
-                    bool isVideo = m.GetProperty("is_video").GetBoolean();
-                    if (!isVideo)
-                    {
-                        media.Add(new ExtractedMedia()
-                        {
-                            Url = m.GetProperty("url").GetString(),
-                            MediaType = "image/jpeg"
-
-                        });
-
-                    }
-                    else
-                    {
-                        media.Add(new ExtractedMedia()
-                        {
-                            Url = m.GetProperty("video_url").GetString(),
-                            MediaType = "video/mp4"
-
-                        });
-                        
-                    }
-
-                }
-                var createdAt = DateTime.Parse(postDoc.GetProperty("date").GetString(), null, System.Globalization.DateTimeStyles.RoundtripKind);
-                var post = new InstagramPost()
-                    {
-                        Id = postDoc.GetProperty("id").GetString(),
-                        MessageContent = postDoc.GetProperty("caption").GetString(),
-                        Author = new InstagramUser()
-                        {
-                            Acct = postDoc.GetProperty("user").GetString(),
-                        },
-                        CreatedAt = createdAt,
-                        IsPinned = postDoc.GetProperty("pinned").GetBoolean(),
-                        
-                        Media = media.ToArray(),
-                    };
-                return post;
-            
-        }
-
-        private async Task<string> GetWebSidecar()
-        {
-            var settings = await _settingsDal.Get("ig_crawling");
-            if (settings == null)
-                return _settings.SidecarURL;
-
-            JsonElement sidecars;
-            if (!settings.Value.TryGetProperty("WebSidecars", out sidecars))
-                return _settings.SidecarURL;
-
-            List<string> sidecarsURL = new List<string>();
-            foreach (var s in sidecars.EnumerateArray())
-            {
-                sidecarsURL.Add(s.GetString());
-            }
-            var day1 = (int)DateTime.Now.DayOfWeek;
-
-            return "http://" + sidecarsURL[day1 % sidecarsURL.Count];
-        }
         
 }

@@ -97,6 +97,9 @@ public class SocialNetworkCache
             {
                 throw;
             }
+            catch (Exception _)
+            {
+            }
         }
         return null;
     }
