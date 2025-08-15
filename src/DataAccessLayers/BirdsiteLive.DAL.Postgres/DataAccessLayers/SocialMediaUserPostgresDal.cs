@@ -207,7 +207,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
                 INSERT INTO {PostCacheTableName} (id, acct, data, lastsync)
                 VALUES ($1, $2, $3, NOW())
                 ON CONFLICT (id)
-                DO NOTHING 
+                DO UPDATE SET data = EXCLUDED.data, lastsync = EXCLUDED.lastsync
 """;
             await using var connection = DataSource.CreateConnection();
             await connection.OpenAsync();
