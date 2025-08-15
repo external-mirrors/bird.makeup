@@ -26,7 +26,7 @@ public class UserTest
         var settings = new InstanceSettings
         {
             Domain = "domain.name",
-            SidecarURL = "http://localhost:5001"
+            SidecarURL = "http://100.95.133.128:5000"
         };
 
         var ipfsService = new Mock<IIpfsService>();

@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
@@ -125,4 +126,16 @@ public class InstagramService : ISocialMediaService
         }
 
         
+}
+public class InstagramSocialMediaUserConverter : JsonConverter<SocialMediaUser>
+{
+    public override SocialMediaUser? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return JsonSerializer.Deserialize<InstagramUser>(ref reader, options);
+    }
+
+    public override void Write(Utf8JsonWriter writer, SocialMediaUser value, JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, value, value.GetType(), options);
+    }
 }
