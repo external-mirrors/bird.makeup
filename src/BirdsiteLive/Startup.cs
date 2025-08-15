@@ -50,8 +50,8 @@ namespace BirdsiteLive
                 .ConfigureResource(builder => builder.AddService(
                     serviceName: "dotmakeup", 
                     autoGenerateServiceInstanceId: false,
-                    serviceInstanceId: Environment.MachineName
-                    //serviceNamespace: Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork 
+                    serviceInstanceId: Environment.MachineName,
+                    serviceNamespace: Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork 
                     ))
                 .WithMetrics(config =>
                 {
