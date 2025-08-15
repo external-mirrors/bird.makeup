@@ -420,10 +420,10 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         {
             Id = long.Parse(result.GetProperty("rest_id").GetString()),
             Acct = result.GetProperty("core").GetProperty("screen_name").GetString().ToLower(), 
-            Name =  result.GetProperty("core").GetProperty("name").GetString(), //res.RootElement.GetProperty("data").GetProperty("name").GetString(),
+            Name =  result.GetProperty("core").GetProperty("name").GetString(), 
             Description =  result.GetProperty("legacy").GetProperty("description").GetString(),
             Url =  "", //res.RootElement.GetProperty("data").GetProperty("url").GetString(),
-            ProfileImageUrl =  result.GetProperty("avatar").GetProperty("image_url").GetString(), 
+            ProfileImageUrl =  result.GetProperty("avatar").GetProperty("image_url").GetString().Replace("_normal", "_400x400"), 
             ProfileBannerURL = profileBannerURL,
             Protected = false, //res.RootElement.GetProperty("data").GetProperty("protected").GetBoolean(), 
             PinnedPosts = pinnedTweets,

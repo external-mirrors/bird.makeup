@@ -171,6 +171,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
             var profileJson = await httpResponse.Content.ReadAsStringAsync();
             var profile = JsonSerializer.Deserialize<TwitterUser>(profileJson);
 
+            profile.ProfileImageUrl = profile.ProfileImageUrl.Replace("_normal", "_400x400");
             await _twitterUserDal.UpdateUserCacheAsync(profile);
             return profile;
         }
