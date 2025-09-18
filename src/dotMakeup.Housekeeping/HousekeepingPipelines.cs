@@ -79,6 +79,18 @@ namespace BirdsiteLive.Moderation
                 }
                 else
                 {
+                    foreach (var media in post.Media)
+                    {
+                        var h = media.Url.Replace("https://ipfs.kilogram.makeup/ipfs/", "");
+                        try
+                        {
+                            await _ipfs.Unpin(h);
+                        }
+                        catch (Exception _)
+                        {
+                            _logger.LogCritical($"Error unpinning {h} from ipfs");
+                        }
+                    }
                     await _socialMediaService.UserDal.DeletePostCacheAsync(p);
                 }
 

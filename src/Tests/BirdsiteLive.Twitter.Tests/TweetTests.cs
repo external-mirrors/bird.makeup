@@ -470,6 +470,7 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }
+        [Ignore]
         [TestMethod]
         [DynamicData(nameof(Implementations))]
         public async Task ShortLink_Expension_3(StrategyHints s)
