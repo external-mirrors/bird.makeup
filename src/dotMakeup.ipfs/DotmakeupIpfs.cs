@@ -95,7 +95,7 @@ public class DotmakeupIpfs : IIpfsService
     public async Task<string[]> AllPinnedHashes()
     {
         var result = new List<string>();
-        await foreach (var item in _ipfs.Pin.ListAsync(PinType.Direct))
+        await foreach (var item in _ipfs.Pin.ListAsync(PinType.Recursive))
         {
             result.Add(item.ToString());
         }
