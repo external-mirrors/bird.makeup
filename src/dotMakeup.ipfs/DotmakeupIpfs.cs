@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.Metrics;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
+using Ipfs.CoreApi;
 using Ipfs.Http;
 
 namespace dotMakeup.ipfs;
@@ -54,7 +55,7 @@ public class DotmakeupIpfs : IIpfsService
         var i = await _ipfs.FileSystem.AddAsync(memoryStream);
         
         if (pin)
-            await _ipfs.Pin.AddAsync(i.Id);
+            await _ipfs.Pin.AddAsync(i.Id, new PinAddOptions() {});
         
         var gatewayClient = _httpClientFactory.CreateClient();
         gatewayClient.Timeout = TimeSpan.FromMinutes(3);
@@ -93,10 +94,12 @@ public class DotmakeupIpfs : IIpfsService
     }
     public async Task<string[]> AllPinnedHashes()
     {
-        var l = await _ipfs.Pin.ListAsync();
-        var hashes = l.Select(x => x.ToString());
-
-        return hashes.ToArray();
+        var result = new List<string>();
+        await foreach (var item in _ipfs.Pin.ListAsync(PinType.Direct))
+        {
+            result.Add(item.ToString());
+        }
+        return result.ToArray();
     }
 
     private async Task UpdateStats()

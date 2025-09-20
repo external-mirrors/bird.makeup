@@ -11,7 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Ipfs.Http.Client" Version="0.33.0" />
+      <PackageReference Include="IpfsShipyard.Ipfs.Http.Client" Version="0.7.0" />
       <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.7" />
     </ItemGroup>
 
