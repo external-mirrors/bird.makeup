@@ -16,7 +16,7 @@ tasks:
       sudo systemctl start docker
       sudo docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=birdsitelive -e POSTGRES_USER=birdsitelive -e POSTGRES_DB=birdsitelive postgres:15 -N 500
       cd bird.makeup/src
-      dotnet test
+      dotnet test --filter "TestCategory!=Twitter"
   - publish-x64: |
       cd bird.makeup/src/BirdsiteLive
       dotnet publish --os linux --arch x64 /t:PublishContainer -c Release

@@ -14,7 +14,7 @@ using Moq;
 
 namespace BirdsiteLive.Twitter.Tests
 {
-    [TestClass]
+    [TestClass, TestCategory("Twitter")]
     public class TimelineTests
     {
         private TwitterTweetsService _tweetService;

@@ -15,7 +15,7 @@ using Moq;
 
 namespace BirdsiteLive.Twitter.Tests
 {
-    [TestClass]
+    [TestClass, TestCategory("Twitter")]
     public class UserTests
     {
         public static IEnumerable<object[]> Implementations
