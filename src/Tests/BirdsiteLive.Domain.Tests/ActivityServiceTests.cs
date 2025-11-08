@@ -95,6 +95,49 @@ namespace BirdsiteLive.Domain.Tests
             #endregion
         }
         [TestMethod]
+        public async Task AcceptFollow_BridgyFed()
+        {
+ 
+
+            var logger1 = new Mock<ILogger<ActivityPubService>>();
+            var httpFactory = new Mock<IHttpClientFactory>();
+            var keyFactory = new Mock<IMagicKeyFactory>();
+            var cryptoService = new CryptoService(keyFactory.Object);
+            httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+            var service = new ActivityPubService(cryptoService, _settings, httpFactory.Object, logger1.Object);
+
+            var json = """
+                       {
+                         "@context": [
+                           "https://www.w3.org/ns/activitystreams",
+                           "https://purl.archive.org/miscellany"
+                         ],
+                         "type": "Follow",
+                         "id": "https://fed.brid.gy/convert/ap/https://snarfed.org/#follow-2025-10-21T13:38:08-@id_aa_carmack@bird.makeup",
+                         "actor": "https://fed.brid.gy/snarfed.org",
+                         "object": "https://bird.makeup/users/id_aa_carmack",
+                         "to": ["https://www.w3.org/ns/activitystreams#Public"],
+                         "url": [{
+                           "type": "Link",
+                           "rel": "canonical",
+                           "href": "https://snarfed.org/#follow-2025-10-21T13:38:08-@id_aa_carmack@bird.makeup"
+                         }]
+                       }
+                       """;
+            var activity = ApDeserializer.ProcessActivity(json) as ActivityFollow;
+
+
+            #region Validations
+
+            var req = service.BuildAcceptFollow(activity);
+            
+            string s = JsonSerializer.Serialize(req);
+            
+            Assert.AreEqual(req.apObject.to[0], "https://www.w3.org/ns/activitystreams#Public");
+
+            #endregion
+        }
+        [TestMethod]
         public async Task AcceptFollow_Lemmy()
         {
  
