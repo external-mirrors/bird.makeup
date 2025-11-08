@@ -142,15 +142,18 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
             var candidates = await _twitterUserDal.GetTwitterCrawlUsersAsync(_instanceSettings.MachineName);
             Random.Shared.Shuffle(candidates);
+            string backend = "localhost";
             foreach (var account in candidates)
             {
                 username = account.Acct;
                 password = account.Password;
+                if (account.Backend is not null)
+                    backend = account.Backend;
             }
 
             var client = _httpClientFactory.CreateClient();
             var request = new HttpRequestMessage(HttpMethod.Get,
-                $"http://localhost:5000/twitter/profile/{userDal.TwitterUserId}");
+                $"http://{backend}:5000/twitter/profile/{userDal.TwitterUserId}");
 
             request.Headers.TryAddWithoutValidation("dotmakeup-user", username);
             request.Headers.TryAddWithoutValidation("dotmakeup-password", password);

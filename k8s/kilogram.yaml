@@ -130,26 +130,6 @@ spec:
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 10
-        - name: tailscale
-          image: ghcr.io/tailscale/tailscale:latest
-          securityContext:
-            privileged: true
-          imagePullPolicy: Always
-          env:
-            - name: "TS_KUBE_SECRET"
-              value: ""
-            - name: "TS_USERSPACE"
-              value: "false"
-            - name: "TS_STATE_DIR"
-              value: "/var/lib/tailscale"
-            - name: "TS_AUTHKEY"
-              valueFrom:
-                secretKeyRef:
-                  name: tailscale
-                  key: ts_authkey
-          volumeMounts:
-            - name: ts
-              mountPath: /var/lib/tailscale
         - name: dotmakeup-social-sidecar
           image: cloutier/dotmakeup-social-sidecar:latest
           imagePullPolicy: Always
@@ -169,15 +149,6 @@ spec:
                   name: http-proxy
                   key: proxy
                   optional: true
-  volumeClaimTemplates:
-    - metadata:
-        name: ts
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        storageClassName: "csi-cinder-classic"
-        resources:
-          requests:
-            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service

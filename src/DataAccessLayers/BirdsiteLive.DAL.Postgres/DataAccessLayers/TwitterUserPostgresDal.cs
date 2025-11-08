@@ -189,7 +189,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
 
         public async Task<CrawlAccount[]> GetTwitterCrawlUsersAsync(string worker)
         {
-            var query = $"SELECT * FROM {_settings.TwitterCrawlingUserTableName} WHERE reservedto = @worker";
+            var query = $"SELECT *, extradata->>'backend' FROM {_settings.TwitterCrawlingUserTableName} WHERE reservedto = @worker";
 
             using (var dbConnection = Connection)
             {
