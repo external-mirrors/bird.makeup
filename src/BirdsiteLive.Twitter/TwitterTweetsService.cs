@@ -44,6 +44,7 @@ namespace BirdsiteLive.Twitter
         private readonly Graphql2024 _tweetFromGraphql2024;
         private readonly Graphql2025 _tweetFromGraphql2025;
         private readonly Sidecar _tweetFromSidecar;
+        private readonly ITimelineExtractor _tweetFromNitter;
 
         #region Ctor
         public TwitterTweetsService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ITwitterUserService twitterUserService, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory, ISettingsDal settings, ILogger<TwitterService> logger)
@@ -60,6 +61,7 @@ namespace BirdsiteLive.Twitter
             _tweetFromSyndication = new Syndication(this, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, this, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, this, httpClientFactory, instanceSettings, logger);
+            _tweetFromNitter = new Nitter(_tweetFromSyndication, _tweetFromGraphql2025, settings, logger);
             _tweetFromSidecar = new Sidecar(_twitterUserDal, this, httpClientFactory, instanceSettings, logger);
         }
         #endregion
@@ -118,6 +120,9 @@ namespace BirdsiteLive.Twitter
             if (s == StrategyHints.Sidecar)
                 return (await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, -1, true)).ToArray();
             
+            if (s == StrategyHints.Nitter)
+                return (await _tweetFromNitter.GetTimelineAsync(user, user.TwitterUserId, -1, true)).ToArray();
+            
             return null;
         }
         public async Task<ExtractedTweet[]> GetTimelineAsync(SyncUser user, long fromTweetId = -1)
@@ -164,8 +169,10 @@ namespace BirdsiteLive.Twitter
             }
             else if (user.Followers > followersThreshold0)
             {
-                extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, true);
-                source = "Sidecar (with replies)";
+                //extractedTweets = await _tweetFromSidecar.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, true);
+                extractedTweets = await _tweetFromNitter.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, false);
+                //source = "Sidecar (with replies)";
+                source = "Nitter";
                 await Task.Delay(postNitterDelay);
             }
             else

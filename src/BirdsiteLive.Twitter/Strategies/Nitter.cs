@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -26,6 +27,8 @@ public class Nitter : ITimelineExtractor
     private readonly IUserExtractor _userExtractor;
     private readonly ITweetExtractor _tweetExtractor;
     private string Useragent = "Bird.makeup ( https://git.sr.ht/~cloutier/bird.makeup ) Bot";
+    static Meter _meter = new("DotMakeup", "1.0.0");
+    static Counter<int> _nCalled = _meter.CreateCounter<int>("dotmakeup_nitter_called_count");
     public Nitter(ITweetExtractor tweetExtractor, IUserExtractor userExtractor, ISettingsDal settingsDal, ILogger<TwitterService> logger)
     {
         _settings = settingsDal;
@@ -124,6 +127,13 @@ public class Nitter : ITimelineExtractor
                 _logger.LogError($"error fetching tweet {match} from user {user.Acct}");
             }
             await Task.Delay(100);
+        }
+
+        if (tweets.Count == 0)
+        {
+            _nCalled.Add(tweets.Count,
+                new KeyValuePair<string, object>("source", domain)
+            );
         }
         
         return tweets;

@@ -29,6 +29,7 @@ namespace BirdsiteLive.Twitter.Tests
                 yield return new object[] { StrategyHints.Graphql2024 };
                 yield return new object[] { StrategyHints.Graphql2025 };
                 yield return new object[] { StrategyHints.Sidecar };
+                yield return new object[] { StrategyHints.Nitter };
             }
         }
         [TestInitialize]
@@ -147,7 +148,6 @@ namespace BirdsiteLive.Twitter.Tests
 
             Assert.IsTrue(tweets.Length > 0);
         }
-        [Ignore]
         [TestMethod]
         [DynamicData(nameof(Implementations))]
         public async Task TimelineGrant(StrategyHints s)

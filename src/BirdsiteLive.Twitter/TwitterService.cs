@@ -13,7 +13,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace BirdsiteLive.Twitter
 {
-    public enum StrategyHints { Syndication, Graphql2024, Graphql2025, Sidecar }
+    public enum StrategyHints { Syndication, Graphql2024, Graphql2025, Sidecar, Nitter }
     public class TwitterService : ISocialMediaService
     {
         private readonly ITwitterTweetsService _twitterTweetsService;
