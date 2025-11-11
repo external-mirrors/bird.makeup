@@ -6,6 +6,83 @@ namespace BirdsiteLive.ActivityPub.Tests
     [TestClass]
     public class ActorTests
     {
+	    [TestMethod]
+	    public void ActorDeserializationTest_BridgyFed_User()
+	    {
+		    var json = """
+		               {
+		               	"@context": [
+		               		"https://www.w3.org/ns/activitystreams",
+		               		"https://purl.archive.org/miscellany",
+		               		{
+		               			"discoverable": "http://joinmastodon.org/ns#discoverable",
+		               			"indexable": "http://joinmastodon.org/ns#indexable"
+		               		},
+		               		{
+		               			"PropertyValue": "http://schema.org#PropertyValue"
+		               		},
+		               		{
+		               			"alsoKnownAs": {
+		               				"@id": "as:alsoKnownAs",
+		               				"@type": "@id"
+		               			}
+		               		},
+		               		"https://w3id.org/security/v1"
+		               	],
+		               	"alsoKnownAs": [
+		               		"https://snarfed.org/"
+		               	],
+		               	"attachment": [
+		               		{
+		               			"name": "Ryan Barrett",
+		               			"type": "PropertyValue",
+		               			"value": "<a rel=\"me\" href=\"https://snarfed.org/about\"><span class=\"invisible\">https://</span>snarfed.org/about</a>"
+		               		}
+		               	],
+		               	"discoverable": true,
+		               	"endpoints": {
+		               		"sharedInbox": "https://fed.brid.gy/ap/sharedInbox"
+		               	},
+		               	"followers": "https://fed.brid.gy/snarfed.org/followers",
+		               	"following": "https://fed.brid.gy/snarfed.org/following",
+		               	"icon": {
+		               		"name": "Ryan",
+		               		"type": "Image",
+		               		"url": "https://snarfed.org/ryan_profile_medium.jpg"
+		               	},
+		               	"id": "https://fed.brid.gy/snarfed.org",
+		               	"image": [
+		               		{
+		               			"type": "Image",
+		               			"url": "https://snarfed.org/w/wp-content/uploads/2013/06/copy-cropped-iraq_bar.jpg"
+		               		},
+		               		{
+		               			"name": "Ryan",
+		               			"type": "Image",
+		               			"url": "https://snarfed.org/ryan_profile_medium.jpg"
+		               		}
+		               	],
+		               	"inbox": "https://fed.brid.gy/snarfed.org/inbox",
+		               	"indexable": true,
+		               	"manuallyApprovesFollowers": false,
+		               	"name": "Ryan Barrett",
+		               	"outbox": "https://fed.brid.gy/snarfed.org/outbox",
+		               	"preferredUsername": "snarfed.org",
+		               	"publicKey": {
+		               		"id": "https://fed.brid.gy/snarfed.org#key",
+		               		"owner": "https://fed.brid.gy/snarfed.org",
+		               		"publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxi54qQrNQOcOnUftXBQm\n9BJoSCTOF6ffbVL+zXkEgktubVy5XD1Hli07CgvpDBz9jlKJNp1BJ2G0lpn0QBtW\nYvViPwlsgB1tsheChL3KtWTrnNl01+2lbYD2kgdTDXc/j/1BkL7ootHulE8jdjfK\ndNUUFoTmzF/5wgueNYMWNnWVSzGUVGyDo6TPYV6tmso3QRi0Cr5Sk28VqJ49oT5K\nbCv4eMrGJifbmVK4fhuTndQWeq1919pxnUByP5rsOBoj9b3YshygiWQAjaqV8W7W\n+kfybE4dGx4Cyj02HcgPlhgGexhSWo6Fpe9IvZGrKquql+kLyWRXvW5eQhb+l4bx\nlwIDAQAB\n-----END PUBLIC KEY-----"
+		               	},
+		               	"summary": "",
+		               	"type": "Person",
+		               	"url": "https://fed.brid.gy/r/https://snarfed.org/about"
+		               }
+		               """;
+
+		    var actor = JsonSerializer.Deserialize<Actor>(json);
+		    Assert.IsNotNull(actor);
+		    Assert.AreEqual(actor.id, "https://fed.brid.gy/snarfed.org");;
+	    }
         [TestMethod]
         public void ActorDeserializationTest_Lemmy_User()
         {

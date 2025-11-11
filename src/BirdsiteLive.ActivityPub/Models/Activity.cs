@@ -21,7 +21,7 @@ namespace BirdsiteLive.ActivityPub
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string actor { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonConverter(typeof(StringOrStringArrayConverter))]
+        [JsonConverter(typeof(SingleOrArrayConverter<string>))]
         public List<string> to { get; set; }
 
 

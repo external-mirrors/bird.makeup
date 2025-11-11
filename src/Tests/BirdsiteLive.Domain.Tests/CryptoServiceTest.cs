@@ -76,6 +76,111 @@ public class CryptoServiceTest
     }
 
     [TestMethod]
+    public void ValidBridgyFed()
+    {
+
+        // POST /users/id_aa_carmack/inbox HTTP/1.1
+        // user-agent: Bridgy Fed (https://fed.brid.gy/)
+        // accept-encoding: gzip, deflate
+        // accept: */*
+        // connection: keep-alive
+        // date: Sun, 09 Nov 2025 15:54:04 GMT
+        // host: bird.makeup
+        // content-type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"
+        // digest: SHA-256=Ni6ysLKi5jiypZcCAGRG32xsXZihOpbr1jpdw1QflnE=
+        // Content-Length: 494
+        // signature: keyId="https://fed.brid.gy/snarfed.org#key",algorithm="rsa-sha256",signature="iqDJDgYdHOLZYLtYv2oC8fvFgzUvQARJXBE/IQfWWDKz1A48JkS1D1WOXSuNrV94vZN2MiY6LVqta6K+nZRACL1NPmARw9Le7wtg601eeqqoV/+l//KbB9j7Htl42P77IhLB7Vs9vbXISKNLOO9lULWon2ueeJiNc/laYZz+WeRMKXI1/28ERcU1nxqb/OvFnPGQ+ZNB1Xgia/6gonpVpbqn7aZ4tVDWMtdFbsIq476rIDTIOQ3Xi+b7rWP1t76/d/+Y89sEY1j83+7e0N7tik325mQ8tR0lU0niyjII65LTOQBS7hrIrQBGFE4FXqelwGM4DYcaUVf5jXR9p3htQA==",headers="date host digest (request-target)"
+        // 
+        // {"@context":["https://www.w3.org/ns/activitystreams","https://purl.archive.org/miscellany"],"type":"Follow","id":"https://fed.brid.gy/convert/ap/https://snarfed.org/#follow-2025-10-21T13:38:08-@id_aa_carmack@bird.makeup","actor":"https://fed.brid.gy/snarfed.org","object":"https://bird.makeup/users/id_aa_carmack","to":["https://www.w3.org/ns/activitystreams#Public"],"url":[{"type":"Link","rel":"canonical","href":"https://snarfed.org/#follow-2025-10-21T13:38:08-@id_aa_carmack@bird.makeup"}]}
+
+        var actorJson = """
+                        {
+                        	"@context": [
+                        		"https://www.w3.org/ns/activitystreams",
+                        		"https://purl.archive.org/miscellany",
+                        		{
+                        			"discoverable": "http://joinmastodon.org/ns#discoverable",
+                        			"indexable": "http://joinmastodon.org/ns#indexable"
+                        		},
+                        		{
+                        			"PropertyValue": "http://schema.org#PropertyValue"
+                        		},
+                        		{
+                        			"alsoKnownAs": {
+                        				"@id": "as:alsoKnownAs",
+                        				"@type": "@id"
+                        			}
+                        		},
+                        		"https://w3id.org/security/v1"
+                        	],
+                        	"alsoKnownAs": [
+                        		"https://snarfed.org/"
+                        	],
+                        	"attachment": [
+                        		{
+                        			"name": "Ryan Barrett",
+                        			"type": "PropertyValue",
+                        			"value": "<a rel=\"me\" href=\"https://snarfed.org/about\"><span class=\"invisible\">https://</span>snarfed.org/about</a>"
+                        		}
+                        	],
+                        	"discoverable": true,
+                        	"endpoints": {
+                        		"sharedInbox": "https://fed.brid.gy/ap/sharedInbox"
+                        	},
+                        	"followers": "https://fed.brid.gy/snarfed.org/followers",
+                        	"following": "https://fed.brid.gy/snarfed.org/following",
+                        	"icon": {
+                        		"name": "Ryan",
+                        		"type": "Image",
+                        		"url": "https://snarfed.org/ryan_profile_medium.jpg"
+                        	},
+                        	"id": "https://fed.brid.gy/snarfed.org",
+                        	"image": [
+                        		{
+                        			"type": "Image",
+                        			"url": "https://snarfed.org/w/wp-content/uploads/2013/06/copy-cropped-iraq_bar.jpg"
+                        		},
+                        		{
+                        			"name": "Ryan",
+                        			"type": "Image",
+                        			"url": "https://snarfed.org/ryan_profile_medium.jpg"
+                        		}
+                        	],
+                        	"inbox": "https://fed.brid.gy/snarfed.org/inbox",
+                        	"indexable": true,
+                        	"manuallyApprovesFollowers": false,
+                        	"name": "Ryan Barrett",
+                        	"outbox": "https://fed.brid.gy/snarfed.org/outbox",
+                        	"preferredUsername": "snarfed.org",
+                        	"publicKey": {
+                        		"id": "https://fed.brid.gy/snarfed.org#key",
+                        		"owner": "https://fed.brid.gy/snarfed.org",
+                        		"publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxi54qQrNQOcOnUftXBQm\n9BJoSCTOF6ffbVL+zXkEgktubVy5XD1Hli07CgvpDBz9jlKJNp1BJ2G0lpn0QBtW\nYvViPwlsgB1tsheChL3KtWTrnNl01+2lbYD2kgdTDXc/j/1BkL7ootHulE8jdjfK\ndNUUFoTmzF/5wgueNYMWNnWVSzGUVGyDo6TPYV6tmso3QRi0Cr5Sk28VqJ49oT5K\nbCv4eMrGJifbmVK4fhuTndQWeq1919pxnUByP5rsOBoj9b3YshygiWQAjaqV8W7W\n+kfybE4dGx4Cyj02HcgPlhgGexhSWo6Fpe9IvZGrKquql+kLyWRXvW5eQhb+l4bx\nlwIDAQAB\n-----END PUBLIC KEY-----"
+                        	},
+                        	"summary": "",
+                        	"type": "Person",
+                        	"url": "https://fed.brid.gy/r/https://snarfed.org/about"
+                        }
+                        """;
+        
+        var remote = JsonSerializer.Deserialize<Actor>(actorJson);
+        var rawSig = "keyId=\"https://fed.brid.gy/snarfed.org#key\",algorithm=\"rsa-sha256\",signature=\"iqDJDgYdHOLZYLtYv2oC8fvFgzUvQARJXBE/IQfWWDKz1A48JkS1D1WOXSuNrV94vZN2MiY6LVqta6K+nZRACL1NPmARw9Le7wtg601eeqqoV/+l//KbB9j7Htl42P77IhLB7Vs9vbXISKNLOO9lULWon2ueeJiNc/laYZz+WeRMKXI1/28ERcU1nxqb/OvFnPGQ+ZNB1Xgia/6gonpVpbqn7aZ4tVDWMtdFbsIq476rIDTIOQ3Xi+b7rWP1t76/d/+Y89sEY1j83+7e0N7tik325mQ8tR0lU0niyjII65LTOQBS7hrIrQBGFE4FXqelwGM4DYcaUVf5jXR9p3htQA==\",headers=\"date host digest (request-target)\"";
+        var method = "POST";
+        var path = "/users/id_aa_carmack/inbox";
+        var queryString = "";
+        var body = "{\"@context\":[\"https://www.w3.org/ns/activitystreams\",\"https://purl.archive.org/miscellany\"],\"type\":\"Follow\",\"id\":\"https://fed.brid.gy/convert/ap/https://snarfed.org/#follow-2025-10-21T13:38:08-@id_aa_carmack@bird.makeup\",\"actor\":\"https://fed.brid.gy/snarfed.org\",\"object\":\"https://bird.makeup/users/id_aa_carmack\",\"to\":[\"https://www.w3.org/ns/activitystreams#Public\"],\"url\":[{\"type\":\"Link\",\"rel\":\"canonical\",\"href\":\"https://snarfed.org/#follow-2025-10-21T13:38:08-@id_aa_carmack@bird.makeup\"}]}";
+        var headers = new Dictionary<string, string>()
+        {
+            { "date", "Sun, 09 Nov 2025 15:54:04 GMT" },
+            { "digest", "SHA-256=Ni6ysLKi5jiypZcCAGRG32xsXZihOpbr1jpdw1QflnE=" },
+            { "host", "bird.makeup"},
+            { "content-type", "application/activity+json"}
+        };
+
+        var res = CryptoService.ValidateSignature(remote, rawSig, method, path, queryString, headers, body);
+        Assert.IsTrue(res.SignatureIsValidated);
+    }
+    [TestMethod]
     public void ValidDelete()
     {
         // kilomakeup | trce: BirdsiteLive.Controllers.InboxController[0]

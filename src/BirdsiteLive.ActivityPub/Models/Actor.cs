@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using BirdsiteLive.ActivityPub.Converters;
 
 namespace BirdsiteLive.ActivityPub
 {
@@ -22,6 +23,8 @@ namespace BirdsiteLive.ActivityPub
         public string? featured { get; set; }
         public PublicKey publicKey { get; set; }
         public Image icon { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonConverter(typeof(ArrayOrSingleConverter<Image>))]
         public Image image { get; set; }
         public EndPoints endpoints { get; set; }
         public UserAttachment[] attachment { get; set; }
