@@ -105,7 +105,6 @@ public class Nitter : ITimelineExtractor
 
             try
             {
-                //var tweet = await TweetFromSyndication(match);
                 var tweet = await _tweetExtractor.GetTweetAsync(match);
                 if (tweet.Author.Acct != user.Acct)
                 {
@@ -129,12 +128,10 @@ public class Nitter : ITimelineExtractor
             await Task.Delay(100);
         }
 
-        if (tweets.Count == 0)
-        {
-            _nCalled.Add(tweets.Count,
-                new KeyValuePair<string, object>("source", domain)
-            );
-        }
+        _nCalled.Add(tweets.Count,
+            new KeyValuePair<string, object>("source", domain),
+            new KeyValuePair<string, object>("success", tweets.Count > 0)
+        );
         
         return tweets;
     }
