@@ -47,7 +47,6 @@ public class Nitter : ITimelineExtractor
     
     public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long fromId, long a, bool withReplies)
     {
-        var lowtrust = false;
         // https://status.d420.de/
         var nitterSettings = await _settings.Get("nitter");
         if (nitterSettings is null)
@@ -55,12 +54,8 @@ public class Nitter : ITimelineExtractor
 
 
         var requester = new DefaultHttpRequester();
-        string useragent;
-        if (lowtrust && nitterSettings.Value.TryGetProperty("useragent", out JsonElement useragentElement))
-            useragent = useragentElement.GetString();
-        else
-            useragent = Useragent;
-        requester.Headers["User-Agent"] = useragent;
+        
+        requester.Headers["User-Agent"] = Useragent;
         requester.Headers["Accept"] =
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
         requester.Headers["Accept-Encoding"] = "gzip, deflate";
@@ -68,21 +63,24 @@ public class Nitter : ITimelineExtractor
         var config = Configuration.Default.With(requester).WithDefaultLoader();
         var context = BrowsingContext.New(config);
 
-        List<string> domains = new List<string>() { };
-        var prop = (lowtrust) ? "lowtrustendpoints" : "endpoints";
-        foreach (var d in nitterSettings.Value.GetProperty(prop).EnumerateArray())
+        List<(string, bool)> domains = new List<(string, bool)>() { };
+        foreach (var d in nitterSettings.Value.GetProperty("lowtrustendpoints").EnumerateArray())
         {
-            domains.Add(d.GetString());
+            domains.Add((d.GetString(), true));
+        }
+        foreach (var d in nitterSettings.Value.GetProperty("endpoints").EnumerateArray())
+        {
+            domains.Add((d.GetString(), false));
         }
 
         Random rnd = new Random();
         int randIndex = rnd.Next(domains.Count);
-        var domain = domains[randIndex];
+        (var domain , bool lowtrust) = domains[randIndex];
         string address;
         if (withReplies)
-            address = $"https://{domain}/{user.Acct}/with_replies";
+            address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{user.Acct}/with_replies";
         else
-            address = $"https://{domain}/{user.Acct}";
+            address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{user.Acct}";
         var document = await context.OpenAsync(address);
 
         var cellSelector = ".tweet-link";
@@ -108,7 +106,7 @@ public class Nitter : ITimelineExtractor
                 var tweet = await _tweetExtractor.GetTweetAsync(match);
                 if (tweet.Author.Acct != user.Acct)
                 {
-                    if (!nitterSettings.Value.GetProperty("allowboosts").GetBoolean() || lowtrust)
+                    if (lowtrust)
                         continue;
                     
                     tweet.IsRetweet = true;
