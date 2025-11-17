@@ -81,6 +81,7 @@ public class Nitter : ITimelineExtractor
             address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{user.Acct}/with_replies";
         else
             address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{user.Acct}";
+        _logger.LogInformation($"Nitter: fetching {address}");
         var document = await context.OpenAsync(address);
 
         var cellSelector = ".tweet-link";
@@ -121,12 +122,12 @@ public class Nitter : ITimelineExtractor
             }
             catch (Exception e)
             {
-                _logger.LogError($"error fetching tweet {match} from user {user.Acct}");
+                _logger.LogError($"Nitter: error fetching tweet {match} from user {user.Acct}");
             }
             await Task.Delay(100);
         }
 
-        _nCalled.Add(tweets.Count,
+        _nCalled.Add(1,
             new KeyValuePair<string, object>("source", domain),
             new KeyValuePair<string, object>("success", tweets.Count > 0)
         );
