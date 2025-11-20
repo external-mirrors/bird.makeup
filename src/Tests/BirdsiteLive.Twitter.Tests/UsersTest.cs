@@ -25,6 +25,7 @@ namespace BirdsiteLive.Twitter.Tests
                 yield return new object[] { StrategyHints.Graphql2024 };
                 yield return new object[] { StrategyHints.Graphql2025 };
                 yield return new object[] { StrategyHints.Sidecar };
+                yield return new object[] { StrategyHints.Nitter };
             }
         }
         private TwitterUserService _tweetService;
@@ -47,6 +48,8 @@ namespace BirdsiteLive.Twitter.Tests
             var settingsDal = new Mock<ISettingsDal>();
             settingsDal.Setup(_ => _.Get("twitteraccounts"))
                 .ReturnsAsync(JsonDocument.Parse("""{"accounts": [["xxx", "xxx"]]}""").RootElement);
+            settingsDal.Setup(_ => _.Get("nitter"))
+                .ReturnsAsync(JsonDocument.Parse("""{"endpoints": ["marci"], "lowtrustendpoints": [], "postnitterdelay": 0, "followersThreshold0": 10, "followersThreshold": 10,  "followersThreshold2": 11,  "followersThreshold3": 12, "twitterFollowersThreshold":  10}""").RootElement);
             httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
             httpFactory.Setup(_ => _.CreateClient("WithProxy")).Returns(new HttpClient());
             ITwitterAuthenticationInitializer auth = new TwitterAuthenticationInitializer(httpFactory.Object, settings, settingsDal.Object, logger.Object);

@@ -8,6 +8,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AngleSharp;
+using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
 using AngleSharp.Io;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
@@ -19,7 +21,7 @@ using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace BirdsiteLive.Twitter.Strategies;
 
-public class Nitter : ITimelineExtractor
+public class Nitter : ITimelineExtractor, IUserExtractor
 {
     private readonly ISettingsDal _settings;
     private readonly ILogger<TwitterService> _logger;
@@ -44,24 +46,16 @@ public class Nitter : ITimelineExtractor
         var config = Configuration.Default.With(requester).WithDefaultLoader();
         _context = BrowsingContext.New(config);
     }
-    
-    public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long fromId, long a, bool withReplies)
+
+    private async Task<(string, bool)> GetDomain()
     {
+        
         // https://status.d420.de/
         var nitterSettings = await _settings.Get("nitter");
         if (nitterSettings is null)
-            return new List<ExtractedTweet>();
+            throw new Exception("Nitter settings not found");
 
 
-        var requester = new DefaultHttpRequester();
-        
-        requester.Headers["User-Agent"] = Useragent;
-        requester.Headers["Accept"] =
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
-        requester.Headers["Accept-Encoding"] = "gzip, deflate";
-        requester.Headers["Accept-Language"] = "en-US,en;q=0.5";
-        var config = Configuration.Default.With(requester).WithDefaultLoader();
-        var context = BrowsingContext.New(config);
 
         List<(string, bool)> domains = new List<(string, bool)>() { };
         foreach (var d in nitterSettings.Value.GetProperty("lowtrustendpoints").EnumerateArray())
@@ -75,14 +69,34 @@ public class Nitter : ITimelineExtractor
 
         Random rnd = new Random();
         int randIndex = rnd.Next(domains.Count);
-        (var domain , bool lowtrust) = domains[randIndex];
-        string address;
-        if (withReplies)
-            address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{user.Acct}/with_replies";
-        else
-            address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{user.Acct}";
+        return domains[randIndex];
+    }
+
+    private async Task<IDocument> GetDocument(string address)
+    {
+        var requester = new DefaultHttpRequester();
+        
+        requester.Headers["User-Agent"] = Useragent;
+        requester.Headers["Accept"] =
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
+        requester.Headers["Accept-Encoding"] = "gzip, deflate";
+        requester.Headers["Accept-Language"] = "en-US,en;q=0.5";
+        var config = Configuration.Default.With(requester).WithDefaultLoader();
+        var context = BrowsingContext.New(config);
+        
         _logger.LogInformation($"Nitter: fetching {address}");
         var document = await context.OpenAsync(address);
+        
+        return document;
+    }
+    
+    public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long fromId, long a, bool withReplies)
+    {
+        (var domain , bool lowtrust) = await GetDomain();
+        
+        string address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{user.Acct}{(withReplies?"/with_replies":"")}";
+        
+        var document = await GetDocument(address);
 
         var cellSelector = ".tweet-link";
         var cells = document.QuerySelectorAll(cellSelector);
@@ -134,5 +148,40 @@ public class Nitter : ITimelineExtractor
         
         return tweets;
     }
-    
+
+    private string SimpleExtract(IDocument document, string cellSelector, string attribute)
+    {
+        var cells = document.QuerySelectorAll(cellSelector);
+        return cells.Select(m => m.GetAttribute(attribute)).First();
+        
+    }
+
+    public async Task<TwitterUser> GetUserAsync(string username)
+    {
+        (var domain , bool lowtrust) = await GetDomain();
+        
+        string address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{username}";
+        
+        var document = await GetDocument(address);
+
+        var name = SimpleExtract(document, ".profile-card-fullname", "title");
+        var profile = SimpleExtract(document, ".profile-card-avatar", "href");
+        
+        return new TwitterUser
+        {
+            Id = 0,
+            Acct = username,
+            Name =  name,
+            Description =  "", //res.RootElement.GetProperty("data").GetProperty("description").GetString(),
+            Url =  "", //res.RootElement.GetProperty("data").GetProperty("url").GetString(),
+            ProfileImageUrl =  profile,
+            ProfileBannerURL = "",
+            Protected = false, 
+            PinnedPosts = [],
+            StatusCount = 0,
+            FollowersCount = 0,
+            Location = "",
+            ProfileUrl = "",
+        };
+    }
 }

@@ -39,7 +39,7 @@ namespace BirdsiteLive.Twitter.Tests
             var twitterDal = new Mock<ITwitterUserDal>();
             var settingsDal = new Mock<ISettingsDal>();
             settingsDal.Setup(_ => _.Get("nitter"))
-                .ReturnsAsync(JsonDocument.Parse("""{"endpoints": ["nitter.x86-64-unknown-linux-gnu.zip"], "allowboosts": true, "postnitterdelay": 0, "followersThreshold0": 10, "followersThreshold": 10,  "followersThreshold2": 11,  "followersThreshold3": 12, "twitterFollowersThreshold":  10}""").RootElement);
+                .ReturnsAsync(JsonDocument.Parse("""{"endpoints": ["marci"], "lowtrustendpoints": [], "postnitterdelay": 0, "followersThreshold0": 10, "followersThreshold": 10,  "followersThreshold2": 11,  "followersThreshold3": 12, "twitterFollowersThreshold":  10}""").RootElement);
             settingsDal.Setup(_ => _.Get("twitteraccounts"))
                 .ReturnsAsync(JsonDocument.Parse("""{"accounts": [["xxx", "xxx"]]}""").RootElement);
             var httpFactory = new Mock<IHttpClientFactory>();

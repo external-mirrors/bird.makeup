@@ -39,6 +39,7 @@ namespace BirdsiteLive.Twitter
         private readonly Graphql2024 _tweetFromGraphql2024;
         private readonly Graphql2025 _tweetFromGraphql2025;
         private readonly Sidecar _tweetFromSidecar;
+        private readonly Nitter _tweetFromNitter;
         private readonly IUserExtractor[] _userExtractors;
 
         #region Ctor
@@ -53,6 +54,7 @@ namespace BirdsiteLive.Twitter
             
             _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
+            _tweetFromNitter = new Nitter(_tweetFromGraphql2024, _tweetFromGraphql2025, settingsDal, logger);
             _tweetFromSidecar = new Sidecar(_twitterUserDal, null, httpClientFactory, instanceSettings, logger);
             _userExtractors = [_tweetFromGraphql2024, _tweetFromGraphql2025];
         }
@@ -68,6 +70,9 @@ namespace BirdsiteLive.Twitter
             
             if (s == StrategyHints.Sidecar)
                 return await _tweetFromSidecar.GetUserAsync(username);
+            
+            if (s == StrategyHints.Nitter)
+                return await _tweetFromNitter.GetUserAsync(username);
             
             return null;
         }
