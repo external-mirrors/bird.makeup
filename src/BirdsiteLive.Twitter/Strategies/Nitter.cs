@@ -17,6 +17,7 @@ using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Twitter.Models;
 using BirdsiteLive.Twitter.Tools;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace BirdsiteLive.Twitter.Strategies;
@@ -166,14 +167,23 @@ public class Nitter : ITimelineExtractor, IUserExtractor
 
         var name = SimpleExtract(document, ".profile-card-fullname", "title");
         var profile = SimpleExtract(document, ".profile-card-avatar", "href");
+        string url;
+        var canonicalLink = document.QuerySelector("link[rel='canonical']");
+        if (canonicalLink is IElement element)
+            url = element.GetAttribute("href");
+        else
+            url = null;
+        
+
+        string bio = document.QuerySelector("div.profile-bio p")?.TextContent.Trim();
         
         return new TwitterUser
         {
             Id = 0,
             Acct = username,
             Name =  name,
-            Description =  "", //res.RootElement.GetProperty("data").GetProperty("description").GetString(),
-            Url =  "", //res.RootElement.GetProperty("data").GetProperty("url").GetString(),
+            Description =  bio,
+            Url =  url,
             ProfileImageUrl =  profile,
             ProfileBannerURL = "",
             Protected = false, 
