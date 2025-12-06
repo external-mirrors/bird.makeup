@@ -203,7 +203,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         string bio = document.QuerySelector("div.profile-bio p")?.TextContent.Trim();
 
         // Extract location - get the second direct child span
-        string location = "";
+        string location = null;
         var locationSpan = document.QuerySelector(".profile-location > span:nth-child(2)");
         if (locationSpan != null)
         {
