@@ -77,6 +77,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(user.Acct, "kobebryant");
             //Assert.AreEqual(user.PinnedPosts, new List<string>());
             Assert.AreEqual(user.Location, null);
+            Assert.IsTrue(user.ProfileImageUrl.StartsWith("https://pbs.twimg.com"));
         }
 
         [TestMethod]

@@ -215,7 +215,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         }
 
         // Extract banner image
-        string banner = "";
+        string banner = null;
         var bannerElement = document.QuerySelector(".profile-banner img");
         if (bannerElement != null)
         {
