@@ -176,6 +176,14 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         
         string bio = document.QuerySelector("div.profile-bio p")?.TextContent.Trim();
         
+        // Extract location - get the second direct child span
+        string location = "";
+        var locationSpan = document.QuerySelector(".profile-location > span:nth-child(2)");
+        if (locationSpan != null)
+        {
+            location = locationSpan.TextContent.Trim();
+        }
+        
         // Extract banner image
         string banner = "";
         var bannerElement = document.QuerySelector(".profile-banner img");
@@ -216,7 +224,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
             PinnedPosts = [],
             StatusCount = statusCount,
             FollowersCount = followersCount,
-            Location = "",
+            Location = location,
             ProfileUrl = "",
         };
     }
