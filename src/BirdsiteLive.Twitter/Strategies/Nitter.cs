@@ -193,6 +193,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor
     {
         var name = SimpleExtract(document, ".profile-card-fullname", "title");
         var profile = SimpleExtract(document, ".profile-card-avatar", "href");
+        if (profile.StartsWith("/pic/"))
+        {
+            profile = WebUtility.UrlDecode(profile.Substring(5));
+        }
         string url;
         var canonicalLink = document.QuerySelector("link[rel='canonical']");
         if (canonicalLink is IElement element)
@@ -216,8 +220,12 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         if (bannerElement != null)
         {
             banner = bannerElement.GetAttribute("src");
+            if (banner.StartsWith("/pic/"))
+            {
+                banner = WebUtility.UrlDecode(banner.Substring(5));
+            }
         }
-
+        
         // Extract stats
         int statusCount = 0;
         int followersCount = 0;
