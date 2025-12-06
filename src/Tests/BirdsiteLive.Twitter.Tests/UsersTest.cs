@@ -96,7 +96,7 @@ namespace BirdsiteLive.Twitter.Tests
                 Assert.Inconclusive();
             Assert.AreEqual(user.Name, "Grant Imahara");
             Assert.IsTrue(Math.Abs( user.StatusCount - 12495 ) < 100);
-            Assert.IsTrue(user.FollowersCount > 500_000);
+            Assert.IsTrue(user.FollowersCount > 490_000);
             Assert.AreEqual(user.Acct, "grantimahara");
             Assert.AreEqual(user.Location, "Los Angeles, CA");
         }

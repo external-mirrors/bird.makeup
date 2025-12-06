@@ -174,22 +174,48 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         else
             url = null;
         
-
         string bio = document.QuerySelector("div.profile-bio p")?.TextContent.Trim();
+        
+        // Extract banner image
+        string banner = "";
+        var bannerElement = document.QuerySelector(".profile-banner img");
+        if (bannerElement != null)
+        {
+            banner = bannerElement.GetAttribute("src");
+        }
+        
+        // Extract stats
+        int statusCount = 0;
+        int followersCount = 0;
+        var statusElement = document.QuerySelector("li.posts .profile-stat-num");
+        if (statusElement != null && int.TryParse(statusElement.TextContent.Trim().Replace(",", ""), out var status))
+        {
+            statusCount = status;
+        }
+        
+        var followersElement = document.QuerySelector("li.followers .profile-stat-num");
+        if (followersElement != null)
+        {
+            var followersText = followersElement.TextContent.Trim().Replace(",", "");
+            if (int.TryParse(followersText, out var followers))
+            {
+                followersCount = followers;
+            }
+        }
         
         return new TwitterUser
         {
             Id = 0,
             Acct = username,
-            Name =  name,
-            Description =  bio,
-            Url =  url,
-            ProfileImageUrl =  profile,
-            ProfileBannerURL = "",
+            Name = name,
+            Description = bio,
+            Url = url,
+            ProfileImageUrl = profile,
+            ProfileBannerURL = banner,
             Protected = false, 
             PinnedPosts = [],
-            StatusCount = 0,
-            FollowersCount = 0,
+            StatusCount = statusCount,
+            FollowersCount = followersCount,
             Location = "",
             ProfileUrl = "",
         };
