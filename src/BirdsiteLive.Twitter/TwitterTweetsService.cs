@@ -61,7 +61,7 @@ namespace BirdsiteLive.Twitter
             _tweetFromSyndication = new Syndication(this, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, this, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, this, httpClientFactory, instanceSettings, logger);
-            _tweetFromNitter = new Nitter(_tweetFromSyndication, _tweetFromGraphql2025, settings, logger);
+            _tweetFromNitter = new Nitter(_tweetFromSyndication, _tweetFromGraphql2025, settings, _twitterUserDal, logger);
             _tweetFromSidecar = new Sidecar(_twitterUserDal, this, httpClientFactory, instanceSettings, logger);
         }
         #endregion

@@ -29,17 +29,19 @@ public class Nitter : ITimelineExtractor, IUserExtractor
     private readonly IBrowsingContext _context;
     private readonly IUserExtractor _userExtractor;
     private readonly ITweetExtractor _tweetExtractor;
+    private readonly ITwitterUserDal _twitterUserDal;
     private string Useragent = "Bird.makeup ( https://git.sr.ht/~cloutier/bird.makeup ) Bot";
     static Meter _meter = new("DotMakeup", "1.0.0");
     static Counter<int> _nCalled = _meter.CreateCounter<int>("dotmakeup_nitter_called_count");
 
-    public Nitter(ITweetExtractor tweetExtractor, IUserExtractor userExtractor, ISettingsDal settingsDal,
+    public Nitter(ITweetExtractor tweetExtractor, IUserExtractor userExtractor, ISettingsDal settingsDal, ITwitterUserDal twitterUserDal,
         ILogger<TwitterService> logger)
     {
         _settings = settingsDal;
         _logger = logger;
         _userExtractor = userExtractor;
         _tweetExtractor = tweetExtractor;
+        _twitterUserDal = twitterUserDal;
 
         var requester = new DefaultHttpRequester();
         requester.Headers["User-Agent"] = Useragent;
@@ -104,6 +106,19 @@ public class Nitter : ITimelineExtractor, IUserExtractor
 
         var document = await GetDocument(address);
 
+        try
+        {
+            if (!lowtrust)
+            {
+                _logger.LogInformation("Nitter: updating user cache for {Username}", user.Acct);
+                var u = ExtractUser(document, user.Acct);
+                await _twitterUserDal.UpdateUserCacheAsync(u);
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error updating user cache for {Username} from Nitter", user.Acct);
+        }
         var cellSelector = ".tweet-link";
         var cells = document.QuerySelectorAll(cellSelector);
         var titles = cells.Select(m => m.GetAttribute("href"));
@@ -172,6 +187,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor
 
         var document = await GetDocument(address);
 
+        return ExtractUser(document, username);
+    }
+    private TwitterUser ExtractUser(IDocument document, string username)
+    {
         var name = SimpleExtract(document, ".profile-card-fullname", "title");
         var profile = SimpleExtract(document, ".profile-card-avatar", "href");
         string url;
