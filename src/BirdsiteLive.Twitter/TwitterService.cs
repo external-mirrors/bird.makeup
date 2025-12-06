@@ -66,18 +66,6 @@ namespace BirdsiteLive.Twitter
                 var mostRecentTweet = tweets.MaxBy(t => t.IdLong).IdLong;
                 await _userDal.UpdateTwitterUserAsync(user.Id, mostRecentTweet, 0, user.LastSync);
             }
-
-            var cacheThreshold = 100;
-            var cacheSettings = await _settings.Get("twitter_user_cache");
-            if (cacheSettings is not null)
-            {
-                if (cacheSettings.Value.TryGetProperty("threshold", out var threshold))
-                {
-                    cacheThreshold = threshold.GetInt32();
-                }
-            }
-            if (user.Followers > cacheThreshold)
-                await _twitterUserService.UpdateUserCache(user);
             
             foreach (var tweet in tweets)
                 _socialNetworkCache.BackfillPostCache(tweet);

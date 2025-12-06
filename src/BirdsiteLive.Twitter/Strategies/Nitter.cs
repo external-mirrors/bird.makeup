@@ -225,7 +225,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
             StatusCount = statusCount,
             FollowersCount = followersCount,
             Location = location,
-            ProfileUrl = "",
+            ProfileUrl = "twitter.com/" + username, 
         };
     }
 }

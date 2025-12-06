@@ -127,15 +127,18 @@ namespace BirdsiteLive.Twitter
         }
         public async Task<ExtractedTweet[]> GetTimelineAsync(SyncUser user, long fromTweetId = -1)
         {
-            long userId;
+            long? userId = null;
             string username = user.Acct;
             if (user.TwitterUserId == default) 
             {
                 var user2 = await _twitterUserService.GetUserAsync(username);
-                userId = user2.Id;
-                await _twitterUserDal.UpdateTwitterUserIdAsync(username, user2.Id);
-                await _twitterUserDal.UpdateUserExtradataAsync(username, "TwitterUserId", user2.Id);
-                user.TwitterUserId = userId;
+                if (user2.Id != 0)
+                {
+                    await _twitterUserDal.UpdateTwitterUserIdAsync(username, user2.Id);
+                    await _twitterUserDal.UpdateUserExtradataAsync(username, "TwitterUserId", user2.Id);
+                    userId = user2.Id;
+                    user.TwitterUserId = user2.Id;
+                }
             }
             else 
             {
@@ -162,9 +165,9 @@ namespace BirdsiteLive.Twitter
                 twitterFollowersThreshold = nitterSettings.Value.GetProperty("twitterFollowersThreshold").GetInt32();
                 postNitterDelay = nitterSettings.Value.GetProperty("postnitterdelay").GetInt32();
             }
-            if (user.StatusesCount == -1)
+            if (user.StatusesCount == -1 && userId is not null)
             {
-                extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId, false);
+                extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId.Value, fromTweetId, false);
                 source = "Vanilla";
             }
             else if (user.Followers > followersThreshold0)
@@ -190,10 +193,15 @@ namespace BirdsiteLive.Twitter
                     source = "Sidecar (without replies)";
                     await Task.Delay(postNitterDelay);
                 }
+                else if (userId is not null)
+                {
+                    extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId.Value, fromTweetId, false);
+                    source = "Vanilla";
+                }
                 else
                 {
-                    extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, userId, fromTweetId, false);
-                    source = "Vanilla";
+                    extractedTweets = new List<ExtractedTweet>();
+                    source = "Failed";
                 }
                 await _twitterUserDal.UpdateTwitterStatusesCountAsync(username, twitterUser.StatusCount);
                 await _twitterUserDal.UpdateUserExtradataAsync(username, "statusesCount", twitterUser.StatusCount);
