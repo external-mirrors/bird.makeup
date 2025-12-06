@@ -32,16 +32,19 @@ public class Nitter : ITimelineExtractor, IUserExtractor
     private string Useragent = "Bird.makeup ( https://git.sr.ht/~cloutier/bird.makeup ) Bot";
     static Meter _meter = new("DotMakeup", "1.0.0");
     static Counter<int> _nCalled = _meter.CreateCounter<int>("dotmakeup_nitter_called_count");
-    public Nitter(ITweetExtractor tweetExtractor, IUserExtractor userExtractor, ISettingsDal settingsDal, ILogger<TwitterService> logger)
+
+    public Nitter(ITweetExtractor tweetExtractor, IUserExtractor userExtractor, ISettingsDal settingsDal,
+        ILogger<TwitterService> logger)
     {
         _settings = settingsDal;
         _logger = logger;
         _userExtractor = userExtractor;
         _tweetExtractor = tweetExtractor;
-        
+
         var requester = new DefaultHttpRequester();
         requester.Headers["User-Agent"] = Useragent;
-        requester.Headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
+        requester.Headers["Accept"] =
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
         requester.Headers["Accept-Encoding"] = "gzip, deflate";
         requester.Headers["Accept-Language"] = "en-US,en;q=0.5";
         var config = Configuration.Default.With(requester).WithDefaultLoader();
@@ -50,7 +53,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
 
     private async Task<(string, bool)> GetDomain()
     {
-        
+
         // https://status.d420.de/
         var nitterSettings = await _settings.Get("nitter");
         if (nitterSettings is null)
@@ -63,6 +66,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         {
             domains.Add((d.GetString(), true));
         }
+
         foreach (var d in nitterSettings.Value.GetProperty("endpoints").EnumerateArray())
         {
             domains.Add((d.GetString(), false));
@@ -76,7 +80,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
     private async Task<IDocument> GetDocument(string address)
     {
         var requester = new DefaultHttpRequester();
-        
+
         requester.Headers["User-Agent"] = Useragent;
         requester.Headers["Accept"] =
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
@@ -84,19 +88,20 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         requester.Headers["Accept-Language"] = "en-US,en;q=0.5";
         var config = Configuration.Default.With(requester).WithDefaultLoader();
         var context = BrowsingContext.New(config);
-        
+
         _logger.LogInformation($"Nitter: fetching {address}");
         var document = await context.OpenAsync(address);
-        
+
         return document;
     }
-    
+
     public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long fromId, long a, bool withReplies)
     {
-        (var domain , bool lowtrust) = await GetDomain();
-        
-        string address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{user.Acct}{(withReplies?"/with_replies":"")}";
-        
+        (var domain, bool lowtrust) = await GetDomain();
+
+        string address =
+            $"{(lowtrust ? "https" : "http")}://{domain}{(lowtrust ? "" : ":8080")}/{user.Acct}{(withReplies ? "/with_replies" : "")}";
+
         var document = await GetDocument(address);
 
         var cellSelector = ".tweet-link";
@@ -107,7 +112,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         List<ExtractedTweet> tweets = new List<ExtractedTweet>();
         string pattern = @".*\/([0-9]+)#m";
         Regex rg = new Regex(pattern);
-        
+
         foreach (string title in titles)
         {
             MatchCollection matchedId = rg.Matches(title);
@@ -124,7 +129,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
                 {
                     if (lowtrust)
                         continue;
-                    
+
                     tweet.IsRetweet = true;
                     tweet.OriginalAuthor = tweet.Author;
                     tweet.Author = await _userExtractor.GetUserAsync(user.Acct);
@@ -133,12 +138,14 @@ public class Nitter : ITimelineExtractor, IUserExtractor
                     var gen = new TwitterSnowflakeGenerator(1, 1);
                     tweet.Id = gen.NextId().ToString();
                 }
+
                 tweets.Add(tweet);
             }
             catch (Exception e)
             {
                 _logger.LogError($"Nitter: error fetching tweet {match} from user {user.Acct}");
             }
+
             await Task.Delay(100);
         }
 
@@ -146,7 +153,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
             new KeyValuePair<string, object>("source", domain),
             new KeyValuePair<string, object>("success", tweets.Count > 0)
         );
-        
+
         return tweets;
     }
 
@@ -154,15 +161,15 @@ public class Nitter : ITimelineExtractor, IUserExtractor
     {
         var cells = document.QuerySelectorAll(cellSelector);
         return cells.Select(m => m.GetAttribute(attribute)).First();
-        
+
     }
 
     public async Task<TwitterUser> GetUserAsync(string username)
     {
-        (var domain , bool lowtrust) = await GetDomain();
-        
-        string address = $"{(lowtrust?"https":"http")}://{domain}{(lowtrust?"":":8080")}/{username}";
-        
+        (var domain, bool lowtrust) = await GetDomain();
+
+        string address = $"{(lowtrust ? "https" : "http")}://{domain}{(lowtrust ? "" : ":8080")}/{username}";
+
         var document = await GetDocument(address);
 
         var name = SimpleExtract(document, ".profile-card-fullname", "title");
@@ -173,9 +180,9 @@ public class Nitter : ITimelineExtractor, IUserExtractor
             url = element.GetAttribute("href");
         else
             url = null;
-        
+
         string bio = document.QuerySelector("div.profile-bio p")?.TextContent.Trim();
-        
+
         // Extract location - get the second direct child span
         string location = "";
         var locationSpan = document.QuerySelector(".profile-location > span:nth-child(2)");
@@ -183,7 +190,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         {
             location = locationSpan.TextContent.Trim();
         }
-        
+
         // Extract banner image
         string banner = "";
         var bannerElement = document.QuerySelector(".profile-banner img");
@@ -191,7 +198,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         {
             banner = bannerElement.GetAttribute("src");
         }
-        
+
         // Extract stats
         int statusCount = 0;
         int followersCount = 0;
@@ -200,7 +207,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         {
             statusCount = status;
         }
-        
+
         var followersElement = document.QuerySelector("li.followers .profile-stat-num");
         if (followersElement != null)
         {
@@ -209,8 +216,30 @@ public class Nitter : ITimelineExtractor, IUserExtractor
             {
                 followersCount = followers;
             }
+
         }
-        
+
+        var pinnedIds = new List<string>();
+        var timelineItems = document.QuerySelectorAll(".timeline-item");
+        string pattern = @".*\/([0-9]+)#m";
+        Regex rg = new Regex(pattern);
+
+        foreach (var item in timelineItems)
+        {
+            if (item.QuerySelector(".pinned") == null) continue;
+
+            var link = item.QuerySelector(".tweet-link");
+            var href = link?.GetAttribute("href");
+
+            if (href == null) continue;
+
+            var match = rg.Match(href);
+            if (match.Success)
+            {
+                pinnedIds.Add(match.Groups[1].Value);
+            }
+        }
+
         return new TwitterUser
         {
             Id = 0,
@@ -220,12 +249,12 @@ public class Nitter : ITimelineExtractor, IUserExtractor
             Url = url,
             ProfileImageUrl = profile,
             ProfileBannerURL = banner,
-            Protected = false, 
-            PinnedPosts = [],
+            Protected = false,
+            PinnedPosts = pinnedIds,
             StatusCount = statusCount,
             FollowersCount = followersCount,
             Location = location,
-            ProfileUrl = "twitter.com/" + username, 
+            ProfileUrl = "twitter.com/" + username,
         };
     }
 }
