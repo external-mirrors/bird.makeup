@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Pipeline.Contracts;
@@ -20,6 +21,7 @@ namespace BirdsiteLive.Pipeline.Processors
         private readonly ILogger<RetrieveTweetsProcessor> _logger;
         private readonly IStatisticsHandler _statisticsHandler;
         private readonly InstanceSettings _settings;
+        private static readonly ActivitySource ActivitySource = new("DotMakeup");
 
         #region Ctor
         public RetrieveTweetsProcessor(ISocialMediaService socialMediaService, IStatisticsHandler statisticsHandler, InstanceSettings settings, ILogger<RetrieveTweetsProcessor> logger)
@@ -46,6 +48,7 @@ namespace BirdsiteLive.Pipeline.Processors
             foreach (var userWtData in syncTwitterUsers)
             {
                 index++;
+                var requestIndex = index;
 
                 var t = Task.Run(async () => {
                     var user = userWtData.User;
@@ -54,26 +57,33 @@ namespace BirdsiteLive.Pipeline.Processors
                     {
                         user.Followers += 9999;
                     }
+                    using var activity = ActivitySource.StartActivity("RetrieveTweetsProcessor", ActivityKind.Internal);
+                    activity?.SetTag("user.acct", user.Acct);
+                    activity?.SetTag("user.isVip", isVip);
                     try 
                     {
                         var tweets = await _socialMediaService.GetNewPosts(user);
-                        _logger.LogInformation(index + "/" + syncTwitterUsers.Count() + " Got " + tweets.Length + " posts from user " + user.Acct + " " );
+                        activity?.SetTag("posts.count", tweets.Length);
+                        _logger.LogInformation(requestIndex + "/" + syncTwitterUsers.Count() + " Got " + tweets.Length + " posts from user " + user.Acct + " " );
                         if (tweets.Length > 0)
                         {
                             userWtData.Tweets = tweets;
                             usersWtTweets.Add(userWtData);
                             var latestPostDate = tweets.Max(x => x.CreatedAt);
+                            activity?.SetTag("latest_post_date", latestPostDate);
                             await _socialMediaService.UserDal.UpdateUserExtradataAsync(user.Acct, "latest_post_date", latestPostDate);
                         }
                         _statisticsHandler.RegisterNewPosts(tweets);
                     } 
                     catch(RateLimitExceededException e)
                     {
+                        activity?.SetStatus(ActivityStatusCode.Error, e.Message);
                         await Task.Delay(_settings.SocialNetworkRequestJitter);
                         _logger.LogError(e.Message);
                     }
                     catch(Exception e)
                     {
+                        activity?.SetStatus(ActivityStatusCode.Error, e.Message);
                         _logger.LogError(e.Message);
                     }
                 });

@@ -1,5 +1,4 @@
 using System;
-using System.Configuration;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Common.Structs;
@@ -23,6 +22,7 @@ using Microsoft.Extensions.Hosting;
 using Grafana.OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using System.Configuration;
 
 namespace BirdsiteLive
 {
@@ -60,7 +60,7 @@ namespace BirdsiteLive
                     config.AddView("http.server.request.duration",
                         new ExplicitBucketHistogramConfiguration
                         {
-                            Boundaries = new double[] { 0.01, 0.1, 1, 10 }
+                            Boundaries = [0.01, 0.1, 1, 10]
                         });
                 })
                 .WithLogging()
@@ -71,7 +71,6 @@ namespace BirdsiteLive
                     config.Instrumentations.Remove(Instrumentation.HttpClient);
                     config.ExporterSettings.EnableTraces = Environment.MachineName == "dotmakeup-kilo-0";
                     config.ExporterSettings.EnableLogs = Environment.MachineName == "dotmakeup-kilo-0";
-                    config.ServiceInstanceId = Environment.MachineName;
                 });
 
             services.AddControllersWithViews();
@@ -160,7 +159,7 @@ namespace BirdsiteLive
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-            //app.UseHttpsRedirection();
+            
             app.UseStaticFiles();
 
             app.UseRouting();
