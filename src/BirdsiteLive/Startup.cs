@@ -68,8 +68,13 @@ namespace BirdsiteLive
                 {
                     b.AddOtlpExporter();
                 })
+                .WithTracing(config =>
+                {
+                    config.AddSource("DotMakeup");
+                })
                 .UseGrafana(config =>
                 {
+                    config.ServiceInstanceId = Environment.MachineName;
                     config.Instrumentations.Remove(Instrumentation.Process);
                     config.Instrumentations.Remove(Instrumentation.NetRuntime);
                     config.Instrumentations.Remove(Instrumentation.HttpClient);
