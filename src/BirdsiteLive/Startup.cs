@@ -23,6 +23,7 @@ using Grafana.OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using System.Configuration;
+using OpenTelemetry.Logs;
 
 namespace BirdsiteLive
 {
@@ -63,7 +64,10 @@ namespace BirdsiteLive
                             Boundaries = [0.01, 0.1, 1, 10]
                         });
                 })
-                .WithLogging()
+                .WithLogging(b =>
+                {
+                    b.AddOtlpExporter();
+                })
                 .UseGrafana(config =>
                 {
                     config.Instrumentations.Remove(Instrumentation.Process);
@@ -71,6 +75,7 @@ namespace BirdsiteLive
                     config.Instrumentations.Remove(Instrumentation.HttpClient);
                     config.ExporterSettings.EnableTraces = Environment.MachineName == "dotmakeup-kilo-0";
                     config.ExporterSettings.EnableLogs = Environment.MachineName == "dotmakeup-kilo-0";
+                    config.ExporterSettings.EnableMetrics = true;
                 });
 
             services.AddControllersWithViews();
