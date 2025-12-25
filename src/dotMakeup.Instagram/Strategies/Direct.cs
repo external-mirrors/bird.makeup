@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Text.Json;
@@ -12,6 +13,7 @@ namespace dotMakeup.Instagram.Strategies;
 
 public class Direct : IUserExtractor
 {
+    private static readonly ActivitySource ActivitySource = new("DotMakeup");
     static Meter _meter = new("DotMakeup", "1.0.0");
     static Counter<int> _apiCalled = _meter.CreateCounter<int>("dotmakeup_api_called_count");
     private readonly IHttpClientFactory _httpClientFactory;
@@ -25,6 +27,9 @@ public class Direct : IUserExtractor
     }
     public async Task<InstagramUser> GetUserAsync(string username)
     {
+        using var activity = ActivitySource.StartActivity("Direct.GetUserAsync", ActivityKind.Internal);
+        activity?.SetTag("user.username", username);
+        
         InstagramUser user = null;
         using var client = _httpClientFactory.CreateClient("WithProxy");
         string requestUrl = $"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}";
@@ -36,8 +41,11 @@ public class Direct : IUserExtractor
         request.Headers.Add("X-IG-App-ID", "936619743392459");
 
         var response = await client.SendAsync(request);
+        activity?.SetTag("http.status_code", (int)response.StatusCode);
+        
         if (response.StatusCode != HttpStatusCode.OK)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, "Rate limit exceeded");
             throw new RateLimitExceededException();
         }
         response.EnsureSuccessStatusCode();
@@ -166,6 +174,9 @@ public class Direct : IUserExtractor
 
         userResult.RecentPosts = userPosts.Where(x => x.IsPinned == false);
         userResult.PinnedPosts = pinnedPosts.Select(x => x.Id).ToArray();
+        
+        activity?.SetTag("posts.count", userPosts.Count);
+        activity?.SetTag("posts.pinned_count", pinnedPosts.Count());
         
         if (user is not null)
             await _dal.UpdateUserCacheAsync(user);

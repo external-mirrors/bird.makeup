@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Text.Json;
@@ -13,6 +14,7 @@ namespace dotMakeup.Instagram.Strategies;
 
 public class Sidecar : IUserExtractor, IPostExtractor
 {
+    private static readonly ActivitySource ActivitySource = new("DotMakeup");
     static Meter _meter = new("DotMakeup", "1.0.0");
     static Counter<int> _apiCalled = _meter.CreateCounter<int>("dotmakeup_api_called_count");
     private readonly IHttpClientFactory _httpClientFactory;
@@ -39,6 +41,9 @@ public class Sidecar : IUserExtractor, IPostExtractor
     
     public async Task<InstagramPost?> GetPostAsync(string id)
     {
+        using var activity = ActivitySource.StartActivity("Sidecar.GetPostAsync", ActivityKind.Internal);
+        activity?.SetTag("post.id", id);
+        
         var client = _httpClientFactory.CreateClient();
         string requestUrl;
         requestUrl = (await GetWebSidecar()) + "/instagram/post2/" + id;
@@ -48,12 +53,14 @@ public class Sidecar : IUserExtractor, IPostExtractor
 
         if (httpResponse.StatusCode != HttpStatusCode.OK)
         {
+            activity?.SetTag("http.status_code", (int)httpResponse.StatusCode);
             return null;
         }
         var c = await httpResponse.Content.ReadAsStringAsync();
         InstagramPost? post = JsonSerializer.Deserialize<InstagramPost>(c, _serializerOptions);
         if (post == null)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, "Failed to deserialize post");
             return null;
         }
 
@@ -65,6 +72,10 @@ public class Sidecar : IUserExtractor, IPostExtractor
     }
     public async Task<InstagramUser> GetUserAsync(string username)
     {
+        using var activity = ActivitySource.StartActivity("Sidecar.GetUserAsync", ActivityKind.Internal);
+        activity?.SetTag("user.username", username);
+        activity?.SetTag("user.isPremium", _isPremium);
+        
         string sidecarURL = await GetWebSidecar();
         int methodChoice = new Random().Next(2) + 1;
         if (_isPremium)
@@ -78,6 +89,9 @@ public class Sidecar : IUserExtractor, IPostExtractor
 
         var httpResponse = await client.SendAsync(request);
 
+        activity?.SetTag("http.status_code", (int)httpResponse.StatusCode);
+        activity?.SetTag("sidecar.url", sidecarURL);
+        
         _apiCalled.Add(1, new KeyValuePair<string, object>("sidecar", $"ig_{method}"),
             new KeyValuePair<string, object>("status", httpResponse.StatusCode),
             new KeyValuePair<string, object>("domain", sidecarURL)
@@ -85,6 +99,7 @@ public class Sidecar : IUserExtractor, IPostExtractor
         
         if (httpResponse.StatusCode != HttpStatusCode.OK)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, "Rate limit exceeded");
             throw new RateLimitExceededException();
         }
 
@@ -93,6 +108,7 @@ public class Sidecar : IUserExtractor, IPostExtractor
 
         if (user == null)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, "User not found");
             throw new UserNotFoundException();
         }
 
