@@ -183,13 +183,11 @@ namespace BirdsiteLive.Twitter
             {
                 extractedTweets = await _tweetFromNitter.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, true);
                 source = "Nitter";
-                await Task.Delay(postNitterDelay);
             }
             else if (user.Followers > followersThreshold2)
             {
                 extractedTweets = await _tweetFromNitter.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, false);
                 source = "Nitter";
-                await Task.Delay(postNitterDelay);
             }
             else
             {
@@ -203,6 +201,9 @@ namespace BirdsiteLive.Twitter
             _newTweets.Add(extractedTweets.Count,
                 new KeyValuePair<string, object>("source", source)
             );
+            
+            await Task.Delay(postNitterDelay);
+            
             return extractedTweets.ToArray();
         }
         

@@ -22,8 +22,10 @@ using Microsoft.Extensions.Hosting;
 using Grafana.OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System.Configuration;
 using OpenTelemetry.Logs;
+using System.Diagnostics;
 
 namespace BirdsiteLive
 {
@@ -71,6 +73,7 @@ namespace BirdsiteLive
                 .WithTracing(config =>
                 {
                     config.AddSource("DotMakeup");
+                    config.AddProcessor(new FilterProcessor());
                 })
                 .UseGrafana(config =>
                 {
