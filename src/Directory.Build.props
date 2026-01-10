@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- Allow building with .NET 10 preview SDK -->
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+  </PropertyGroup>
+</Project>
+
