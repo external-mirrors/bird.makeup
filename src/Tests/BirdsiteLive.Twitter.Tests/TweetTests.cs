@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
@@ -28,6 +29,7 @@ namespace BirdsiteLive.Twitter.Tests
                 yield return new object[] { StrategyHints.Graphql2024 };
                 yield return new object[] { StrategyHints.Graphql2025 };
                 yield return new object[] { StrategyHints.Sidecar };
+                yield return new object[] { StrategyHints.Nitter };
             }
         }
 
@@ -40,6 +42,8 @@ namespace BirdsiteLive.Twitter.Tests
             var logger = new Mock<ILogger<TwitterService>>();
             var twitterDal = new Mock<ITwitterUserDal>();
             var settingsDal = new Mock<ISettingsDal>();
+            settingsDal.Setup(_ => _.Get("nitter"))
+                .ReturnsAsync(JsonDocument.Parse("""{"endpoints": ["marci"], "lowtrustendpoints": [], "postnitterdelay": 0, "followersThreshold0": 10, "followersThreshold": 10,  "followersThreshold2": 11,  "followersThreshold3": 12, "twitterFollowersThreshold":  10}""").RootElement);
             var httpFactory = new Mock<IHttpClientFactory>();
             httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(() => new HttpClient());
             httpFactory.Setup(_ => _.CreateClient("WithProxy")).Returns(() => new HttpClient());

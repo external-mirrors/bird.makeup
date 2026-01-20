@@ -3,30 +3,23 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
 using AngleSharp.Io;
 using BirdsiteLive.Common.Interfaces;
-using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Twitter.Models;
 using BirdsiteLive.Twitter.Tools;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace BirdsiteLive.Twitter.Strategies;
 
-public class Nitter : ITimelineExtractor, IUserExtractor
+public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 {
     private readonly ISettingsDal _settings;
     private readonly ILogger<TwitterService> _logger;
-    private readonly IBrowsingContext _context;
     private readonly IUserExtractor _userExtractor;
     private readonly ITweetExtractor _tweetExtractor;
     private readonly ITwitterUserDal _twitterUserDal;
@@ -49,8 +42,8 @@ public class Nitter : ITimelineExtractor, IUserExtractor
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
         requester.Headers["Accept-Encoding"] = "gzip, deflate";
         requester.Headers["Accept-Language"] = "en-US,en;q=0.5";
-        var config = Configuration.Default.With(requester).WithDefaultLoader();
-        _context = BrowsingContext.New(config);
+        // var config = Configuration.Default.With(requester).WithDefaultLoader();
+        // _context = BrowsingContext.New(config);
     }
 
     private async Task<(string, bool)> GetDomain()
@@ -63,7 +56,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor
 
 
 
-        List<(string, bool)> domains = new List<(string, bool)>() { };
+        List<(string, bool)> domains = new List<(string, bool)>();
         foreach (var d in nitterSettings.Value.GetProperty("lowtrustendpoints").EnumerateArray())
         {
             domains.Add((d.GetString(), true));
@@ -119,49 +112,74 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         {
             _logger.LogError(e, "Error updating user cache for {Username} from Nitter", user.Acct);
         }
-        var cellSelector = ".tweet-link";
-        var cells = document.QuerySelectorAll(cellSelector);
-        var titles = cells.Select(m => m.GetAttribute("href"));
-
-
         List<ExtractedTweet> tweets = new List<ExtractedTweet>();
         string pattern = @".*\/([0-9]+)#m";
         Regex rg = new Regex(pattern);
 
-        foreach (string title in titles)
+        if (false && !lowtrust)
         {
-            MatchCollection matchedId = rg.Matches(title);
-            var matchString = matchedId[0].Groups[1].Value;
-            var match = Int64.Parse(matchString);
-
-            if (match <= fromId)
-                continue;
-
-            try
+            var timelineItems = document.QuerySelectorAll(".timeline-item");
+            foreach (var item in timelineItems)
             {
-                var tweet = await _tweetExtractor.GetTweetAsync(match);
-                if (tweet.Author.Acct != user.Acct)
+                try
                 {
-                    if (lowtrust)
-                        continue;
+                    var tweet = ParseTweetFromElement(item);
+                    if (tweet == null) continue;
 
-                    tweet.IsRetweet = true;
-                    tweet.OriginalAuthor = tweet.Author;
-                    tweet.Author = await _userExtractor.GetUserAsync(user.Acct);
-                    tweet.RetweetId = tweet.IdLong;
-                    // Sadly not given by Nitter UI
-                    var gen = new TwitterSnowflakeGenerator(1, 1);
-                    tweet.Id = gen.NextId().ToString();
+                    if (tweet.IdLong <= fromId) continue;
+
+                    if (tweet.Author.Acct != user.Acct)
+                    {
+                        tweet.IsRetweet = true;
+                        tweet.OriginalAuthor = tweet.Author;
+                        tweet.Author = await _userExtractor.GetUserAsync(user.Acct);
+                        tweet.RetweetId = tweet.IdLong;
+                        // Sadly not given by Nitter UI
+                        var gen = new TwitterSnowflakeGenerator(1, 1);
+                        tweet.Id = gen.NextId().ToString();
+                    }
+                    tweets.Add(tweet);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, $"Nitter: error parsing tweet from user {user.Acct}");
+                }
+            }
+        }
+        else
+        {
+            var cellSelector = ".tweet-link";
+            var cells = document.QuerySelectorAll(cellSelector);
+            var titles = cells.Select(m => m.GetAttribute("href"));
+
+            foreach (string title in titles)
+            {
+                if (title == null) continue;
+                MatchCollection matchedId = rg.Matches(title);
+                if (matchedId.Count == 0) continue;
+                var matchString = matchedId[0].Groups[1].Value;
+                var match = Int64.Parse(matchString);
+
+                if (match <= fromId)
+                    continue;
+
+                try
+                {
+                    var tweet = await _tweetExtractor.GetTweetAsync(match);
+                    if (tweet.Author.Acct != user.Acct)
+                    {
+                        continue;
+                    }
+
+                    tweets.Add(tweet);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, $"Nitter: error fetching tweet {match} from user {user.Acct}");
                 }
 
-                tweets.Add(tweet);
+                await Task.Delay(100);
             }
-            catch (Exception e)
-            {
-                _logger.LogError($"Nitter: error fetching tweet {match} from user {user.Acct}");
-            }
-
-            await Task.Delay(100);
         }
 
         _nCalled.Add(1,
@@ -170,6 +188,127 @@ public class Nitter : ITimelineExtractor, IUserExtractor
         );
 
         return tweets;
+    }
+
+    public async Task<ExtractedTweet> GetTweetAsync(long statusId)
+    {
+        (var domain, bool lowtrust) = await GetDomain();
+
+        // Use /i/status/<id> which usually redirects on Nitter
+        string address = $"{(lowtrust ? "https" : "http")}://{domain}{(lowtrust ? "" : ":8080")}/i/status/{statusId}";
+
+        var document = await GetDocument(address);
+        
+        var mainTweet = document.QuerySelector(".main-tweet .timeline-item");
+        if (mainTweet != null)
+        {
+            var tweet = ParseTweetFromElement(mainTweet);
+            if (tweet != null)
+            {
+                // Ensure ID is set correctly if it wasn't parsed (should be parsed by fallback though)
+                if (string.IsNullOrEmpty(tweet.Id) || tweet.Id == "0") tweet.Id = statusId.ToString();
+                return tweet;
+            }
+        }
+
+        return null;
+    }
+
+    private ExtractedTweet ParseTweetFromElement(IElement item)
+    {
+        var link = item.QuerySelector(".tweet-link")?.GetAttribute("href");
+        if (link == null)
+        {
+            // Fallback for single tweet view which lacks .tweet-link on the main tweet item
+            // It usually has a date link that contains the status ID
+            link = item.QuerySelector(".tweet-date a")?.GetAttribute("href");
+        }
+        if (link == null) return null;
+
+        string pattern = @".*\/([0-9]+)#m";
+        Regex rg = new Regex(pattern);
+        var matchId = rg.Match(link);
+        if (!matchId.Success) return null;
+        var id = matchId.Groups[1].Value;
+
+        var content = item.QuerySelector(".tweet-content")?.TextContent;
+
+        // Date
+        var dateStr = item.QuerySelector(".tweet-date a")?.GetAttribute("title");
+        DateTime createdAt = DateTime.UtcNow;
+        if (dateStr != null)
+        {
+            var cleanDate = dateStr.Replace("UTC", "").Replace("·", "").Trim();
+            if (DateTime.TryParse(cleanDate, out var dt)) createdAt = dt;
+        }
+
+        // Author
+        var fullname = item.QuerySelector(".fullname")?.TextContent.Trim();
+        var username = item.QuerySelector(".username")?.TextContent.Trim();
+        var avatar = item.QuerySelector(".tweet-avatar img")?.GetAttribute("src");
+        if (avatar != null && avatar.StartsWith("/pic/"))
+            avatar = WebUtility.UrlDecode(avatar.Substring(5));
+
+        var author = new TwitterUser
+        {
+            Acct = username?.TrimStart('@'),
+            Name = fullname,
+            ProfileImageUrl = avatar,
+            ProfileUrl = "https://twitter.com/" + username?.TrimStart('@'),
+            Id = 0
+        };
+
+        // Stats
+        long likes = 0, shares = 0;
+        var stats = item.QuerySelectorAll(".tweet-stats .tweet-stat");
+        foreach (var stat in stats)
+        {
+            var num = stat.TextContent.Trim().Replace(",", "");
+            long val = 0;
+            long.TryParse(num, out val);
+
+            if (stat.QuerySelector(".icon-heart") != null) likes = val;
+            if (stat.QuerySelector(".icon-retweet") != null) shares = val;
+        }
+
+        // Media
+        List<ExtractedMedia> media = new List<ExtractedMedia>();
+        var attachments = item.QuerySelectorAll(".attachment");
+        foreach (var att in attachments)
+        {
+            if (att.QuerySelector("video") != null)
+            {
+                var src = att.QuerySelector("video")?.GetAttribute("poster");
+                var vidSrc = att.QuerySelector("source")?.GetAttribute("src");
+                if (vidSrc != null)
+                {
+                    media.Add(new ExtractedMedia { MediaType = "video", Url = vidSrc });
+                }
+                else if (src != null)
+                {
+                    if (src.StartsWith("/pic/")) src = WebUtility.UrlDecode(src.Substring(5));
+                    media.Add(new ExtractedMedia { MediaType = "image", Url = src });
+                }
+            }
+            else if (att.QuerySelector("img") != null)
+            {
+                var src = att.QuerySelector("img")?.GetAttribute("src");
+                if (src != null && src.StartsWith("/pic/")) src = WebUtility.UrlDecode(src.Substring(5));
+                media.Add(new ExtractedMedia { MediaType = "image", Url = src });
+            }
+        }
+
+        return new ExtractedTweet
+        {
+            Id = id,
+            MessageContent = content,
+            CreatedAt = createdAt,
+            Author = author,
+            LikeCount = likes,
+            ShareCount = shares,
+            Media = media.ToArray(),
+            IsRetweet = false
+        };
     }
 
     private string SimpleExtract(IDocument document, string cellSelector, string attribute)

@@ -44,7 +44,7 @@ namespace BirdsiteLive.Twitter
         private readonly Graphql2024 _tweetFromGraphql2024;
         private readonly Graphql2025 _tweetFromGraphql2025;
         private readonly Sidecar _tweetFromSidecar;
-        private readonly ITimelineExtractor _tweetFromNitter;
+        private readonly Nitter _tweetFromNitter;
 
         #region Ctor
         public TwitterTweetsService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ITwitterUserService twitterUserService, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, IHttpClientFactory httpClientFactory, ISettingsDal settings, ILogger<TwitterService> logger)
@@ -80,6 +80,8 @@ namespace BirdsiteLive.Twitter
             
             if (s == StrategyHints.Sidecar)
                 return await _tweetFromSidecar.GetTweetAsync(statusId);
+            if (s == StrategyHints.Nitter)
+                return await _tweetFromNitter.GetTweetAsync(statusId);
             return null;
         }
         public async Task<ExtractedTweet> GetTweetAsync(long statusId)
