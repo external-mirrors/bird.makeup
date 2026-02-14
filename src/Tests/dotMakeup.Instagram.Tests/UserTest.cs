@@ -34,7 +34,6 @@ public class UserTest
         ipfsService.Setup(a => a.GetIpfsPublicLink(It.IsAny<string>())).Returns("http://abc.com");
         _instaService = new InstagramService(ipfsService.Object, userDal.Object, httpFactory.Object, settings, settingsDal.Object);
     }
-    [Ignore]
     [TestMethod]
     public async Task user_kobe()
     {
@@ -113,13 +112,18 @@ public class UserTest
         {
             user = (InstagramUser)await _instaService.GetUserAsync("therealoj32");
         }
-        catch (Exception _)
+        catch (Exception ex)
         {
+            Console.WriteLine($"[DEBUG_LOG] Exception in user_therealoj32: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null) Console.WriteLine($"[DEBUG_LOG] Inner Exception: {ex.InnerException.Message}");
             Assert.Inconclusive();
             return;
         }
         if (user is null)
+        {
+            Console.WriteLine("[DEBUG_LOG] user is null in user_therealoj32");
             Assert.Inconclusive();
+        }
         Assert.AreEqual(user.PinnedPosts.ToArray().Length, 1);
     }
 }

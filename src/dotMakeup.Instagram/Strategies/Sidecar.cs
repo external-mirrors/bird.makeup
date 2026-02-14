@@ -49,7 +49,8 @@ public class Sidecar : IUserExtractor, IPostExtractor
         requestUrl = (await GetWebSidecar()) + "/instagram/post2/" + id;
         var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-        var httpResponse = await client.SendAsync(request);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var httpResponse = await client.SendAsync(request, cts.Token);
 
         if (httpResponse.StatusCode != HttpStatusCode.OK)
         {
@@ -87,7 +88,8 @@ public class Sidecar : IUserExtractor, IPostExtractor
         requestUrl = $"{sidecarURL}/instagram/{method}/{username}";
         var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-        var httpResponse = await client.SendAsync(request);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var httpResponse = await client.SendAsync(request, cts.Token);
 
         activity?.SetTag("http.status_code", (int)httpResponse.StatusCode);
         activity?.SetTag("sidecar.url", sidecarURL);

@@ -32,20 +32,34 @@ public class Direct : IUserExtractor
         
         InstagramUser user = null;
         using var client = _httpClientFactory.CreateClient("WithProxy");
+        // Ensure HttpClient doesn't add its own headers that might conflict
+        client.DefaultRequestHeaders.Clear();
+        client.DefaultRequestHeaders.Add("Connection", "keep-alive");
+      
         string requestUrl = $"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}";
         var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+        request.Version = HttpVersion.Version20;
 
-        request.Headers.Add("User-Agent", 
+        request.Headers.TryAddWithoutValidation("User-Agent", 
             "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0");
-        request.Headers.Add("Accept", "*/*");
-        request.Headers.Add("X-IG-App-ID", "936619743392459");
+        request.Headers.TryAddWithoutValidation("Accept", "*/*");
+        request.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.5");
+        request.Headers.TryAddWithoutValidation("X-IG-App-ID", "936619743392459");
+        request.Headers.TryAddWithoutValidation("X-ASBD-ID", "129477");
+        request.Headers.TryAddWithoutValidation("X-IG-WWW-Claim", "0");
+        request.Headers.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
+        request.Headers.TryAddWithoutValidation("Sec-Fetch-Dest", "empty");
+        request.Headers.TryAddWithoutValidation("Sec-Fetch-Mode", "cors");
+        request.Headers.TryAddWithoutValidation("Sec-Fetch-Site", "same-origin");
+        request.Headers.TryAddWithoutValidation("Referer", $"https://www.instagram.com/{username}/");
 
         var response = await client.SendAsync(request);
         activity?.SetTag("http.status_code", (int)response.StatusCode);
         
         if (response.StatusCode != HttpStatusCode.OK)
         {
-            activity?.SetStatus(ActivityStatusCode.Error, "Rate limit exceeded");
+            var body = await response.Content.ReadAsStringAsync();
+            activity?.SetStatus(ActivityStatusCode.Error, $"HTTP {response.StatusCode}: {body}");
             throw new RateLimitExceededException();
         }
         response.EnsureSuccessStatusCode();
@@ -57,14 +71,19 @@ public class Direct : IUserExtractor
 
         var userJson = root.GetProperty("data").GetProperty("user");
         string profileUrl = null;
-        foreach (var l in userJson.GetProperty("bio_links").EnumerateArray())
+        if (userJson.TryGetProperty("bio_links", out var bioLinks))
         {
-            profileUrl = l.GetProperty("url").GetString();
+            foreach (var l in bioLinks.EnumerateArray())
+            {
+                profileUrl = l.GetProperty("url").GetString();
+            }
         }
         
         InstagramUser userResult = new InstagramUser()
         {
-            Description = userJson.GetProperty("biography_with_entities").GetProperty("raw_text").GetString(),
+            Description = userJson.TryGetProperty("biography_with_entities", out var bioWithEntities) 
+                ? bioWithEntities.GetProperty("raw_text").GetString()
+                : (userJson.TryGetProperty("biography", out var bio) ? bio.GetString() : ""),
             Acct = username,
             ProfileImageUrl = userJson.GetProperty("profile_pic_url_hd").GetString(),
             Name = userJson.GetProperty("full_name").GetString(),
@@ -140,11 +159,14 @@ public class Direct : IUserExtractor
                 catch (Exception _) { }
 
                 var isPinned = false;
-                foreach (var pin in node.GetProperty("pinned_for_users").EnumerateArray())
+                if (node.TryGetProperty("pinned_for_users", out var pinnedForUsers))
                 {
-                    var pinUser = pin.GetProperty("username").GetString();
-                    if (pinUser == userResult.Acct)
-                        isPinned = true;
+                    foreach (var pin in pinnedForUsers.EnumerateArray())
+                    {
+                        var pinUser = pin.GetProperty("username").GetString();
+                        if (pinUser == userResult.Acct)
+                            isPinned = true;
+                    }
                 }
                 var parsedPost = new InstagramPost()
                 {
@@ -178,8 +200,8 @@ public class Direct : IUserExtractor
         activity?.SetTag("posts.count", userPosts.Count);
         activity?.SetTag("posts.pinned_count", pinnedPosts.Count());
         
-        if (user is not null)
-            await _dal.UpdateUserCacheAsync(user);
+        if (userResult is not null)
+            await _dal.UpdateUserCacheAsync(userResult);
         
         return userResult;
     }
