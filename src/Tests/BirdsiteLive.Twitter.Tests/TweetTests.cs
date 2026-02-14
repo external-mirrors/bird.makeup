@@ -88,7 +88,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
-                "@ETHGlobal Taipei is kicking off! \ud83d\udd25\n\nPowered by\ud83e\uddcb\nBuilt on Ethereum");
+                "@ETHGlobal Taipei is kicking off! 🔥\n\nPowered by🧋\nBuilt on Ethereum");
 
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);

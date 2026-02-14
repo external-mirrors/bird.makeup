@@ -232,6 +232,14 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         var id = matchId.Groups[1].Value;
 
         var content = item.QuerySelector(".tweet-content")?.TextContent;
+        if (content != null)
+        {
+            content = content.Trim();
+            if (content.StartsWith(".@"))
+            {
+                content = content.Substring(1);
+            }
+        }
 
         // Date
         var dateStr = item.QuerySelector(".tweet-date a")?.GetAttribute("title");
@@ -287,14 +295,14 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 else if (src != null)
                 {
                     if (src.StartsWith("/pic/")) src = WebUtility.UrlDecode(src.Substring(5));
-                    media.Add(new ExtractedMedia { MediaType = "image", Url = src });
+                    media.Add(new ExtractedMedia { MediaType = "image/jpeg", Url = src });
                 }
             }
             else if (att.QuerySelector("img") != null)
             {
                 var src = att.QuerySelector("img")?.GetAttribute("src");
                 if (src != null && src.StartsWith("/pic/")) src = WebUtility.UrlDecode(src.Substring(5));
-                media.Add(new ExtractedMedia { MediaType = "image", Url = src });
+                media.Add(new ExtractedMedia { MediaType = "image/jpeg", Url = src });
             }
         }
 
