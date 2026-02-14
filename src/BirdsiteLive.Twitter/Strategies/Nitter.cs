@@ -46,7 +46,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         // _context = BrowsingContext.New(config);
     }
 
-    private async Task<(string, bool)> GetDomain()
+    private async Task<(string, bool)> GetDomain(bool onlyHighTrust = false)
     {
 
         // https://status.d420.de/
@@ -62,9 +62,12 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             domains.Add((d.GetString(), true));
         }
 
-        foreach (var d in nitterSettings.Value.GetProperty("endpoints").EnumerateArray())
+        if (!onlyHighTrust)
         {
-            domains.Add((d.GetString(), false));
+            foreach (var d in nitterSettings.Value.GetProperty("endpoints").EnumerateArray())
+            {
+                domains.Add((d.GetString(), false));
+            }
         }
 
         Random rnd = new Random();
@@ -116,70 +119,46 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         string pattern = @".*\/([0-9]+)#m";
         Regex rg = new Regex(pattern);
 
-        if (false && !lowtrust)
+        var cellSelector = ".tweet-link";
+        var cells = document.QuerySelectorAll(cellSelector);
+        var titles = cells.Select(m => m.GetAttribute("href"));
+
+        foreach (string title in titles)
         {
-            var timelineItems = document.QuerySelectorAll(".timeline-item");
-            foreach (var item in timelineItems)
+            if (title == null) continue;
+            MatchCollection matchedId = rg.Matches(title);
+            if (matchedId.Count == 0) continue;
+            var matchString = matchedId[0].Groups[1].Value;
+            var match = Int64.Parse(matchString);
+
+            if (match <= fromId)
+                continue;
+
+            try
             {
+                ExtractedTweet tweet;
                 try
                 {
-                    var tweet = ParseTweetFromElement(item);
-                    if (tweet == null) continue;
-
-                    if (tweet.IdLong <= fromId) continue;
-
-                    if (tweet.Author.Acct != user.Acct)
-                    {
-                        tweet.IsRetweet = true;
-                        tweet.OriginalAuthor = tweet.Author;
-                        tweet.Author = await _userExtractor.GetUserAsync(user.Acct);
-                        tweet.RetweetId = tweet.IdLong;
-                        // Sadly not given by Nitter UI
-                        var gen = new TwitterSnowflakeGenerator(1, 1);
-                        tweet.Id = gen.NextId().ToString();
-                    }
-                    tweets.Add(tweet);
+                    tweet = await GetTweetAsync(match);
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError(e, $"Nitter: error parsing tweet from user {user.Acct}");
+                    Console.WriteLine(e);
+                    tweet = await _tweetExtractor.GetTweetAsync(match);
                 }
-            }
-        }
-        else
-        {
-            var cellSelector = ".tweet-link";
-            var cells = document.QuerySelectorAll(cellSelector);
-            var titles = cells.Select(m => m.GetAttribute("href"));
-
-            foreach (string title in titles)
-            {
-                if (title == null) continue;
-                MatchCollection matchedId = rg.Matches(title);
-                if (matchedId.Count == 0) continue;
-                var matchString = matchedId[0].Groups[1].Value;
-                var match = Int64.Parse(matchString);
-
-                if (match <= fromId)
+                if (tweet.Author.Acct != user.Acct)
+                {
                     continue;
-
-                try
-                {
-                    var tweet = await _tweetExtractor.GetTweetAsync(match);
-                    if (tweet.Author.Acct != user.Acct)
-                    {
-                        continue;
-                    }
-
-                    tweets.Add(tweet);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e, $"Nitter: error fetching tweet {match} from user {user.Acct}");
                 }
 
-                await Task.Delay(100);
+                tweets.Add(tweet);
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"Nitter: error fetching tweet {match} from user {user.Acct}");
+            }
+
+            await Task.Delay(100);
         }
 
         _nCalled.Add(1,
@@ -192,9 +171,8 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
     public async Task<ExtractedTweet> GetTweetAsync(long statusId)
     {
-        (var domain, bool lowtrust) = await GetDomain();
+        (var domain, bool lowtrust) = await GetDomain(true);
 
-        // Use /i/status/<id> which usually redirects on Nitter
         string address = $"{(lowtrust ? "https" : "http")}://{domain}{(lowtrust ? "" : ":8080")}/i/status/{statusId}";
 
         var document = await GetDocument(address);
