@@ -146,9 +146,19 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                     Console.WriteLine(e);
                     tweet = await _tweetExtractor.GetTweetAsync(match);
                 }
-                if (tweet.Author.Acct != user.Acct)
+                if (tweet.Author.Acct != user.Acct && lowtrust)
                 {
                     continue;
+                }
+                if (tweet.Author.Acct != user.Acct && !lowtrust)
+                {
+                    tweet.IsRetweet = true;
+                    tweet.OriginalAuthor = tweet.Author;
+                    tweet.Author = await _userExtractor.GetUserAsync(user.Acct);
+                    tweet.RetweetId = tweet.IdLong;
+                    // Sadly not given by Nitter UI
+                    var gen = new TwitterSnowflakeGenerator(1, 1);
+                    tweet.Id = gen.NextId().ToString();
                 }
 
                 tweets.Add(tweet);
