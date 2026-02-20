@@ -43,7 +43,7 @@ namespace BirdsiteLive.Twitter.Tests
             var twitterDal = new Mock<ITwitterUserDal>();
             var settingsDal = new Mock<ISettingsDal>();
             settingsDal.Setup(_ => _.Get("nitter"))
-                .ReturnsAsync(JsonDocument.Parse("""{"endpoints": ["marci"], "lowtrustendpoints": [], "postnitterdelay": 0, "followersThreshold0": 10, "followersThreshold": 10,  "followersThreshold2": 11,  "followersThreshold3": 12, "twitterFollowersThreshold":  10}""").RootElement);
+                .ReturnsAsync(JsonDocument.Parse("""{"endpoints": ["marci", "medusa"], "lowtrustendpoints": [], "postnitterdelay": 0, "followersThreshold0": 10, "followersThreshold": 10,  "followersThreshold2": 11,  "followersThreshold3": 12, "twitterFollowersThreshold":  10}""").RootElement);
             var httpFactory = new Mock<IHttpClientFactory>();
             httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(() => new HttpClient());
             httpFactory.Setup(_ => _.CreateClient("WithProxy")).Returns(() => new HttpClient());
@@ -112,6 +112,23 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleTextAndDoublePictureTweet(StrategyHints s)
+        {
+            var tweet = await _tweetService.GetTweetAsync(2023159374605385743, s);
+            if (tweet is null)
+                Assert.Inconclusive();
+            Assert.AreEqual(tweet.Media.Length, 2);
+            Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
+            Assert.AreEqual(tweet.Media[1].MediaType, "image/jpeg");
+
+            Assert.AreEqual(tweet.MessageContent, "");
+
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
+        }
+        
         [TestMethod]
         [DynamicData(nameof(Implementations))]
         public async Task SimpleTextAndSinglePictureTweet(StrategyHints s)

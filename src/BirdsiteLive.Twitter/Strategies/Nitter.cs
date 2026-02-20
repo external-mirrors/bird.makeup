@@ -55,19 +55,19 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             throw new Exception("Nitter settings not found");
 
 
-
         List<(string, bool)> domains = new List<(string, bool)>();
-        foreach (var d in nitterSettings.Value.GetProperty("lowtrustendpoints").EnumerateArray())
-        {
-            domains.Add((d.GetString(), true));
-        }
 
         if (!onlyHighTrust)
         {
-            foreach (var d in nitterSettings.Value.GetProperty("endpoints").EnumerateArray())
+            foreach (var d in nitterSettings.Value.GetProperty("lowtrustendpoints").EnumerateArray())
             {
-                domains.Add((d.GetString(), false));
+                domains.Add((d.GetString(), true));
             }
+        }
+
+        foreach (var d in nitterSettings.Value.GetProperty("endpoints").EnumerateArray())
+        {
+            domains.Add((d.GetString(), false));
         }
 
         Random rnd = new Random();
