@@ -122,6 +122,11 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.Media.Length, 2);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media[1].MediaType, "image/jpeg");
+            
+            Console.WriteLine($"[DEBUG_LOG] Media 0 URL: {tweet.Media[0].Url}");
+            Console.WriteLine($"[DEBUG_LOG] Media 1 URL: {tweet.Media[1].Url}");
+
+            Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://pbs.twimg.com/"));
 
             Assert.AreEqual(tweet.MessageContent, "");
 

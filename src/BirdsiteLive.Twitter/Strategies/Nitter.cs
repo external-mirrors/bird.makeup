@@ -333,10 +333,65 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             }
             else if (att.QuerySelector("img") != null)
             {
+                string NormalizeMediaUrl(string url)
+                {
+                    if (string.IsNullOrEmpty(url)) return url;
+
+                    // Decode nitter proxy
+                    if (url.StartsWith("/pic/"))
+                    {
+                        return WebUtility.UrlDecode(url.Substring(5));
+                    }
+
+                    // Convert nitter relative media paths to pbs.twimg.com
+                    if (url.StartsWith("media/"))
+                    {
+                        return "https://pbs.twimg.com/" + url.Split('?')[0];
+                    }
+                    if (url.StartsWith("/media/"))
+                    {
+                        return "https://pbs.twimg.com" + url.Split('?')[0];
+                    }
+
+                    return url;
+                }
+
                 var src = att.QuerySelector("img")?.GetAttribute("src");
-                if (src != null && src.StartsWith("/pic/")) src = WebUtility.UrlDecode(src.Substring(5));
+
+                // Some nitter templates put the useful URL on the parent anchor
+                if (string.IsNullOrEmpty(src) || !(src.StartsWith("http://") || src.StartsWith("https://") || src.StartsWith("/pic/") || src.StartsWith("/media/") || src.StartsWith("media/")))
+                {
+                    var aHref = att.QuerySelector("a")?.GetAttribute("href");
+                    if (!string.IsNullOrEmpty(aHref))
+                        src = aHref;
+                }
+
+                src = NormalizeMediaUrl(src);
+
                 media.Add(new ExtractedMedia { MediaType = "image/jpeg", Url = src });
             }
+        }
+
+        // Final media normalization pass (ensure absolute pbs urls)
+        for (int i = 0; i < media.Count; i++)
+        {
+            var m = media[i];
+            if (!string.IsNullOrEmpty(m.Url))
+            {
+                if (m.Url.StartsWith("media/"))
+                {
+                    m.Url = "https://pbs.twimg.com/" + m.Url.Split('?')[0];
+                }
+                else if (m.Url.StartsWith("/media/"))
+                {
+                    m.Url = "https://pbs.twimg.com" + m.Url.Split('?')[0];
+                }
+                else if (m.Url.StartsWith("/pic/"))
+                {
+                    m.Url = WebUtility.UrlDecode(m.Url.Substring(5));
+                }
+            }
+            media[i] = m;
         }
 
         // Replies
