@@ -21,7 +21,7 @@ namespace BirdsiteLive
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureLogging(logging =>
+                .ConfigureLogging((context, logging) =>
                 {
                     logging.AddOpenTelemetry(options =>
                     {
