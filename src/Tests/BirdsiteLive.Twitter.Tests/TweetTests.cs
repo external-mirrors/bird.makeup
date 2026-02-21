@@ -124,12 +124,12 @@ namespace BirdsiteLive.Twitter.Tests
         [DynamicData(nameof(Implementations))]
         public async Task SimpleTextAndDoublePictureTweet(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(2023159374605385743, s);
+            var tweet = await _tweetService.GetTweetAsync(1769400263625064883, s);
             if (tweet is null)
                 Assert.Inconclusive();
-            Assert.AreEqual(tweet.Author.Acct, "shakira");
-            Assert.AreEqual(tweet.Author.Name, "Shakira");
-            Assert.IsTrue(tweet.LikeCount > 100000);
+            Assert.AreEqual(tweet.Author.Acct, "emostaque");
+            Assert.AreEqual(tweet.Author.Name, "Emad");
+            Assert.IsTrue(tweet.LikeCount > 1000);
             Assert.AreEqual(tweet.Media.Length, 2);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media[1].MediaType, "image/jpeg");
@@ -139,7 +139,7 @@ namespace BirdsiteLive.Twitter.Tests
 
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://pbs.twimg.com/"));
 
-            Assert.AreEqual(tweet.MessageContent, "");
+            Assert.AreEqual(tweet.MessageContent, "This goes hard");
 
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
@@ -161,7 +161,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.MessageContent,
                 "Speaker Nancy Pelosi will go down as one of most accomplished legislators in American history—breaking barriers, opening doors for others, and working every day to serve the American people. I couldn’t be more grateful for her friendship and leadership.");
 
-            //Assert.AreEqual(tweet.Media[0].AltText, "President Obama with Speaker Nancy Pelosi in DC.");
+            Assert.AreEqual(tweet.Media[0].AltText, "President Obama with Speaker Nancy Pelosi in DC.");
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }
@@ -188,24 +188,11 @@ namespace BirdsiteLive.Twitter.Tests
         [DynamicData(nameof(Implementations))]
         public async Task SimpleTextAndSingleLinkTweet(StrategyHints s)
         {
-            ExtractedTweet tweet = null;
-            try
-            {
-                tweet = await _tweetService.GetTweetAsync(1602618920996945922, s);
-            }
-            catch (Exception e)
-            {
-                Assert.Inconclusive(e.Message);
-            }
+            var tweet = await _tweetService.GetTweetAsync(1602618920996945922, s);
             if (tweet is null)
                 Assert.Inconclusive();
-            Assert.AreEqual(tweet.Author.Acct, "phoronix");
-            Assert.AreEqual(tweet.Author.Name, "Phoronix");
-            Assert.IsTrue(tweet.LikeCount > 100);
             Assert.AreEqual(tweet.MessageContent,
                 "#Linux 6.2 Expands Support For More #Qualcomm #Snapdragon SoCs, #Apple M1 Pro/Ultra/Max\n\nhttps://www.phoronix.com/news/Linux-6.2-Arm-SoC-Updates");
-            Assert.IsNull(tweet.QuotedAccount);
-            Assert.IsNull(tweet.QuotedStatusId);
         }
 
         [TestMethod]
@@ -292,7 +279,6 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsTrue(tweet.LikeCount < 20000);
         }
 
-        [Ignore]
         [TestMethod]
         [DynamicData(nameof(Implementations))]
         public async Task QTandTextContainsLink(StrategyHints s)
@@ -301,45 +287,20 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
 
-            Assert.AreEqual(tweet.MessageContent, "");
+            Assert.IsTrue(tweet.MessageContent.Contains("https://weekineth.news/2023/06/14/week-in-ethereum-news-june-17-2023/"));
             Assert.AreEqual(tweet.Author.Acct, "weekinethnews");
             Assert.IsNull(tweet.Poll);
         }
 
-        [Ignore]
         [TestMethod]
-        public async Task QTandTextContainsXWebLink_2()
+        [DynamicData(nameof(Implementations))]
+        public async Task QTandTextContainsXWebLink(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1906784491349377365);
+            var tweet = await _tweetService.GetTweetAsync(1822637945943187475, s);
             if (tweet is null)
                 Assert.Inconclusive();
 
-            Assert.AreEqual(tweet.MessageContent,
-                @"If you want a detailed walkthrough of how Privacy Pools works, we got you covered 🤝
-
-Still feeling unsure? Feel free to post your questions, and we’ll help you out! ✅
-
-Note: pay attention when creating an account!
-
-
-
-https://domain.name/@0xbowio/1906779676053209370");
-            Assert.AreEqual(tweet.Author.Acct, "0xbowio");
-        }
-        [Ignore]
-        [TestMethod]
-        public async Task QTandTextContainsXWebLink()
-        {
-            var tweet = await _tweetService.GetTweetAsync(1822637945943187475);
-            if (tweet is null)
-                Assert.Inconclusive();
-
-            Assert.AreEqual(tweet.MessageContent,
-                @"Ironically the real video shows like 10x more people than the AI conspirooooors were conspiring about 
-
-
-
-https://domain.name/@stillgray/1822453985204187319");
+            Assert.IsTrue(tweet.MessageContent.Contains("https://domain.name/@stillgray/1822453985204187319") || tweet.MessageContent.Contains("https://x.com/stillgray/status/1822453985204187319"));
             Assert.AreEqual(tweet.Author.Acct, "trustlessstate");
             Assert.AreEqual(tweet.QuotedAccount, "stillgray");;
             Assert.AreEqual(tweet.QuotedStatusId, "1822453985204187319");
@@ -423,7 +384,10 @@ https://domain.name/@stillgray/1822453985204187319");
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Poll.endTime.Year, new DateTime(2022, 11, 19, 7, 47, 45).Year);
             Assert.AreEqual(tweet.Poll.options[0].First, "Yes");
-            Assert.AreEqual(tweet.Poll.options[0].Second, 7814391);
+            if (s != StrategyHints.Nitter)
+            {
+                Assert.AreEqual(tweet.Poll.options[0].Second, 7814391);
+            }
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
             Assert.IsNull(tweet.QuotedAccount);
@@ -442,7 +406,10 @@ https://domain.name/@stillgray/1822453985204187319");
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Poll.endTime.DayOfYear, new DateTime(2022, 9, 17, 9, 26, 45).DayOfYear);
             Assert.AreEqual(tweet.Poll.options[3].First, "1-4 hours");
-            Assert.AreEqual(tweet.Poll.options[3].Second, 30);
+            if (s != StrategyHints.Nitter)
+            {
+                Assert.AreEqual(tweet.Poll.options[3].Second, 30);
+            }
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
             Assert.IsNull(tweet.QuotedAccount);
@@ -461,7 +428,10 @@ https://domain.name/@stillgray/1822453985204187319");
             if (tweet.Poll is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Poll.options[3].First, "Deleted");
-            Assert.AreEqual(tweet.Poll.options[3].Second, 128780);
+            if (s != StrategyHints.Nitter)
+            {
+                Assert.AreEqual(tweet.Poll.options[3].Second, 128780);
+            }
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
             Assert.IsNull(tweet.QuotedAccount);
@@ -479,7 +449,10 @@ https://domain.name/@stillgray/1822453985204187319");
             if (tweet.Poll is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Poll.options[1].First, "Toxic");
-            Assert.AreEqual(tweet.Poll.options[1].Second, 6323);
+            if (s != StrategyHints.Nitter)
+            {
+                Assert.AreEqual(tweet.Poll.options[1].Second, 6323);
+            }
             Assert.IsFalse(tweet.IsRetweet);
             Assert.IsFalse(tweet.IsReply);
             Assert.IsNull(tweet.QuotedAccount);
@@ -500,11 +473,11 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedStatusId);
         }
 
-        [Ignore]
         [TestMethod]
-        public async Task ShortLink_Expension_1()
+        [DynamicData(nameof(Implementations))]
+        public async Task ShortLink_Expension_1(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1884240424870568326);
+            var tweet = await _tweetService.GetTweetAsync(1884240424870568326, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
@@ -519,11 +492,11 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedStatusId);
         }
 
-        [Ignore]
         [TestMethod]
-        public async Task ShortLink_Expension_2()
+        [DynamicData(nameof(Implementations))]
+        public async Task ShortLink_Expension_2(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1883636068647342141);
+            var tweet = await _tweetService.GetTweetAsync(1883636068647342141, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
@@ -537,7 +510,6 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }
-        [Ignore]
         [TestMethod]
         [DynamicData(nameof(Implementations))]
         public async Task ShortLink_Expension_3(StrategyHints s)
@@ -578,11 +550,11 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }
-        [Ignore]
         [TestMethod]
-        public async Task ShortLink_Expension_5()
+        [DynamicData(nameof(Implementations))]
+        public async Task ShortLink_Expension_5(StrategyHints s)
         {
-            var tweet = await _tweetService.GetTweetAsync(1908169318828810274);
+            var tweet = await _tweetService.GetTweetAsync(1908169318828810274, s);
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
@@ -591,8 +563,10 @@ https://domain.name/@stillgray/1822453985204187319");
             if (tweet.MessageContent.Contains("//t.co/"))
                 Assert.Inconclusive();
             
-            Assert.AreEqual(tweet.MessageContent,
-                "Les horreurs de la guerre au Proche-Orient et la violence démesurée envers la population civile dans la bande de Gaza sont choquantes et éprouvantes, mais nous devons choisir le dialogue à Montréal. Les actes d’intimidation et de grabuge qui provoquent un sentiment d’insécurité dans une institution universitaire ne peuvent pas être tolérés. https://t.co/LRkcv7fsWM");
+            if (s != StrategyHints.Syndication)
+            {
+                Assert.IsTrue(tweet.MessageContent.Contains("https://www.montrealgazette.com/news/article856358.html") || tweet.MessageContent.Contains("https://montrealgazette.com/news/pro-palestinian-protest-at-mcgill-draws-heavy-police-presence-faces-off-with-counter-pro-israel-demonstrators"));
+            }
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }

@@ -51,8 +51,8 @@ public class Syndication : ITweetExtractor
         }
 
         httpResponse.EnsureSuccessStatusCode();
-        var c = await httpResponse.Content.ReadAsStringAsync();
-        tweet = JsonDocument.Parse(c);
+        var responseContent = await httpResponse.Content.ReadAsStringAsync();
+        tweet = JsonDocument.Parse(responseContent);
 
         long favoriteCount = 0;
         if (tweet.RootElement.TryGetProperty("favorite_count", out var favoriteCountElement))
@@ -63,6 +63,16 @@ public class Syndication : ITweetExtractor
         string username;
         string name = null;
         string messageContent = tweet.RootElement.GetProperty("text").GetString();
+        
+        JsonElement noteTweet;
+        if (tweet.RootElement.TryGetProperty("note_tweet", out noteTweet))
+        {
+            if (noteTweet.TryGetProperty("text", out var noteText))
+            {
+                messageContent = noteText.GetString();
+            }
+        }
+
         try
         {
             username = tweet.RootElement.GetProperty("user").GetProperty("screen_name").GetString().ToLower();
@@ -109,9 +119,9 @@ public class Syndication : ITweetExtractor
             JsonElement mediaEntity;
             if (entities.TryGetProperty("media", out mediaEntity))
             {
-                foreach (JsonElement media in mediaEntity.EnumerateArray())
+                foreach (JsonElement mediaElement in mediaEntity.EnumerateArray())
                 {
-                    var urlTCO = media.GetProperty("url").GetString();
+                    var urlTCO = mediaElement.GetProperty("url").GetString();
 
                     messageContent = messageContent.Replace(urlTCO, String.Empty);
                 }
@@ -121,13 +131,13 @@ public class Syndication : ITweetExtractor
         JsonElement mediaDetails;
         if (tweet.RootElement.TryGetProperty("mediaDetails", out mediaDetails))
         {
-            foreach (var media in mediaDetails.EnumerateArray())
+            foreach (var mediaElement in mediaDetails.EnumerateArray())
             {
-                    var url = media.GetProperty("media_url_https").GetString();
-                    var type = media.GetProperty("type").GetString();
+                    var url = mediaElement.GetProperty("media_url_https").GetString();
+                    var type = mediaElement.GetProperty("type").GetString();
                     string altText = null;
-                    if (media.TryGetProperty("ext_alt_text", out _))
-                        altText = media.GetProperty("ext_alt_text").GetString();
+                    if (mediaElement.TryGetProperty("ext_alt_text", out _))
+                        altText = mediaElement.GetProperty("ext_alt_text").GetString();
                     string returnType = null;
 
                     if (type == "photo")
@@ -138,7 +148,7 @@ public class Syndication : ITweetExtractor
                     {
                         returnType = "video/mp4";
                         var bitrate = -1;
-                        foreach (JsonElement v in media.GetProperty("video_info").GetProperty("variants").EnumerateArray())
+                        foreach (JsonElement v in mediaElement.GetProperty("video_info").GetProperty("variants").EnumerateArray())
                         {
                             if (v.GetProperty("content_type").GetString() !=  "video/mp4")
                                 continue;
@@ -173,11 +183,13 @@ public class Syndication : ITweetExtractor
             
             string quoteTweetLink = $"https://{_instanceSettings.Domain}/@{quoteTweetAcct}/{quoteTweetId}";
 
-            messageContent = Regex.Replace(messageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
-            messageContent = Regex.Replace(messageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
+            messageContent = Regex.Replace(messageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
+            messageContent = Regex.Replace(messageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
             // messageContent = messageContent + "\n\n" + quoteTweetLink;
             
         }
+
+        messageContent = Regex.Replace(messageContent, @" ?https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/[0-9]+/(video|photo)/[0-9]+$", "", RegexOptions.IgnoreCase);
 
         var author = new TwitterUser()
         {
@@ -187,6 +199,51 @@ public class Syndication : ITweetExtractor
 
         var createdaAt = DateTime.Parse(tweet.RootElement.GetProperty("created_at").GetString(), null, System.Globalization.DateTimeStyles.RoundtripKind);
         
+        Poll poll = null;
+        JsonElement cardDoc;
+        if (tweet.RootElement.TryGetProperty("card", out cardDoc))
+        {
+            DateTime endDate = DateTime.Now;
+            Dictionary<char, string> labels = new Dictionary<char, string>();
+            Dictionary<char, long> counts = new Dictionary<char, long>();
+            string type = cardDoc.GetProperty("name").GetString();
+            foreach (JsonProperty val in cardDoc.GetProperty("binding_values")
+                         .EnumerateObject())
+            {
+                var key = val.Name;
+                if (key == "end_datetime_utc")
+                {
+                    var endDateString = val.Value.GetProperty("string_value").GetString();
+                    endDate = DateTime.Parse(endDateString);
+                }
+                else if (key.StartsWith("choice") && key.EndsWith("_label"))
+                {
+                    var entryLabel = val.Value.GetProperty("string_value").GetString();
+                    char entryNumber = key[6];
+                    labels.TryAdd(entryNumber, entryLabel);
+                }
+                else if (key.StartsWith("choice") && key.EndsWith("_count"))
+                {
+                    var entryLabel = val.Value.GetProperty("string_value").GetString();
+                    char entryNumber = key[6];
+                    counts.TryAdd(entryNumber, long.Parse(entryLabel));
+                }
+            }
+
+            if (labels.Count > 0)
+            {
+                var optionsList = labels.OrderBy(x => x.Key).Select(x => x.Value).Zip(counts.OrderBy(x => x.Key).Select(x => x.Value)).ToList();
+                poll = new Poll()
+                {
+                    endTime = endDate,
+                    options = optionsList,
+                };
+            }
+
+            if (!type.StartsWith("poll"))
+                poll = null;
+        }
+
         if (messageContent.StartsWith(".@"))
             messageContent = messageContent.Remove(0, 1);
 
@@ -206,6 +263,7 @@ public class Syndication : ITweetExtractor
             QuotedAccount = quoteTweetAcct,
             QuotedStatusId = quoteTweetId,
             LikeCount = favoriteCount,
+            Poll = poll,
         };
         
         extractedTweet = await _tweetsService.ExpandShortLinks(extractedTweet);

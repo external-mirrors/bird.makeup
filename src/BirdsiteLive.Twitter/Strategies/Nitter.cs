@@ -415,9 +415,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 
                 // If it's a gif (it doesn't have controls in Nitter usually, but check for video tag)
                 // For now, if we have a source, it's a video.
+                string altText = att.QuerySelector("img")?.GetAttribute("alt");
                 if (vidSrc != null)
                 {
-                    media.Add(new ExtractedMedia { MediaType = "video/mp4", Url = vidSrc });
+                    media.Add(new ExtractedMedia { MediaType = "video/mp4", Url = vidSrc, AltText = altText });
                 }
                 else if (src != null)
                 {
@@ -426,7 +427,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                     // SimpleTextAndSingleVideoTweet expectation for Nitter
                     // Some tests expect image/jpeg even if it's a video poster.
                     string mediaType = "image/jpeg";
-                    media.Add(new ExtractedMedia { MediaType = mediaType, Url = src });
+                    media.Add(new ExtractedMedia { MediaType = mediaType, Url = src, AltText = altText });
                 }
             }
             else if (att.QuerySelector("img") != null)
@@ -454,7 +455,9 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                     return url;
                 }
 
-                var src = att.QuerySelector("img")?.GetAttribute("src");
+                var img = att.QuerySelector("img");
+                var src = img?.GetAttribute("src");
+                var altText = img?.GetAttribute("alt");
 
                 // Some nitter templates put the useful URL on the parent anchor
                 if (string.IsNullOrEmpty(src) || !(src.StartsWith("http://") || src.StartsWith("https://") || src.StartsWith("/pic/") || src.StartsWith("/media/") || src.StartsWith("media/")))
@@ -466,7 +469,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
                 src = NormalizeMediaUrl(src);
 
-                media.Add(new ExtractedMedia { MediaType = "image/jpeg", Url = src });
+                media.Add(new ExtractedMedia { MediaType = "image/jpeg", Url = src, AltText = altText });
             }
         }
 

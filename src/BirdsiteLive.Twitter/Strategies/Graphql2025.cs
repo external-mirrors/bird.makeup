@@ -308,12 +308,14 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
             //MessageContent.Replace($"https://twitter.com/i/web/status/{}", "");
            // MessageContent = MessageContent.Replace($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}", "");
-            MessageContent = MessageContent.Replace($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}", "", StringComparison.OrdinalIgnoreCase);
-            MessageContent = MessageContent.Replace($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}", "", StringComparison.OrdinalIgnoreCase);
+            MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
+            MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
             
             //MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
             // MessageContent = MessageContent + "\n\n" + quoteTweetLink;
         }
+
+        MessageContent = Regex.Replace(MessageContent, @" ?https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/[0-9]+/(video|photo)/[0-9]+$", "", RegexOptions.IgnoreCase);
 
         Poll poll = null;
         JsonElement cardDoc;
