@@ -335,6 +335,21 @@ https://domain.name/@stillgray/1822453985204187319");
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleThread2(StrategyHints s)
+        {
+            var tweet = await _tweetService.GetTweetAsync(2024378849446793643, s);
+            if (tweet is null)
+                Assert.Inconclusive();
+
+            Assert.AreEqual(tweet.InReplyToAccount, "peter_szilagyi");
+            Assert.AreEqual(tweet.InReplyToStatusId, 2024378741799940426);
+            Assert.IsTrue(tweet.IsReply);
+            Assert.IsTrue(tweet.IsThread);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
+        }
 
         [TestMethod]
         [DynamicData(nameof(Implementations))]

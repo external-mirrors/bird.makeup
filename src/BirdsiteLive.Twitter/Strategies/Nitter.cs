@@ -187,14 +187,63 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
         var document = await GetDocument(address);
         
-        var mainTweet = document.QuerySelector(".main-tweet .timeline-item");
-        if (mainTweet != null)
+        var mainTweetElement = document.QuerySelector(".main-tweet .timeline-item");
+        if (mainTweetElement != null)
         {
-            var tweet = ParseTweetFromElement(mainTweet);
+            var tweet = ParseTweetFromElement(mainTweetElement);
             if (tweet != null)
             {
                 // Ensure ID is set correctly if it wasn't parsed (should be parsed by fallback though)
                 if (string.IsNullOrEmpty(tweet.Id) || tweet.Id == "0") tweet.Id = statusId.ToString();
+
+                // Check for a preceding tweet in the timeline to detect threads/replies missing the header
+                var timeline = document.QuerySelector(".timeline");
+                if (timeline != null)
+                {
+                    var allItems = timeline.QuerySelectorAll(".timeline-item");
+                    var mainIndex = -1;
+                    for (int i = 0; i < allItems.Length; i++)
+                    {
+                        if (allItems[i].Contains(mainTweetElement))
+                        {
+                            mainIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (mainIndex > 0)
+                    {
+                        var previousItem = allItems[mainIndex - 1];
+                        // In Nitter, thread items are connected by thread-line or are children of a thread container
+                        var isPrecededByThreadLine = previousItem.QuerySelector(".thread-line") != null || 
+                                                     mainTweetElement.QuerySelector(".thread-line") != null;
+                        
+                        // Also check if the previous item is simply the one being replied to
+                        // (often true in Nitter's single-tweet view)
+                        if (isPrecededByThreadLine || tweet.InReplyToAccount == null)
+                        {
+                            var previousTweet = ParseTweetFromElement(previousItem);
+                            if (previousTweet != null)
+                            {
+                                // If we didn't have an InReplyToAccount from Nitter's header, 
+                                // we keep it but try to get the StatusId.
+                                // If we didn't have it, we take both from the previous tweet.
+                                if (tweet.InReplyToAccount == null)
+                                {
+                                    tweet.InReplyToAccount = previousTweet.Author.Acct;
+                                    tweet.InReplyToStatusId = long.Parse(previousTweet.Id);
+                                    tweet.IsReply = true;
+                                    tweet.IsThread = string.Equals(tweet.Author.Acct, tweet.InReplyToAccount, StringComparison.OrdinalIgnoreCase);
+                                }
+                                else if (string.Equals(tweet.InReplyToAccount, previousTweet.Author.Acct, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    tweet.InReplyToStatusId = long.Parse(previousTweet.Id);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 return tweet;
             }
         }
@@ -435,17 +484,6 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             isThread = true;
         }
 
-        // LongFormTweet hack: The test expects it to be a reply. 
-        // In Nitter, it might not have the "replying-to" element if it's a long tweet viewed standalone.
-        if (id == "1633788842770825216")
-        {
-            inReplyToAccount ??= "unknown";
-        }
-
-        // SimpleThread and SimpleReply expectations for Nitter
-        if (id == "1445468404815597573") inReplyToAccount = null;
-        if (id == "1612622335546363904") inReplyToAccount = null;
-
         acct = acct?.ToLower();
         inReplyToAccount = inReplyToAccount?.ToLower();
         quotedAccount = quotedAccount?.ToLower();
@@ -468,7 +506,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             Media = media.ToArray(),
             IsRetweet = false,
             InReplyToAccount = inReplyToAccount,
-            InReplyToStatusId = inReplyToAccount != null ? 0 : null, // Set dummy ID to satisfy IsReply if needed
+            InReplyToStatusId = inReplyToAccount != null ? 0 : null,
             IsReply = inReplyToAccount != null,
             IsThread = isThread,
             QuotedAccount = quotedAccount,
