@@ -70,6 +70,7 @@ namespace BirdsiteLive.Twitter.Tests
                 Assert.Inconclusive();
             
             Assert.AreEqual(tweet.Author.Acct, "joebiden");
+            Assert.AreEqual(tweet.Author.Name, "Joe Biden");
             Assert.IsTrue(tweet.LikeCount > 10000);
 
             Assert.AreEqual(tweet.MessageContent,
@@ -92,6 +93,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Author.Acct, "hwwonx");
+            Assert.AreEqual(tweet.Author.Name, "hww.eth | Hsiao-Wei Wang");
             Assert.IsTrue(tweet.LikeCount > 200);
             Assert.AreEqual(tweet.MessageContent,
                 "@ETHGlobal Taipei is kicking off! 🔥\n\nPowered by🧋\nBuilt on Ethereum");
@@ -126,6 +128,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Author.Acct, "shakira");
+            Assert.AreEqual(tweet.Author.Name, "Shakira");
             Assert.IsTrue(tweet.LikeCount > 100000);
             Assert.AreEqual(tweet.Media.Length, 2);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
@@ -150,6 +153,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Author.Acct, "barackobama");
+            Assert.AreEqual(tweet.Author.Name, "Barack Obama");
             Assert.IsTrue(tweet.LikeCount > 100000);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
@@ -169,6 +173,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Author.Acct, "shayan86");
+            Assert.AreEqual(tweet.Author.Name, "Shayan Sardarizadeh");
             Assert.IsTrue(tweet.LikeCount > 400);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
@@ -195,6 +200,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Author.Acct, "phoronix");
+            Assert.AreEqual(tweet.Author.Name, "Phoronix");
             Assert.IsTrue(tweet.LikeCount > 100);
             Assert.AreEqual(tweet.MessageContent,
                 "#Linux 6.2 Expands Support For More #Qualcomm #Snapdragon SoCs, #Apple M1 Pro/Ultra/Max\n\nhttps://www.phoronix.com/news/Linux-6.2-Arm-SoC-Updates");
@@ -210,6 +216,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Author.Acct, "spacex");
+            Assert.AreEqual(tweet.Author.Name, "SpaceX");
             Assert.IsTrue(tweet.LikeCount > 40000);
             Assert.AreEqual(tweet.MessageContent,
                 "Falcon 9’s first stage has landed on the Just Read the Instructions droneship, completing the 15th launch and landing of this booster!");
@@ -259,6 +266,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweet is null)
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.Author.Acct, "ryansadams");
+            Assert.AreEqual(tweet.Author.Name, "RYAN SΞAN ADAMS - rsa.eth 🦄");
             Assert.IsTrue(tweet.LikeCount > 0);
             Assert.AreEqual(tweet.MessageContent,
                 "When you gave them your keys you gave them your coins.");
@@ -276,6 +284,7 @@ namespace BirdsiteLive.Twitter.Tests
                 Assert.Inconclusive();
 
             Assert.AreEqual(tweet.Author.Acct, "trustlessstate");
+            Assert.AreEqual(tweet.Author.Name, "David Hoffman (No ETH - No Trust)");
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.QuotedAccount, "0xjaehaerys");
             Assert.AreEqual(tweet.QuotedStatusId, "1944859201291083887");
@@ -486,6 +495,7 @@ https://domain.name/@stillgray/1822453985204187319");
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.Author.Acct, "elidourado");
+            Assert.AreEqual(tweet.Author.Name, "Eli Dourado");
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }

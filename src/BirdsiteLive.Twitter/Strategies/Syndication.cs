@@ -61,10 +61,15 @@ public class Syndication : ITweetExtractor
         }
 
         string username;
+        string name = null;
         string messageContent = tweet.RootElement.GetProperty("text").GetString();
         try
         {
             username = tweet.RootElement.GetProperty("user").GetProperty("screen_name").GetString().ToLower();
+            if (tweet.RootElement.GetProperty("user").TryGetProperty("name", out var nameElement))
+            {
+                name = nameElement.GetString();
+            }
         }
         catch (KeyNotFoundException _)
         {
@@ -177,6 +182,7 @@ public class Syndication : ITweetExtractor
         var author = new TwitterUser()
         {
             Acct = username,
+            Name = name,
         };
 
         var createdaAt = DateTime.Parse(tweet.RootElement.GetProperty("created_at").GetString(), null, System.Globalization.DateTimeStyles.RoundtripKind);
