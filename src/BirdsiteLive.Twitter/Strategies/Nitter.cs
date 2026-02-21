@@ -119,44 +119,37 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         string pattern = @".*\/([0-9]+)#m";
         Regex rg = new Regex(pattern);
 
-        var cellSelector = ".tweet-link";
-        var cells = document.QuerySelectorAll(cellSelector);
-        var titles = cells.Select(m => m.GetAttribute("href"));
-
-        foreach (string title in titles)
+        // Iterate timeline items directly to preserve context (e.g., replies) without refetching
+        var items = document.QuerySelectorAll(".timeline-item");
+        foreach (var item in items)
         {
-            if (title == null) continue;
-            MatchCollection matchedId = rg.Matches(title);
-            if (matchedId.Count == 0) continue;
-            var matchString = matchedId[0].Groups[1].Value;
-            var match = Int64.Parse(matchString);
+            var href = item.QuerySelector(".tweet-link")?.GetAttribute("href") ?? item.QuerySelector(".tweet-date a")?.GetAttribute("href");
+            if (href == null) continue;
+            var idMatch = rg.Match(href);
+            if (!idMatch.Success) continue;
+            var match = long.Parse(idMatch.Groups[1].Value);
 
             if (match <= fromId)
                 continue;
 
             try
             {
-                ExtractedTweet tweet;
-                try
-                {
-                    tweet = await GetTweetAsync(match);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    tweet = await _tweetExtractor.GetTweetAsync(match);
-                }
+                // Parse tweet from the timeline item element (keeps reply/quote context)
+                var tweet = ParseTweetFromElement(item);
+                if (tweet == null) continue;
+
+                // If low trust, ensure we don't leak other authors' tweets
                 if (tweet.Author.Acct != user.Acct && lowtrust)
-                {
                     continue;
-                }
+
+                // Mark retweets when parsing from main user's timeline (non-lowtrust endpoint)
                 if (tweet.Author.Acct != user.Acct && !lowtrust)
                 {
                     tweet.IsRetweet = true;
                     tweet.OriginalAuthor = tweet.Author;
                     tweet.Author = await _userExtractor.GetUserAsync(user.Acct);
                     tweet.RetweetId = tweet.IdLong;
-                    // Sadly not given by Nitter UI
+                    // Nitter timeline doesn't give retweet's new ID, generate one
                     var gen = new TwitterSnowflakeGenerator(1, 1);
                     tweet.Id = gen.NextId().ToString();
                 }
@@ -165,10 +158,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"Nitter: error fetching tweet {match} from user {user.Acct}");
+                _logger.LogError(e, $"Nitter: error parsing timeline tweet {match} from user {user.Acct}");
             }
 
-            await Task.Delay(100);
+            await Task.Delay(50);
         }
 
         _nCalled.Add(1,
@@ -198,6 +191,20 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
                 // Check for a preceding tweet in the timeline to detect threads/replies missing the header
                 var timeline = document.QuerySelector(".timeline");
+
+                // Also look for a direct reply header in the main tweet area
+                if (tweet.InReplyToAccount == null)
+                {
+                    var headerReplyLink = document.QuerySelector(".main-tweet .replying-to a");
+                    var headerReplyText = headerReplyLink?.TextContent?.TrimStart('@');
+                    if (!string.IsNullOrWhiteSpace(headerReplyText))
+                    {
+                        tweet.InReplyToAccount = headerReplyText.ToLower();
+                        tweet.IsReply = true;
+                        tweet.IsThread = string.Equals(tweet.Author.Acct, tweet.InReplyToAccount, StringComparison.OrdinalIgnoreCase);
+                    }
+                }
+
                 if (timeline != null)
                 {
                     var allItems = timeline.QuerySelectorAll(".timeline-item");
@@ -301,6 +308,48 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 if (content.StartsWith(".@"))
                 {
                     content = content.Substring(1);
+                }
+            }
+
+            // Heuristic: if there's no explicit reply header, detect leading mention as a reply target
+            if (content != null && string.IsNullOrEmpty(item.QuerySelector(".replying-to")?.TextContent))
+            {
+                // Find the first meaningful child element and see if it's a mention
+                IElement firstEl = null;
+                // Prefer actual child elements over text nodes
+                if (contentElement.Children.Length > 0)
+                {
+                    firstEl = contentElement.Children[0] as IElement;
+                    // Skip empty elements
+                    if (firstEl != null && string.IsNullOrWhiteSpace(firstEl.TextContent))
+                    {
+                        firstEl = contentElement.Children.FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.TextContent));
+                    }
+                }
+                else
+                {
+                    var node = contentElement.ChildNodes.FirstOrDefault();
+                    if (node is IElement el)
+                        firstEl = el;
+                }
+
+                if (firstEl != null)
+                {
+                    var firstText = firstEl.TextContent?.Trim();
+                    var firstClass = firstEl.GetAttribute("class") ?? "";
+                    if (!string.IsNullOrEmpty(firstText) && firstText.StartsWith("@"))
+                    {
+                        // Prefer elements that look like mentions
+                        if (firstEl.TagName.Equals("A", StringComparison.OrdinalIgnoreCase) || firstClass.Contains("username"))
+                        {
+                            var handle = firstText.TrimStart('@');
+                            if (!string.IsNullOrWhiteSpace(handle))
+                            {
+                                // Assign tentatively; will be normalized below
+                                item.SetAttribute("data-leading-mention", handle);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -450,6 +499,12 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         {
             inReplyToAccount = replyTo.QuerySelector("a")?.TextContent.TrimStart('@');
         }
+        // Fallback from heuristic above (leading mention)
+        if (inReplyToAccount == null)
+        {
+            var lm = item.GetAttribute("data-leading-mention");
+            if (!string.IsNullOrWhiteSpace(lm)) inReplyToAccount = lm;
+        }
 
         // Quote
         var quote = item.QuerySelector(".quote");
@@ -469,6 +524,59 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             }
         }
 
+        // Polls
+        Poll poll = null;
+        var pollElement = item.QuerySelector(".poll");
+        if (pollElement != null)
+        {
+            var options = new List<(string First, long Second)>();
+
+            // Try multiple selector patterns used by different Nitter templates
+            var optionElements = pollElement.QuerySelectorAll(".poll-option");
+            if (optionElements.Length == 0)
+                optionElements = pollElement.QuerySelectorAll("li");
+            if (optionElements.Length == 0)
+                optionElements = pollElement.Children;
+
+            foreach (var opt in optionElements)
+            {
+                // Option text
+                var optionText = opt.QuerySelector(".option-text")?.TextContent?.Trim();
+                if (string.IsNullOrWhiteSpace(optionText))
+                    optionText = opt.TextContent?.Trim();
+                // Strip leading percentage values like "53%"
+                if (!string.IsNullOrWhiteSpace(optionText))
+                    optionText = Regex.Replace(optionText, @"^\s*\d+%\s*", "").Trim();
+
+                // Count (try to find any number inside the option node)
+                long count = 0;
+                var countElement = opt.QuerySelector(".option-count");
+                string countText = countElement?.TextContent;
+                if (string.IsNullOrWhiteSpace(countText))
+                    countText = opt.TextContent;
+
+                if (!string.IsNullOrWhiteSpace(countText))
+                {
+                    var match = Regex.Match(countText.Replace(",", ""), @"\d+");
+                    if (match.Success)
+                        long.TryParse(match.Value, out count);
+                }
+
+                // Keep only meaningful options
+                if (!string.IsNullOrWhiteSpace(optionText))
+                    options.Add((optionText, count));
+            }
+            
+            if (options.Count > 0)
+            {
+                poll = new Poll
+                {
+                    options = options,
+                    endTime = createdAt.AddDays(1) // Nitter doesn't always show end time clearly
+                };
+            }
+        }
+
         // Check if it's REALLY a reply. Nitter shows "Replying to @user" even if it's the main tweet 
         // in a thread view sometimes, or if it's just a mention.
         // BirdsiteLive usually wants IsReply only if it's replying to someone else or part of a thread.
@@ -483,6 +591,8 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         {
             isThread = true;
         }
+        // If we are in a visible thread segment, consider it a reply for timeline context
+        bool isReply = inReplyToAccount != null || item.QuerySelector(".thread-line") != null;
 
         acct = acct?.ToLower();
         inReplyToAccount = inReplyToAccount?.ToLower();
@@ -504,10 +614,11 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             LikeCount = likes,
             ShareCount = shares,
             Media = media.ToArray(),
+            Poll = poll,
             IsRetweet = false,
             InReplyToAccount = inReplyToAccount,
             InReplyToStatusId = inReplyToAccount != null ? 0 : null,
-            IsReply = inReplyToAccount != null,
+            IsReply = isReply,
             IsThread = isThread,
             QuotedAccount = quotedAccount,
             QuotedStatusId = quotedStatusId
