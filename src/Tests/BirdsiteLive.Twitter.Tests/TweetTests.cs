@@ -68,6 +68,10 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet = await _tweetService.GetTweetAsync(1600905296892891149, s);
             if (tweet is null)
                 Assert.Inconclusive();
+            
+            Assert.AreEqual(tweet.Author.Acct, "joebiden");
+            Assert.IsTrue(tweet.LikeCount > 10000);
+
             Assert.AreEqual(tweet.MessageContent,
                 "We’re strengthening American manufacturing by creating 750,000 manufacturing jobs since I became president.");
             Assert.AreEqual(tweet.IdLong, 1600905296892891149);
@@ -87,6 +91,8 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet = await _tweetService.GetTweetAsync(1908137050907558326, s);
             if (tweet is null)
                 Assert.Inconclusive();
+            Assert.AreEqual(tweet.Author.Acct, "hwwonx");
+            Assert.IsTrue(tweet.LikeCount > 200);
             Assert.AreEqual(tweet.MessageContent,
                 "@ETHGlobal Taipei is kicking off! 🔥\n\nPowered by🧋\nBuilt on Ethereum");
 
@@ -119,6 +125,8 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet = await _tweetService.GetTweetAsync(2023159374605385743, s);
             if (tweet is null)
                 Assert.Inconclusive();
+            Assert.AreEqual(tweet.Author.Acct, "shakira");
+            Assert.IsTrue(tweet.LikeCount > 100000);
             Assert.AreEqual(tweet.Media.Length, 2);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media[1].MediaType, "image/jpeg");
@@ -141,6 +149,8 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet = await _tweetService.GetTweetAsync(1593344577385160704, s);
             if (tweet is null)
                 Assert.Inconclusive();
+            Assert.AreEqual(tweet.Author.Acct, "barackobama");
+            Assert.IsTrue(tweet.LikeCount > 100000);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
             
@@ -158,6 +168,8 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet = await _tweetService.GetTweetAsync(1935683033836773498, s);
             if (tweet is null)
                 Assert.Inconclusive();
+            Assert.AreEqual(tweet.Author.Acct, "shayan86");
+            Assert.IsTrue(tweet.LikeCount > 400);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
 
@@ -182,6 +194,8 @@ namespace BirdsiteLive.Twitter.Tests
             }
             if (tweet is null)
                 Assert.Inconclusive();
+            Assert.AreEqual(tweet.Author.Acct, "phoronix");
+            Assert.IsTrue(tweet.LikeCount > 100);
             Assert.AreEqual(tweet.MessageContent,
                 "#Linux 6.2 Expands Support For More #Qualcomm #Snapdragon SoCs, #Apple M1 Pro/Ultra/Max\n\nhttps://www.phoronix.com/news/Linux-6.2-Arm-SoC-Updates");
             Assert.IsNull(tweet.QuotedAccount);
@@ -195,7 +209,8 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet = await _tweetService.GetTweetAsync(1604231025311129600, s);
             if (tweet is null)
                 Assert.Inconclusive();
-
+            Assert.AreEqual(tweet.Author.Acct, "spacex");
+            Assert.IsTrue(tweet.LikeCount > 40000);
             Assert.AreEqual(tweet.MessageContent,
                 "Falcon 9’s first stage has landed on the Just Read the Instructions droneship, completing the 15th launch and landing of this booster!");
             Assert.AreEqual(tweet.Media.Length, 1);
@@ -207,7 +222,8 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet2 = await _tweetService.GetTweetAsync(1657913781006258178, s);
             if (tweet2 is null)
                 Assert.Inconclusive();
-
+            Assert.AreEqual(tweet2.Author.Acct, "coinbase");
+            Assert.IsTrue(tweet2.LikeCount > 100);
             Assert.AreEqual(tweet2.MessageContent,
                 "Coinbase has big international expansion plans\n\nTom Duff Gordon (@tomduffgordon), VP of International Policy @coinbase has the deets");
             Assert.AreEqual(tweet2.Media.Length, 1);
@@ -242,10 +258,10 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet = await _tweetService.GetTweetAsync(1610807139089383427, s);
             if (tweet is null)
                 Assert.Inconclusive();
-
+            Assert.AreEqual(tweet.Author.Acct, "ryansadams");
+            Assert.IsTrue(tweet.LikeCount > 0);
             Assert.AreEqual(tweet.MessageContent,
                 "When you gave them your keys you gave them your coins.");
-            Assert.AreEqual(tweet.Author.Acct, "ryansadams");
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.QuotedAccount, "kadhim");
             Assert.AreEqual(tweet.QuotedStatusId, "1610706613207285773");
