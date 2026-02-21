@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BirdsiteLive.Services;
+using Grafana.OpenTelemetry;
 using Lamar.Microsoft.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -27,6 +28,7 @@ namespace BirdsiteLive
                     {
                         options.IncludeFormattedMessage = true;
                         options.IncludeScopes = true;
+                        options.UseGrafana();
                     });
                 })
                 .UseLamar()
