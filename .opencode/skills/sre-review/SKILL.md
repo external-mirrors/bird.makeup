@@ -10,8 +10,43 @@ This skill covers the **crawling pipeline only**:
 - `Sidecar.GetUserAsync` / `Sidecar.GetPostAsync` — sidecar-backed fetches
 - `Direct.GetUserAsync` — direct API user fetches
 
-It does **not** cover HTTP server spans, ActivityPub delivery, or follower fan-out
-(those are either filtered out by `FilterProcessor` or currently untraced).
+It does **not** cover HTTP server spans, ActivityPub delivery to remote servers,
+or follower fan-out. Delivery to other servers (`SendTweetsToFollowersProcessor`,
+remote inbox POSTs, per-instance failure tracking) is out of scope — those paths
+are either filtered out by `FilterProcessor` or currently untraced, and
+investigating them is not part of an SRE review session with this skill.
+
+## MCP / tooling limitations
+
+The Grafana MCP integration currently exposes **Tempo only** (traces). Logs (Loki)
+and metrics (Prometheus/Mimir) are not yet queryable via MCP tools, but support is
+expected in a future Grafana MCP release.
+
+This means:
+- Log-only signals (e.g. AP delivery failures, dead follower accumulation, proxy
+  rotation events) cannot be queried during a session — ask the user to check Loki
+  manually if those signals are relevant.
+- OTel metrics emitted by `StatisticsHandler` and the `DotMakeup` meter (e.g.
+  `dotmakeup_api_called_count`, `dotmakeup_twitter_new_tweets_count`) are visible
+  in Grafana dashboards but not queryable here.
+
+Despite this, improvements to logs and metrics **can still be suggested** during a
+session — they just can't be validated in-session. Suggestions worth making:
+
+**Logs:**
+- Structured log fields (e.g. `acct`, `strategy`, `postCount`) on key events in
+  `RetrieveTweetsProcessor` and `Sidecar` would make Loki queries far more useful.
+  Currently most log lines are unstructured strings.
+- `Console.WriteLine` calls (e.g. `Sidecar.cs:65`, `Sidecar.cs:131`) should be
+  replaced with `_logger.LogError` so they appear in Loki at the correct severity.
+
+**Metrics:**
+- A `dotmakeup_crawl_errors_total` counter broken down by `error_type` and
+  `strategy` would give a durable rate signal independent of trace sampling.
+- A `dotmakeup_token_refresh_total` counter in `Graphql2025.cs` would surface
+  token churn as a Grafana alertable metric (see Gap 6 in Section D).
+- Gauge for active follower count per instance host would make dead-follower
+  accumulation visible without a direct DB query.
 
 ## Codebase reference
 
@@ -370,4 +405,42 @@ can confirm before you use the Edit tool.
 
 ## Learned Notes
 
-_No notes yet. Notes are added here during investigations._
+### 2026-02-22 — Scope clarification: delivery to other servers is out of scope
+
+AP delivery to remote servers (`SendTweetsToFollowersProcessor` fan-out, HTTP POST
+to remote inboxes, per-instance failure tracking) is explicitly **out of scope** for
+this skill. Gap 5 in Section D documents what instrumentation _could_ be added, but
+investigating or tuning delivery behaviour is not part of an SRE review session here.
+
+---
+
+### 2026-02-22 — `ISocialMediaService.ServiceName` vs `GetType().Name` for `crawl.strategy`
+
+`ISocialMediaService` has a `ServiceName` string property, but it returns a
+human-readable display name (e.g. `"Twitter"`). For the `crawl.strategy` span tag,
+`_socialMediaService.GetType().Name` is more useful because it distinguishes concrete
+implementations (`TwitterService`, `InstagramService`, `HnService`) without requiring
+interface changes. Use `GetType().Name` when tagging strategy in processor spans.
+
+---
+
+### 2026-02-22 — `Sidecar.GetTimelineAsync` was silently swallowing all exceptions
+
+Prior to the Gap 3 fix, the `catch` block in `Sidecar.GetTimelineAsync` called
+`Console.WriteLine(e)` and returned `[]`. All network errors, deserialization
+failures, and HTTP non-200 responses were invisible in Tempo — they appeared as
+`posts.count = 0` with `status = unset`, indistinguishable from a legitimate
+empty timeline. After the fix, these are tagged as span errors with `error.type`.
+
+---
+
+### 2026-02-22 — Dominant error pattern: NullReferenceException in RetrieveTweetsProcessor
+
+7 of 11 error traces in the past hour were `NullReferenceException` in
+`RetrieveTweetsProcessor`, all with durations of ~14–17 seconds. Affected accounts
+were unrelated (`duckduckgo`, `synacktiv`, `sg_posters`, `slpng_giants_fr`, etc.),
+ruling out account-specific causes. The consistent long duration before crash
+suggests `GetNewPosts()` completes a full upstream fetch but returns `null` (rather
+than an empty array), which then hits `.Length` without a null guard. The fix for
+Gap 2 (`error.type` tag) will make this queryable as
+`{ span.error.type = "NullReferenceException" }` once deployed.

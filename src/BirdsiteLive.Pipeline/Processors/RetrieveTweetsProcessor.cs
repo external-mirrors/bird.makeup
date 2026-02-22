@@ -60,6 +60,8 @@ namespace BirdsiteLive.Pipeline.Processors
                     using var activity = ActivitySource.StartActivity("RetrieveTweetsProcessor", ActivityKind.Internal);
                     activity?.SetTag("user.acct", user.Acct);
                     activity?.SetTag("user.isVip", isVip);
+                    activity?.SetTag("crawl.strategy", _socialMediaService.GetType().Name);
+                    activity?.SetTag("posts.count", 0);
                     try 
                     {
                         var tweets = await _socialMediaService.GetNewPosts(user);
@@ -77,12 +79,14 @@ namespace BirdsiteLive.Pipeline.Processors
                     } 
                     catch(RateLimitExceededException e)
                     {
+                        activity?.SetTag("error.type", e.GetType().Name);
                         activity?.SetStatus(ActivityStatusCode.Error, e.Message);
                         await Task.Delay(_settings.SocialNetworkRequestJitter);
                         _logger.LogError(e.Message);
                     }
                     catch(Exception e)
                     {
+                        activity?.SetTag("error.type", e.GetType().Name);
                         activity?.SetStatus(ActivityStatusCode.Error, e.Message);
                         _logger.LogError(e.Message);
                     }

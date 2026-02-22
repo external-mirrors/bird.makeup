@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
@@ -22,6 +23,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
     static Meter _meter = new("DotMakeup", "1.0.0");
     static Counter<int> _apiCalled = _meter.CreateCounter<int>("dotmakeup_api_called_count");
     static Counter<int> _newTweets = _meter.CreateCounter<int>("dotmakeup_twitter_new_tweets_count");
+    private static readonly ActivitySource ActivitySource = new("DotMakeup");
     
     private readonly ITwitterUserDal  _twitterUserDal;
     private readonly ITwitterTweetsService _tweetsService;
@@ -70,6 +72,10 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
     
     public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long userId, long fromId, bool withReplies)
     {
+        using var activity = ActivitySource.StartActivity("Sidecar.GetTimelineAsync", ActivityKind.Internal);
+        activity?.SetTag("crawl.strategy", "Sidecar");
+        activity?.SetTag("crawl.endpoint", withReplies ? "postbyuserwithreplies" : "postbyuser");
+        activity?.SetTag("posts.count", 0);
         try
         {
             var tweets = new List<ExtractedTweet>();
@@ -107,6 +113,8 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
                     new KeyValuePair<string, object>("result", "5xx"),
                     new KeyValuePair<string, object>("endpoint", endpoint)
                 );
+                activity?.SetStatus(ActivityStatusCode.Error, httpResponse.StatusCode.ToString());
+                activity?.SetTag("error.type", "HttpError");
                 return new List<ExtractedTweet>();
             }
             _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_sidecar_timeline"),
@@ -123,11 +131,14 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
                 tweets[i] = await _tweetsService.ExpandShortLinks(tweets[i]);
                 tweets[i] = _tweetsService.CleanupText(tweets[i]);
             }
-            
+
+            activity?.SetTag("posts.count", tweets.Count);
             return tweets;
         }
         catch (Exception e)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, e.Message);
+            activity?.SetTag("error.type", e.GetType().Name);
             Console.WriteLine(e);
             return new List<ExtractedTweet>();
         }
