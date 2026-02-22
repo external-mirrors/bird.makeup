@@ -14,6 +14,12 @@ using Moq;
 
 namespace BirdsiteLive.Twitter.Tests
 {
+    // LEARNED DEBUGGING STRATEGIES:
+    // 1. Live Data Inspection: Use 'curl' and 'grep' to inspect the actual HTML output from Nitter (e.g., http://marci:8080/user/with_replies).
+    //    This helps identify how Nitter's structure (like '.retweet-header' or '.timeline-item') has changed and if thread parents are included.
+    // 2. Targeted Test Execution: Use 'run_test fqn:...' for specific test cases to quickly verify fixes without running the entire suite.
+    // 3. Strategy Overlap: Check 'TwitterTweetsService.cs' to see which strategy (Nitter vs Vanilla) is actually being used based on mock settings (e.g., followersThreshold).
+    
     [TestClass, TestCategory("Twitter")]
     public class TimelineTests
     {
