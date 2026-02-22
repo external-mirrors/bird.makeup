@@ -72,11 +72,19 @@ namespace BirdsiteLive.Twitter
             if (s == StrategyHints.Syndication)
                 return await _tweetFromSyndication.GetTweetAsync(statusId);
 
-            if (s == StrategyHints.Graphql2024)
-                return await _tweetFromGraphql2024.GetTweetAsync(statusId);
+            try
+            {
+                if (s == StrategyHints.Graphql2024)
+                    return await _tweetFromGraphql2024.GetTweetAsync(statusId);
             
-            if (s == StrategyHints.Graphql2025)
-                return await _tweetFromGraphql2025.GetTweetAsync(statusId);
+                if (s == StrategyHints.Graphql2025)
+                    return await _tweetFromGraphql2025.GetTweetAsync(statusId);
+            }
+            catch (HttpRequestException e)
+            {
+                Console.WriteLine(e);
+                return null;
+            }
             
             if (s == StrategyHints.Sidecar)
                 return await _tweetFromSidecar.GetTweetAsync(statusId);

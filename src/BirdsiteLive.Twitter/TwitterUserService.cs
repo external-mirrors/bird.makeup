@@ -62,11 +62,20 @@ namespace BirdsiteLive.Twitter
 
         public async Task<TwitterUser> GetUserAsync(string username, StrategyHints s)
         {
-            if (s == StrategyHints.Graphql2024)
-                return await _tweetFromGraphql2024.GetUserAsync(username);
-            
-            if (s == StrategyHints.Graphql2025)
-                return await _tweetFromGraphql2025.GetUserAsync(username);
+            try
+            {
+                if (s == StrategyHints.Graphql2024)
+                    return await _tweetFromGraphql2024.GetUserAsync(username);
+
+                if (s == StrategyHints.Graphql2025)
+                    return await _tweetFromGraphql2025.GetUserAsync(username);
+
+            }
+            catch (HttpRequestException e)
+            {
+                if (e.StatusCode == HttpStatusCode.NotFound)
+                    return null;
+            }
             
             if (s == StrategyHints.Sidecar)
                 return await _tweetFromSidecar.GetUserAsync(username);

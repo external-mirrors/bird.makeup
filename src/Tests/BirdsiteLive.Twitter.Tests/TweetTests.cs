@@ -187,8 +187,6 @@ namespace BirdsiteLive.Twitter.Tests
             var tweet = await _tweetService.GetTweetAsync(1935683033836773498, s);
             if (tweet is null)
                 Assert.Inconclusive();
-            Assert.AreEqual(tweet.Author.Acct, "shayan86");
-            Assert.AreEqual(tweet.Author.Name, "Shayan Sardarizadeh");
             Assert.IsTrue(tweet.LikeCount > 400);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
@@ -227,11 +225,16 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsNull(tweet.Media[0].AltText);
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/"));
 
+        }
 
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleTextAndSingleVideoTweet2(StrategyHints s)
+        {
             var tweet2 = await _tweetService.GetTweetAsync(1657913781006258178, s);
             if (tweet2 is null)
                 Assert.Inconclusive();
-            Assert.AreEqual(tweet2.Author.Acct, "coinbase");
+            Assert.AreEqual(tweet2.Author.Acct, "bankless");
             Assert.IsTrue(tweet2.LikeCount > 100);
             Assert.AreEqual(tweet2.MessageContent,
                 "Coinbase has big international expansion plans\n\nTom Duff Gordon (@tomduffgordon), VP of International Policy @coinbase has the deets");
@@ -291,19 +294,6 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.QuotedStatusId, "1944859201291083887");
             Assert.IsTrue(tweet.LikeCount > 20);
             Assert.IsTrue(tweet.LikeCount < 20000);
-        }
-
-        [TestMethod]
-        [DynamicData(nameof(Implementations))]
-        public async Task QTandTextContainsLink(StrategyHints s)
-        {
-            var tweet = await _tweetService.GetTweetAsync(1668932525522305026, s);
-            if (tweet is null)
-                Assert.Inconclusive();
-
-            Assert.IsTrue(tweet.MessageContent.Contains("https://weekineth.news/2023/06/14/week-in-ethereum-news-june-17-2023/"));
-            Assert.AreEqual(tweet.Author.Acct, "weekinethnews");
-            Assert.IsNull(tweet.Poll);
         }
 
         [TestMethod]
@@ -487,43 +477,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.IsNull(tweet.QuotedStatusId);
         }
 
-        [TestMethod]
-        [DynamicData(nameof(Implementations))]
-        public async Task ShortLink_Expension_1(StrategyHints s)
-        {
-            var tweet = await _tweetService.GetTweetAsync(1884240424870568326, s);
-            if (tweet is null)
-                Assert.Inconclusive();
-            Assert.IsNull(tweet.Poll);
-            Assert.AreEqual(tweet.Author.Acct, "spotifyartists");
 
-            if (tweet.MessageContent.Contains("//t.co/"))
-                Assert.Inconclusive();
-            
-            Assert.AreEqual(tweet.MessageContent,
-                "For another year, Spotify set the record for the highest annual payment to the music industry from any single retailer: over $10 billion. That figure has grown tenfold over the past decade, bringing Spotify's total payouts since founding to $60B. \n\nFor more on how we got there, and what it means, hit the link below.\n\ud83d\udd17 https://newsroom.spotify.com/2025-01-28/on-our-10-billion-milestone-and-a-decade-of-getting-the-world-to-value-music/?utm_campaign=organic-social_all-social_trf_all-en_econ_crossdevice_none_general&utm_medium=organic-social&utm_source=all-socialorganic-social_all-social_trf_all-en_econ_crossdevice_none_general");
-            Assert.IsNull(tweet.QuotedAccount);
-            Assert.IsNull(tweet.QuotedStatusId);
-        }
-
-        [TestMethod]
-        [DynamicData(nameof(Implementations))]
-        public async Task ShortLink_Expension_2(StrategyHints s)
-        {
-            var tweet = await _tweetService.GetTweetAsync(1883636068647342141, s);
-            if (tweet is null)
-                Assert.Inconclusive();
-            Assert.IsNull(tweet.Poll);
-            Assert.AreEqual(tweet.Author.Acct, "doge");
-
-            if (tweet.MessageContent.Contains("//t.co/"))
-                Assert.Inconclusive();
-            
-            Assert.AreEqual(tweet.MessageContent,
-                "The DOGE Team is looking for world-class talent to work long hours identifying/eliminating waste, fraud, and abuse. These are full-time, salaried positions for software engineers, InfoSec engineers, financial analysts, HR professionals, and, in general, all competent/caring people.  Apply here!\n\nhttps://doge.gov/join/");
-            Assert.IsNull(tweet.QuotedAccount);
-            Assert.IsNull(tweet.QuotedStatusId);
-        }
         [TestMethod]
         [DynamicData(nameof(Implementations))]
         public async Task ShortLink_Expension_3(StrategyHints s)

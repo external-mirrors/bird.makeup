@@ -97,6 +97,7 @@ namespace BirdsiteLive.Twitter.Tests
                 Assert.Inconclusive();
             }
         }
+        // Vanilla now returns the top tweets, ordered by likes. We want them chronologically. Still useful to keep around as backup.
         [TestMethod]
         public async Task TimelineKobeVanilla()
         {
@@ -115,7 +116,9 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweets.Length == 0)
                 Assert.Inconclusive();
            
-            Assert.AreEqual(tweets[0].MessageContent, "Continuing to move the game forward @KingJames. Much respect my brother 💪🏾 #33644");
+            Assert.IsTrue(Array.Exists(
+                tweets,
+                t => t.MessageContent == "Continuing to move the game forward @KingJames. Much respect my brother 💪🏾 #33644"));
             Assert.IsTrue(tweets.Length > 10);
         }
         [TestMethod]
