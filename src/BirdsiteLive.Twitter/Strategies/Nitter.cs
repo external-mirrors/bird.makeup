@@ -234,10 +234,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         {
             var tweet = ParseTweetFromElement(mainTweetElement);
             _logger.LogInformation("Nitter: tweet={Found}, InReplyToAccount={Account}, InReplyToStatusId={StatusId}", tweet != null, tweet?.InReplyToAccount, tweet?.InReplyToStatusId);
-            if (tweet != null)
-            {
-                // Ensure ID is set correctly if it wasn't parsed from the element.
-                if (string.IsNullOrEmpty(tweet.Id) || tweet.Id == "0") tweet.Id = statusId.ToString();
+	            if (tweet != null)
+	            {
+	                // Ensure ID is set correctly if it wasn't parsed from the element.
+	                if (string.IsNullOrEmpty(tweet.Id) || tweet.Id == "0") tweet.Id = statusId.ToString();
 
                 // Check for a preceding tweet in the timeline to detect threads/replies missing the header
                 var timeline = document.QuerySelector(".timeline") ?? document.QuerySelector(".conversation") ?? document.QuerySelector(".main-thread");
@@ -324,13 +324,13 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                                     }
                                 }
                             }
-                        }
-                    }
-                }
+	                        }
+	                    }
+	                }
 
-                return tweet;
-            }
-        }
+	                return tweet;
+	            }
+	        }
 
         return null;
     }

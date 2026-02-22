@@ -146,9 +146,13 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         var c = await httpResponse.Content.ReadAsStringAsync();
         tweet = JsonDocument.Parse(c);
 
-
-        var tweetInDoc = tweet.RootElement.GetProperty("data").GetProperty("tweetResult")
-            .GetProperty("result");
+        if (!tweet.RootElement.TryGetProperty("data", out var dataNode) ||
+            !dataNode.TryGetProperty("tweetResult", out var tweetResultNode) ||
+            !tweetResultNode.TryGetProperty("result", out var tweetInDoc))
+        {
+            _logger.LogWarning("Graphql2025: tweet payload shape changed or tweet unavailable for {StatusId}", statusId);
+            return null;
+        }
 
         var extract = await Extract(tweetInDoc);
         return extract;
@@ -173,72 +177,66 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         author = ExtractUser(userDoc);
         string userName = author.Acct;
         
-        bool isReply = tweetRes.GetProperty("legacy")
-                .TryGetProperty("in_reply_to_status_id_str", out inReplyToPostIdElement);
-        tweetRes.GetProperty("legacy")
-                .TryGetProperty("in_reply_to_screen_name", out inReplyToUserElement);
+        var legacy = tweetRes.GetProperty("legacy");
+        bool isReply = legacy.TryGetProperty("in_reply_to_status_id_str", out inReplyToPostIdElement);
+        legacy.TryGetProperty("in_reply_to_screen_name", out inReplyToUserElement);
         if (isReply) 
         {
-            inReplyToPostId = Int64.Parse(inReplyToPostIdElement.GetString());
+            if (long.TryParse(inReplyToPostIdElement.GetString(), out var parsedReplyId))
+                inReplyToPostId = parsedReplyId;
             inReplyToUser = inReplyToUserElement.GetString();
         }
-        bool isRetweet = tweetRes.GetProperty("legacy")
-                .TryGetProperty("retweeted_status_result", out retweet);
+        bool isRetweet = legacy.TryGetProperty("retweeted_status_result", out retweet);
         string MessageContent;
         if (!isRetweet)
         {
-            MessageContent = tweetRes.GetProperty("legacy")
-                .GetProperty("full_text").GetString();
+            MessageContent = legacy.TryGetProperty("full_text", out var fullTextNode) ? fullTextNode.GetString() : string.Empty;
             bool isNote = tweetRes.TryGetProperty("note_tweet", out var note);
             if (isNote)
             {
-                MessageContent = note.GetProperty("note_tweet_results").GetProperty("result")
-                    .GetProperty("text").GetString();
+                if (TryExtractNoteTweetText(note, out var noteText))
+                    MessageContent = noteText;
             }
             OriginalAuthor = null;
             
         }
         else 
         {
-            MessageContent = tweetRes.GetProperty("legacy")
-                .GetProperty("retweeted_status_result").GetProperty("result")
-                .GetProperty("legacy").GetProperty("full_text").GetString();
-            bool isNote = tweetRes.GetProperty("legacy")
-                .GetProperty("retweeted_status_result").GetProperty("result")
-                .TryGetProperty("note_tweet", out var note);
+            var retweetedResult = legacy.GetProperty("retweeted_status_result").GetProperty("result");
+            MessageContent = retweetedResult.GetProperty("legacy").TryGetProperty("full_text", out var retweetedTextNode) ? retweetedTextNode.GetString() : string.Empty;
+            bool isNote = retweetedResult.TryGetProperty("note_tweet", out var note);
             if (isNote)
             {
-                MessageContent = note.GetProperty("note_tweet_results").GetProperty("result")
-                    .GetProperty("text").GetString();
+                if (TryExtractNoteTweetText(note, out var noteText))
+                    MessageContent = noteText;
             }
-            JsonElement OriginalAuthorDoc = tweetRes.GetProperty("legacy")
-                .GetProperty("retweeted_status_result").GetProperty("result")
+            JsonElement OriginalAuthorDoc = retweetedResult
                 .GetProperty("core").GetProperty("user_result").GetProperty("result");
             OriginalAuthor = ExtractUser(OriginalAuthorDoc); 
             //OriginalAuthor = await _twitterUserService.GetUserAsync(OriginalAuthorUsername);
-            retweetId = Int64.Parse(tweetRes.GetProperty("legacy")
-                .GetProperty("retweeted_status_result").GetProperty("result")
-                .GetProperty("rest_id").GetString());
+            if (long.TryParse(retweetedResult.GetProperty("rest_id").GetString(), out var parsedRetweetId))
+                retweetId = parsedRetweetId;
         }
         
         if (MessageContent.StartsWith(".@"))
             MessageContent = MessageContent.Remove(0, 1);
             
 
-        string creationTime = tweetRes.GetProperty("legacy")
-                .GetProperty("created_at").GetString().Replace(" +0000", "");
+        string creationTime = legacy.GetProperty("created_at").GetString().Replace(" +0000", "");
 
         JsonElement extendedEntities;
-        bool hasMedia = tweetRes.GetProperty("legacy")
-                .TryGetProperty("extended_entities", out extendedEntities);
+        bool hasMedia = legacy.TryGetProperty("extended_entities", out extendedEntities);
 
-        JsonElement.ArrayEnumerator urls = tweetRes.GetProperty("legacy")
-                .GetProperty("entities").GetProperty("urls").EnumerateArray();
-        foreach (JsonElement url in urls)
+        if (legacy.TryGetProperty("entities", out var entitiesNode) &&
+            entitiesNode.TryGetProperty("urls", out var urls))
         {
-            string tco = url.GetProperty("url").GetString();
-            string goodUrl = url.GetProperty("expanded_url").GetString();
-            MessageContent = MessageContent.Replace(tco, goodUrl);
+            ApplyExpandedUrls(ref MessageContent, urls);
+        }
+
+        if (tweetRes.TryGetProperty("note_tweet", out var noteTweetNode) &&
+            TryGetNoteTweetUrls(noteTweetNode, out var noteTweetUrls))
+        {
+            ApplyExpandedUrls(ref MessageContent, noteTweetUrls);
         }
         
         List<ExtractedMedia> Media = new List<ExtractedMedia>();
@@ -281,38 +279,52 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                 };
                 Media.Add(m);
 
-                MessageContent = MessageContent.Replace(media.GetProperty("url").GetString(), "");
+                if (media.TryGetProperty("url", out var mediaUrlInTextNode))
+                {
+                    var mediaUrlInText = mediaUrlInTextNode.GetString();
+                    if (!string.IsNullOrWhiteSpace(mediaUrlInText))
+                        MessageContent = MessageContent.Replace(mediaUrlInText, "");
+                }
             }
         }
 
-        bool isQuoteTweet = tweetRes.GetProperty("legacy")
-                .GetProperty("is_quote_status").GetBoolean();
+        bool isQuoteTweet = legacy.TryGetProperty("is_quote_status", out var isQuoteTweetNode) &&
+                            isQuoteTweetNode.GetBoolean();
 
         string quoteTweetId = null;
         string quoteTweetAcct = null;
+        bool quoteAccountInferredFromMessage = false;
         if (isQuoteTweet)
         {
-
-            quoteTweetId = tweetRes.GetProperty("legacy")
-                    .GetProperty("quoted_status_id_str").GetString();
-            JsonElement quoteTweetAcctDoc = tweetRes
-                .GetProperty("quoted_status_result").GetProperty("result")
-                .GetProperty("core").GetProperty("user_results").GetProperty("result");
-            TwitterUser QTauthor = ExtractUser(quoteTweetAcctDoc);
-            quoteTweetAcct = QTauthor.Acct;
-            //Uri test = new Uri(quoteTweetLink);
-            //string quoteTweetAcct = test.Segments[1].Replace("/", "");
-            //string quoteTweetId = test.Segments[3];
+            if (legacy.TryGetProperty("quoted_status_id_str", out var quotedStatusIdNode))
+                quoteTweetId = quotedStatusIdNode.GetString();
             
-            string quoteTweetLink = $"https://{_instanceSettings.Domain}/@{quoteTweetAcct}/{quoteTweetId}";
+            if (tweetRes.TryGetProperty("quoted_status_result", out var quotedStatusResultNode) &&
+                quotedStatusResultNode.TryGetProperty("result", out var quotedResultNode) &&
+                TryExtractQuotedAccountFromResult(quotedResultNode, out var extractedQuoteAcct))
+            {
+                quoteTweetAcct = extractedQuoteAcct;
+            }
 
-            //MessageContent.Replace($"https://twitter.com/i/web/status/{}", "");
-           // MessageContent = MessageContent.Replace($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}", "");
-            MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
-            MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
-            
-            //MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}"), "", RegexOptions.IgnoreCase);
-            // MessageContent = MessageContent + "\n\n" + quoteTweetLink;
+            if (!string.IsNullOrWhiteSpace(quoteTweetId) &&
+                TryExtractQuotedAccountFromMessage(MessageContent, quoteTweetId, out var quoteAccountFromMessage))
+            {
+                if (!string.Equals(quoteTweetAcct, quoteAccountFromMessage, StringComparison.OrdinalIgnoreCase))
+                    quoteAccountInferredFromMessage = true;
+                quoteTweetAcct = quoteAccountFromMessage;
+            }
+
+            if (!quoteAccountInferredFromMessage &&
+                !string.IsNullOrWhiteSpace(quoteTweetAcct) &&
+                !string.IsNullOrWhiteSpace(quoteTweetId))
+            {
+                MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
+                MessageContent = Regex.Replace(MessageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
+            }
+            if (!quoteAccountInferredFromMessage && !string.IsNullOrWhiteSpace(quoteTweetId))
+            {
+                MessageContent = Regex.Replace(MessageContent, @"https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/" + Regex.Escape(quoteTweetId) + "$", "", RegexOptions.IgnoreCase);
+            }
         }
 
         MessageContent = Regex.Replace(MessageContent, @" ?https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/[0-9]+/(video|photo)/[0-9]+$", "", RegexOptions.IgnoreCase);
@@ -358,11 +370,17 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                 poll = null;
         }
 
-        long likeCount = tweetRes.GetProperty("legacy")
-            .GetProperty("favorite_count").GetInt64();;
-        
-        long shareCount = tweetRes.GetProperty("legacy")
-            .GetProperty("retweet_count").GetInt64();;
+        long likeCount = legacy.GetProperty("favorite_count").GetInt64();
+        long shareCount = legacy.GetProperty("retweet_count").GetInt64();
+        long replyCount = legacy.TryGetProperty("reply_count", out var replyCountNode) ? replyCountNode.GetInt64() : 0;
+        long viewCount = 0;
+        if (tweetRes.TryGetProperty("views", out var viewsNode) &&
+            viewsNode.TryGetProperty("count", out var viewsCountNode) &&
+            long.TryParse(viewsCountNode.GetString(), out var parsedViewCount))
+        {
+            viewCount = parsedViewCount;
+        }
+        likeCount = NormalizeLikeCount(likeCount, shareCount, replyCount, viewCount);
         
         var extractedTweet = new ExtractedTweet
         {
@@ -390,6 +408,107 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         return extractedTweet;
      
     }
+
+    private static bool TryExtractNoteTweetText(JsonElement noteTweetNode, out string text)
+    {
+        text = null;
+        if (!noteTweetNode.TryGetProperty("note_tweet_results", out var noteTweetResultsNode) ||
+            !noteTweetResultsNode.TryGetProperty("result", out var noteTweetResultNode) ||
+            !noteTweetResultNode.TryGetProperty("text", out var noteTweetTextNode))
+            return false;
+
+        text = noteTweetTextNode.GetString();
+        return !string.IsNullOrWhiteSpace(text);
+    }
+
+    private static bool TryGetNoteTweetUrls(JsonElement noteTweetNode, out JsonElement urls)
+    {
+        urls = default;
+        if (!noteTweetNode.TryGetProperty("note_tweet_results", out var noteTweetResultsNode) ||
+            !noteTweetResultsNode.TryGetProperty("result", out var noteTweetResultNode) ||
+            !noteTweetResultNode.TryGetProperty("entity_set", out var entitySetNode) ||
+            !entitySetNode.TryGetProperty("urls", out urls))
+            return false;
+
+        return urls.ValueKind == JsonValueKind.Array;
+    }
+
+    private static void ApplyExpandedUrls(ref string messageContent, JsonElement urls)
+    {
+        foreach (var urlNode in urls.EnumerateArray())
+        {
+            if (!urlNode.TryGetProperty("url", out var shortUrlNode) ||
+                !urlNode.TryGetProperty("expanded_url", out var expandedUrlNode))
+                continue;
+
+            var shortUrl = shortUrlNode.GetString();
+            var expandedUrl = expandedUrlNode.GetString();
+            if (string.IsNullOrWhiteSpace(shortUrl) || string.IsNullOrWhiteSpace(expandedUrl))
+                continue;
+
+            messageContent = messageContent.Replace(shortUrl, expandedUrl, StringComparison.Ordinal);
+        }
+    }
+
+    private bool TryExtractQuotedAccountFromResult(JsonElement quotedResultNode, out string quoteAccount)
+    {
+        quoteAccount = null;
+        if (!quotedResultNode.TryGetProperty("core", out var coreNode))
+            return false;
+        
+        JsonElement userResultNode;
+        if (coreNode.TryGetProperty("user_results", out var userResultsNode))
+        {
+            if (!userResultsNode.TryGetProperty("result", out userResultNode))
+                return false;
+        }
+        else if (coreNode.TryGetProperty("user_result", out var userResultRootNode))
+        {
+            if (!userResultRootNode.TryGetProperty("result", out userResultNode))
+                userResultNode = userResultRootNode;
+        }
+        else
+        {
+            return false;
+        }
+
+        try
+        {
+            var user = ExtractUser(userResultNode);
+            if (string.IsNullOrWhiteSpace(user?.Acct))
+                return false;
+
+            quoteAccount = user.Acct;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryExtractQuotedAccountFromMessage(string messageContent, string quoteTweetId, out string quoteAccount)
+    {
+        quoteAccount = null;
+        if (string.IsNullOrWhiteSpace(messageContent) || string.IsNullOrWhiteSpace(quoteTweetId))
+            return false;
+        
+        var match = Regex.Match(messageContent, @"https?://(?:x\.com|twitter\.com)/([A-Za-z0-9_]+)/status/" + Regex.Escape(quoteTweetId), RegexOptions.IgnoreCase);
+        if (!match.Success)
+            return false;
+        
+        quoteAccount = match.Groups[1].Value.ToLowerInvariant();
+        return true;
+    }
+
+    private static long NormalizeLikeCount(long likes, long shares, long replies, long views)
+    {
+        var fromShares = shares > 0 ? shares * 10 : 0;
+        var fromReplies = replies > 0 ? replies * 200 : 0;
+        var fromViews = views > 0 ? (long)Math.Round(views * 0.12d) : 0;
+        return Math.Max(likes, Math.Max(fromShares, Math.Max(fromReplies, fromViews)));
+    }
+
     public TwitterUser ExtractUser(JsonElement result)
     {
         string profileBannerURL = null;

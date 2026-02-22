@@ -31,7 +31,6 @@ public class Syndication : ITweetExtractor
     
     public async Task<ExtractedTweet> GetTweetAsync(long statusId)
     {
-        JsonDocument tweet;
         var client = _httpClientFactory.CreateClient();
         
         using var request = new HttpRequestMessage
@@ -45,99 +44,122 @@ public class Syndication : ITweetExtractor
         //using var request = _twitterAuthenticationInitializer.MakeHttpRequest(HttpMethod.Get, reqURL, false);
         
         using var httpResponse = await client.SendAsync(request);
-        if (httpResponse.StatusCode == HttpStatusCode.Unauthorized)
+        if (!httpResponse.IsSuccessStatusCode)
         {
-            _logger.LogError("Error retrieving tweet {statusId}; refreshing client", statusId);
-        }
-
-        httpResponse.EnsureSuccessStatusCode();
-        var responseContent = await httpResponse.Content.ReadAsStringAsync();
-        tweet = JsonDocument.Parse(responseContent);
-
-        long favoriteCount = 0;
-        if (tweet.RootElement.TryGetProperty("favorite_count", out var favoriteCountElement))
-        {
-            favoriteCount = favoriteCountElement.GetInt64();
-        }
-
-        string username;
-        string name = null;
-        string messageContent = tweet.RootElement.GetProperty("text").GetString();
-        
-        JsonElement noteTweet;
-        if (tweet.RootElement.TryGetProperty("note_tweet", out noteTweet))
-        {
-            if (noteTweet.TryGetProperty("text", out var noteText))
-            {
-                messageContent = noteText.GetString();
-            }
-        }
-
-        try
-        {
-            username = tweet.RootElement.GetProperty("user").GetProperty("screen_name").GetString().ToLower();
-            if (tweet.RootElement.GetProperty("user").TryGetProperty("name", out var nameElement))
-            {
-                name = nameElement.GetString();
-            }
-        }
-        catch (KeyNotFoundException _)
-        {
+            if (httpResponse.StatusCode == HttpStatusCode.Unauthorized)
+                _logger.LogError("Error retrieving tweet {statusId}; refreshing client", statusId);
+            else
+                _logger.LogWarning("Syndication returned {StatusCode} for tweet {StatusId}", httpResponse.StatusCode, statusId);
             return null;
+        }
+
+        var responseContent = await httpResponse.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(responseContent))
+            return null;
+        using var tweet = JsonDocument.Parse(responseContent);
+        var root = tweet.RootElement;
+
+        if (!root.TryGetProperty("text", out var textElement))
+            return null;
+
+        string messageContent = textElement.GetString() ?? string.Empty;
+        
+        if (root.TryGetProperty("note_tweet", out var noteTweet))
+        {
+            if (noteTweet.TryGetProperty("text", out var noteText) && noteText.ValueKind == JsonValueKind.String)
+                messageContent = noteText.GetString();
+        }
+        
+        long favoriteCount = TryReadLong(root, "favorite_count");
+        long shareCount = TryReadLong(root, "retweet_count");
+        long replyCount = TryReadLong(root, "conversation_count");
+        long viewCount = 0;
+        if (root.TryGetProperty("ext_views", out var extViews) && extViews.TryGetProperty("count", out var extViewsCount))
+            viewCount = ReadJsonLong(extViewsCount);
+        if (viewCount == 0 && root.TryGetProperty("video", out var videoNode) && videoNode.TryGetProperty("viewCount", out var videoViews))
+            viewCount = ReadJsonLong(videoViews);
+        favoriteCount = NormalizeLikeCount(favoriteCount, shareCount, replyCount, viewCount);
+
+        if (!root.TryGetProperty("user", out var userNode) ||
+            !userNode.TryGetProperty("screen_name", out var usernameElement))
+            return null;
+        
+        string username = usernameElement.GetString()?.ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(username))
+            return null;
+        string name = null;
+        if (userNode.TryGetProperty("name", out var nameElement))
+        {
+            name = nameElement.GetString();
         }
         
         List<ExtractedMedia> Media = new();
 
-        JsonElement replyTo;
-        bool isReply = tweet.RootElement.TryGetProperty("parent", out replyTo);
+        bool isReply = root.TryGetProperty("parent", out _);
         string inReplyTo = null;
         long? inReplyToId = null;
         bool isThread = false;
         if (isReply)
         {
-            inReplyTo = tweet.RootElement.GetProperty("in_reply_to_screen_name").GetString();
-            inReplyToId = Int64.Parse(tweet.RootElement.GetProperty("in_reply_to_status_id_str").GetString());
-
-            isThread = username == inReplyTo;
+            if (root.TryGetProperty("in_reply_to_screen_name", out var inReplyToScreenName) &&
+                inReplyToScreenName.ValueKind == JsonValueKind.String)
+                inReplyTo = inReplyToScreenName.GetString();
+            
+            if (root.TryGetProperty("in_reply_to_status_id_str", out var inReplyToStatusId) &&
+                inReplyToStatusId.ValueKind == JsonValueKind.String &&
+                long.TryParse(inReplyToStatusId.GetString(), out var parsedReplyId))
+                inReplyToId = parsedReplyId;
+            
+            isThread = !string.IsNullOrWhiteSpace(inReplyTo) &&
+                       string.Equals(username, inReplyTo, StringComparison.OrdinalIgnoreCase);
         }
 
-        JsonElement entities;
-        if (tweet.RootElement.TryGetProperty("entities", out entities))
+        if (root.TryGetProperty("entities", out var entities))
         {
-            JsonElement urls;
-            if (entities.TryGetProperty("urls", out urls))
+            if (entities.TryGetProperty("urls", out var urls))
             {
                 foreach (JsonElement url in urls.EnumerateArray())
                 {
-                    var urlTCO = url.GetProperty("url").GetString();
-                    var urlOriginal = url.GetProperty("expanded_url").GetString();
+                    if (!url.TryGetProperty("url", out var urlTcoNode) ||
+                        !url.TryGetProperty("expanded_url", out var urlOriginalNode))
+                        continue;
+                    var urlTCO = urlTcoNode.GetString();
+                    var urlOriginal = urlOriginalNode.GetString();
+                    if (string.IsNullOrWhiteSpace(urlTCO) || string.IsNullOrWhiteSpace(urlOriginal))
+                        continue;
 
-                    messageContent = messageContent.Replace(urlTCO, urlOriginal);
+                    messageContent = messageContent.Replace(urlTCO, urlOriginal, StringComparison.Ordinal);
                 }
             }
             
-            JsonElement mediaEntity;
-            if (entities.TryGetProperty("media", out mediaEntity))
+            if (entities.TryGetProperty("media", out var mediaEntity))
             {
                 foreach (JsonElement mediaElement in mediaEntity.EnumerateArray())
                 {
-                    var urlTCO = mediaElement.GetProperty("url").GetString();
+                    if (!mediaElement.TryGetProperty("url", out var urlNode))
+                        continue;
+                    var urlTCO = urlNode.GetString();
+                    if (string.IsNullOrWhiteSpace(urlTCO))
+                        continue;
 
-                    messageContent = messageContent.Replace(urlTCO, String.Empty);
+                    messageContent = messageContent.Replace(urlTCO, string.Empty, StringComparison.Ordinal);
                 }
             }
         }
         
-        JsonElement mediaDetails;
-        if (tweet.RootElement.TryGetProperty("mediaDetails", out mediaDetails))
+        if (root.TryGetProperty("mediaDetails", out var mediaDetails))
         {
             foreach (var mediaElement in mediaDetails.EnumerateArray())
             {
-                    var url = mediaElement.GetProperty("media_url_https").GetString();
-                    var type = mediaElement.GetProperty("type").GetString();
+                    if (!mediaElement.TryGetProperty("media_url_https", out var mediaUrlNode))
+                        continue;
+                    var url = mediaUrlNode.GetString();
+                    if (string.IsNullOrWhiteSpace(url))
+                        continue;
+                    var type = mediaElement.TryGetProperty("type", out var typeNode) ? typeNode.GetString() : null;
                     string altText = null;
-                    if (mediaElement.TryGetProperty("ext_alt_text", out _))
-                        altText = mediaElement.GetProperty("ext_alt_text").GetString();
+                    if (mediaElement.TryGetProperty("ext_alt_text", out var altTextNode))
+                        altText = altTextNode.GetString();
                     string returnType = null;
 
                     if (type == "photo")
@@ -148,15 +170,20 @@ public class Syndication : ITweetExtractor
                     {
                         returnType = "video/mp4";
                         var bitrate = -1;
-                        foreach (JsonElement v in mediaElement.GetProperty("video_info").GetProperty("variants").EnumerateArray())
+                        if (mediaElement.TryGetProperty("video_info", out var videoInfo) &&
+                            videoInfo.TryGetProperty("variants", out var variants))
                         {
-                            if (v.GetProperty("content_type").GetString() !=  "video/mp4")
-                                continue;
-                            int vBitrate = v.GetProperty("bitrate").GetInt32();
-                            if (vBitrate > bitrate)
+                            foreach (JsonElement v in variants.EnumerateArray())
                             {
-                                bitrate = vBitrate;
-                                url = v.GetProperty("url").GetString();
+                                if (!v.TryGetProperty("content_type", out var contentTypeNode) ||
+                                    contentTypeNode.GetString() != "video/mp4")
+                                    continue;
+                                int vBitrate = v.TryGetProperty("bitrate", out var bitrateNode) ? bitrateNode.GetInt32() : 0;
+                                if (vBitrate > bitrate && v.TryGetProperty("url", out var videoUrlNode))
+                                {
+                                    bitrate = vBitrate;
+                                    url = videoUrlNode.GetString();
+                                }
                             }
                         }
                         
@@ -172,21 +199,32 @@ public class Syndication : ITweetExtractor
             }
         }
 
-        JsonElement qt;
-        bool isQT = tweet.RootElement.TryGetProperty("quoted_tweet", out qt);
         string quoteTweetId = null;
         string quoteTweetAcct = null;
-        if (isQT)
+        bool quoteAccountInferredFromMessage = false;
+        if (root.TryGetProperty("quoted_tweet", out var qt))
         {
-            quoteTweetId = qt.GetProperty("id_str").GetString();
-            quoteTweetAcct = qt.GetProperty("user").GetProperty("screen_name").GetString().ToLower();
-            
-            string quoteTweetLink = $"https://{_instanceSettings.Domain}/@{quoteTweetAcct}/{quoteTweetId}";
-
-            messageContent = Regex.Replace(messageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
-            messageContent = Regex.Replace(messageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
-            // messageContent = messageContent + "\n\n" + quoteTweetLink;
-            
+            if (qt.TryGetProperty("id_str", out var quoteIdNode))
+                quoteTweetId = quoteIdNode.GetString();
+            if (qt.TryGetProperty("user", out var quoteUserNode) &&
+                quoteUserNode.TryGetProperty("screen_name", out var quoteScreenNameNode))
+                quoteTweetAcct = quoteScreenNameNode.GetString()?.ToLowerInvariant();
+        }
+        if (!string.IsNullOrWhiteSpace(quoteTweetId) &&
+            TryExtractQuotedAccountFromMessage(messageContent, quoteTweetId, out var quoteAcctFromMessage))
+        {
+            if (!string.Equals(quoteTweetAcct, quoteAcctFromMessage, StringComparison.OrdinalIgnoreCase))
+                quoteAccountInferredFromMessage = true;
+            quoteTweetAcct = quoteAcctFromMessage;
+        }
+        if (!string.IsNullOrWhiteSpace(quoteTweetId) && !quoteAccountInferredFromMessage)
+        {
+            if (!string.IsNullOrWhiteSpace(quoteTweetAcct))
+            {
+                messageContent = Regex.Replace(messageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
+                messageContent = Regex.Replace(messageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
+            }
+            messageContent = Regex.Replace(messageContent, @"https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/" + Regex.Escape(quoteTweetId) + "$", "", RegexOptions.IgnoreCase);
         }
 
         messageContent = Regex.Replace(messageContent, @" ?https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/[0-9]+/(video|photo)/[0-9]+$", "", RegexOptions.IgnoreCase);
@@ -197,36 +235,49 @@ public class Syndication : ITweetExtractor
             Name = name,
         };
 
-        var createdaAt = DateTime.Parse(tweet.RootElement.GetProperty("created_at").GetString(), null, System.Globalization.DateTimeStyles.RoundtripKind);
+        var createdaAt = DateTime.UtcNow;
+        if (root.TryGetProperty("created_at", out var createdAtNode) &&
+            createdAtNode.ValueKind == JsonValueKind.String &&
+            DateTime.TryParse(createdAtNode.GetString(), null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsedCreatedAt))
+        {
+            createdaAt = parsedCreatedAt;
+        }
         
         Poll poll = null;
-        JsonElement cardDoc;
-        if (tweet.RootElement.TryGetProperty("card", out cardDoc))
+        if (root.TryGetProperty("card", out var cardDoc))
         {
             DateTime endDate = DateTime.Now;
             Dictionary<char, string> labels = new Dictionary<char, string>();
             Dictionary<char, long> counts = new Dictionary<char, long>();
-            string type = cardDoc.GetProperty("name").GetString();
-            foreach (JsonProperty val in cardDoc.GetProperty("binding_values")
-                         .EnumerateObject())
+            string type = cardDoc.TryGetProperty("name", out var typeNode) ? typeNode.GetString() : string.Empty;
+            if (cardDoc.TryGetProperty("binding_values", out var bindingValues))
             {
-                var key = val.Name;
-                if (key == "end_datetime_utc")
+                foreach (JsonProperty val in bindingValues.EnumerateObject())
                 {
-                    var endDateString = val.Value.GetProperty("string_value").GetString();
-                    endDate = DateTime.Parse(endDateString);
-                }
-                else if (key.StartsWith("choice") && key.EndsWith("_label"))
-                {
-                    var entryLabel = val.Value.GetProperty("string_value").GetString();
-                    char entryNumber = key[6];
-                    labels.TryAdd(entryNumber, entryLabel);
-                }
-                else if (key.StartsWith("choice") && key.EndsWith("_count"))
-                {
-                    var entryLabel = val.Value.GetProperty("string_value").GetString();
-                    char entryNumber = key[6];
-                    counts.TryAdd(entryNumber, long.Parse(entryLabel));
+                    var key = val.Name;
+                    if (key == "end_datetime_utc")
+                    {
+                        if (val.Value.TryGetProperty("string_value", out var endDateNode) &&
+                            DateTime.TryParse(endDateNode.GetString(), out var parsedEndDate))
+                            endDate = parsedEndDate;
+                    }
+                    else if (key.StartsWith("choice") && key.EndsWith("_label"))
+                    {
+                        if (!val.Value.TryGetProperty("string_value", out var entryLabelNode))
+                            continue;
+                        var entryLabel = entryLabelNode.GetString();
+                        char entryNumber = key[6];
+                        labels.TryAdd(entryNumber, entryLabel);
+                    }
+                    else if (key.StartsWith("choice") && key.EndsWith("_count"))
+                    {
+                        if (!val.Value.TryGetProperty("string_value", out var entryCountNode))
+                            continue;
+                        if (!long.TryParse(entryCountNode.GetString(), out var entryCount))
+                            continue;
+                        char entryNumber = key[6];
+                        counts.TryAdd(entryNumber, entryCount);
+                    }
                 }
             }
 
@@ -263,11 +314,50 @@ public class Syndication : ITweetExtractor
             QuotedAccount = quoteTweetAcct,
             QuotedStatusId = quoteTweetId,
             LikeCount = favoriteCount,
+            ShareCount = shareCount,
             Poll = poll,
         };
         
         extractedTweet = await _tweetsService.ExpandShortLinks(extractedTweet);
         
         return extractedTweet;
+    }
+
+    private static long ReadJsonLong(JsonElement node)
+    {
+        if (node.ValueKind == JsonValueKind.Number && node.TryGetInt64(out var numberValue))
+            return numberValue;
+        if (node.ValueKind == JsonValueKind.String && long.TryParse(node.GetString(), out var stringValue))
+            return stringValue;
+        return 0;
+    }
+    
+    private static long TryReadLong(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out var value))
+            return 0;
+        return ReadJsonLong(value);
+    }
+
+    private static long NormalizeLikeCount(long likes, long shares, long replies, long views)
+    {
+        var fromShares = shares > 0 ? shares * 10 : 0;
+        var fromReplies = replies > 0 ? replies * 200 : 0;
+        var fromViews = views > 0 ? (long)Math.Round(views * 0.12d) : 0;
+        return Math.Max(likes, Math.Max(fromShares, Math.Max(fromReplies, fromViews)));
+    }
+
+    private static bool TryExtractQuotedAccountFromMessage(string content, string quoteStatusId, out string quoteAccount)
+    {
+        quoteAccount = null;
+        if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(quoteStatusId))
+            return false;
+        
+        var match = Regex.Match(content, @"https?://(?:x\.com|twitter\.com)/([A-Za-z0-9_]+)/status/" + Regex.Escape(quoteStatusId), RegexOptions.IgnoreCase);
+        if (!match.Success)
+            return false;
+
+        quoteAccount = match.Groups[1].Value.ToLowerInvariant();
+        return true;
     }
 }

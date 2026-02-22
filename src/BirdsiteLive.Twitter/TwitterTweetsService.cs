@@ -80,7 +80,11 @@ namespace BirdsiteLive.Twitter
                 if (s == StrategyHints.Graphql2025)
                     return await _tweetFromGraphql2025.GetTweetAsync(statusId);
             }
-            catch (HttpRequestException e)
+            catch (Exception e) when (
+                e is HttpRequestException ||
+                e is KeyNotFoundException ||
+                e is JsonException ||
+                e is FormatException)
             {
                 Console.WriteLine(e);
                 return null;
