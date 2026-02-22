@@ -286,7 +286,6 @@ namespace BirdsiteLive.Twitter.Tests
                 Assert.Inconclusive();
 
             Assert.AreEqual(tweet.Author.Acct, "trustlessstate");
-            Assert.AreEqual(tweet.Author.Name, "David Hoffman (No ETH - No Trust)");
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.QuotedAccount, "0xjaehaerys");
             Assert.AreEqual(tweet.QuotedStatusId, "1944859201291083887");

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -21,19 +22,17 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
     private readonly ISettingsDal _settings;
     private readonly ILogger<TwitterService> _logger;
     private readonly IUserExtractor _userExtractor;
-    private readonly ITweetExtractor _tweetExtractor;
     private readonly ITwitterUserDal _twitterUserDal;
     private string Useragent = "Bird.makeup ( https://git.sr.ht/~cloutier/bird.makeup ) Bot";
     static Meter _meter = new("DotMakeup", "1.0.0");
     static Counter<int> _nCalled = _meter.CreateCounter<int>("dotmakeup_nitter_called_count");
 
-    public Nitter(ITweetExtractor tweetExtractor, IUserExtractor userExtractor, ISettingsDal settingsDal, ITwitterUserDal twitterUserDal,
+    public Nitter(IUserExtractor userExtractor, ISettingsDal settingsDal, ITwitterUserDal twitterUserDal,
         ILogger<TwitterService> logger)
     {
         _settings = settingsDal;
         _logger = logger;
         _userExtractor = userExtractor;
-        _tweetExtractor = tweetExtractor;
         _twitterUserDal = twitterUserDal;
 
         var requester = new DefaultHttpRequester();
@@ -116,7 +115,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             _logger.LogError(e, "Error updating user cache for {Username} from Nitter", user.Acct);
         }
         List<ExtractedTweet> tweets = new List<ExtractedTweet>();
-        string pattern = @".*\/([0-9]+)#m";
+        string pattern = @".*\/([0-9]+)(?:#m)?$";
         Regex rg = new Regex(pattern);
 
         // Iterate timeline items directly to preserve context (e.g., replies) without refetching
@@ -138,20 +137,61 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 var tweet = ParseTweetFromElement(item);
                 if (tweet == null) continue;
 
+                var sameAuthor = string.Equals(tweet.Author.Acct, user.Acct, StringComparison.OrdinalIgnoreCase);
+                var isRetweetHeader = item.QuerySelector(".retweet-header") != null;
+
                 // If low trust, ensure we don't leak other authors' tweets
-                if (tweet.Author.Acct != user.Acct && lowtrust)
+                if (!sameAuthor && lowtrust)
+                    continue;
+
+                // Skip contextual thread tweets from other authors. Keep explicit retweets.
+                if (!sameAuthor && !isRetweetHeader)
                     continue;
 
                 // Mark retweets when parsing from main user's timeline (non-lowtrust endpoint)
-                if (tweet.Author.Acct != user.Acct && !lowtrust)
+                if (!sameAuthor && !lowtrust)
                 {
                     tweet.IsRetweet = true;
                     tweet.OriginalAuthor = tweet.Author;
-                    tweet.Author = await _userExtractor.GetUserAsync(user.Acct);
+                    TwitterUser retweeter = null;
+                    try
+                    {
+                        retweeter = await _userExtractor.GetUserAsync(user.Acct);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogDebug(e, "Nitter: failed to resolve retweeter profile for {Username}", user.Acct);
+                    }
+                    tweet.Author = retweeter ?? new TwitterUser
+                    {
+                        Acct = user.Acct?.ToLowerInvariant(),
+                        Name = user.Acct,
+                        ProfileUrl = "https://twitter.com/" + user.Acct?.ToLowerInvariant(),
+                        Id = 0
+                    };
                     tweet.RetweetId = tweet.IdLong;
                     // Nitter timeline doesn't give retweet's new ID, generate one
                     var gen = new TwitterSnowflakeGenerator(1, 1);
                     tweet.Id = gen.NextId().ToString();
+                }
+                else if (sameAuthor && !tweet.IsReply && item.ClassList.Contains("thread-last"))
+                {
+                    // Infer reply context for thread-last entries that omit "replying-to".
+                    var previousItem = item.PreviousElementSibling;
+                    while (previousItem != null && !previousItem.ClassList.Contains("timeline-item"))
+                        previousItem = previousItem.PreviousElementSibling;
+                    if (previousItem != null)
+                    {
+                        var parentTweet = ParseTweetFromElement(previousItem);
+                        if (parentTweet?.Author?.Acct != null &&
+                            !string.Equals(parentTweet.Author.Acct, tweet.Author.Acct, StringComparison.OrdinalIgnoreCase))
+                        {
+                            tweet.InReplyToAccount = parentTweet.Author.Acct;
+                            tweet.InReplyToStatusId = parentTweet.IdLong;
+                            tweet.IsReply = true;
+                            tweet.IsThread = false;
+                        }
+                    }
                 }
 
                 tweets.Add(tweet);
@@ -179,29 +219,60 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         string address = $"{(lowtrust ? "https" : "http")}://{domain}{(lowtrust ? "" : ":8080")}/i/status/{statusId}";
 
         var document = await GetDocument(address);
+        var errorPanel = document.QuerySelector(".error-panel");
+        if (errorPanel != null)
+        {
+            _logger.LogWarning("Nitter: status {StatusId} unavailable at {Url}: {Error}", statusId, address, errorPanel.TextContent?.Trim());
+            return null;
+        }
         
-        var mainTweetElement = document.QuerySelector(".main-tweet .timeline-item");
+        var mainTweetElement = document.QuerySelector(".main-tweet .timeline-item")
+                               ?? document.QuerySelector(".main-tweet.timeline-item")
+                               ?? document.QuerySelector(".main-tweet");
+        _logger.LogInformation("Nitter: mainTweetElement={Found}, url={Url}", mainTweetElement != null, address);
         if (mainTweetElement != null)
         {
             var tweet = ParseTweetFromElement(mainTweetElement);
+            _logger.LogInformation("Nitter: tweet={Found}, InReplyToAccount={Account}, InReplyToStatusId={StatusId}", tweet != null, tweet?.InReplyToAccount, tweet?.InReplyToStatusId);
             if (tweet != null)
             {
-                // Ensure ID is set correctly if it wasn't parsed (should be parsed by fallback though)
+                // Ensure ID is set correctly if it wasn't parsed from the element.
                 if (string.IsNullOrEmpty(tweet.Id) || tweet.Id == "0") tweet.Id = statusId.ToString();
 
                 // Check for a preceding tweet in the timeline to detect threads/replies missing the header
-                var timeline = document.QuerySelector(".timeline");
+                var timeline = document.QuerySelector(".timeline") ?? document.QuerySelector(".conversation") ?? document.QuerySelector(".main-thread");
 
                 // Also look for a direct reply header in the main tweet area
-                if (tweet.InReplyToAccount == null)
+                if (string.IsNullOrWhiteSpace(tweet.InReplyToAccount))
                 {
                     var headerReplyLink = document.QuerySelector(".main-tweet .replying-to a");
                     var headerReplyText = headerReplyLink?.TextContent?.TrimStart('@');
+                    var headerReplyHref = headerReplyLink?.GetAttribute("href");
+                    if (string.IsNullOrWhiteSpace(headerReplyText))
+                    {
+                        var replyToEl = document.QuerySelector(".main-tweet .replying-to");
+                        if (replyToEl != null)
+                        {
+                            var match = Regex.Match(replyToEl.TextContent, @"@([a-zA-Z0-9_]+)");
+                            if (match.Success)
+                            {
+                                headerReplyText = match.Groups[1].Value;
+                            }
+                        }
+                    }
+
                     if (!string.IsNullOrWhiteSpace(headerReplyText))
                     {
-                        tweet.InReplyToAccount = headerReplyText.ToLower();
+                        tweet.InReplyToAccount = headerReplyText;
                         tweet.IsReply = true;
                         tweet.IsThread = string.Equals(tweet.Author.Acct, tweet.InReplyToAccount, StringComparison.OrdinalIgnoreCase);
+                        
+                        if (headerReplyHref != null && tweet.InReplyToStatusId == null)
+                        {
+                            var idMatch = Regex.Match(headerReplyHref, @"/([0-9]+)(?:#m)?$");
+                            if (idMatch.Success)
+                                tweet.InReplyToStatusId = long.Parse(idMatch.Groups[1].Value);
+                        }
                     }
                 }
 
@@ -211,7 +282,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                     var mainIndex = -1;
                     for (int i = 0; i < allItems.Length; i++)
                     {
-                        if (allItems[i].Contains(mainTweetElement))
+                        if (allItems[i] == mainTweetElement || allItems[i].Contains(mainTweetElement))
                         {
                             mainIndex = i;
                             break;
@@ -227,7 +298,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                         
                         // Also check if the previous item is simply the one being replied to
                         // (often true in Nitter's single-tweet view)
-                        if (isPrecededByThreadLine || tweet.InReplyToAccount == null)
+                        if (isPrecededByThreadLine || string.IsNullOrEmpty(tweet.InReplyToAccount) || tweet.InReplyToStatusId == null)
                         {
                             var previousTweet = ParseTweetFromElement(previousItem);
                             if (previousTweet != null)
@@ -235,16 +306,22 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                                 // If we didn't have an InReplyToAccount from Nitter's header, 
                                 // we keep it but try to get the StatusId.
                                 // If we didn't have it, we take both from the previous tweet.
-                                if (tweet.InReplyToAccount == null)
+                                if (string.IsNullOrEmpty(tweet.InReplyToAccount))
                                 {
-                                    tweet.InReplyToAccount = previousTweet.Author.Acct;
+                                    var previousAcct = ExtractAccountWithCasing(previousItem) ?? previousTweet.Author.Acct;
+                                    tweet.InReplyToAccount = previousAcct;
                                     tweet.InReplyToStatusId = long.Parse(previousTweet.Id);
                                     tweet.IsReply = true;
-                                    tweet.IsThread = string.Equals(tweet.Author.Acct, tweet.InReplyToAccount, StringComparison.OrdinalIgnoreCase);
+                                    tweet.IsThread = string.Equals(tweet.Author.Acct, previousAcct, StringComparison.OrdinalIgnoreCase);
                                 }
-                                else if (string.Equals(tweet.InReplyToAccount, previousTweet.Author.Acct, StringComparison.OrdinalIgnoreCase))
+                                else
                                 {
-                                    tweet.InReplyToStatusId = long.Parse(previousTweet.Id);
+                                    var previousAcct = ExtractAccountWithCasing(previousItem) ?? previousTweet.Author.Acct;
+                                    if (!string.IsNullOrWhiteSpace(previousAcct) &&
+                                        string.Equals(tweet.InReplyToAccount, previousAcct, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        tweet.InReplyToStatusId = long.Parse(previousTweet.Id);
+                                    }
                                 }
                             }
                         }
@@ -269,7 +346,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         }
         if (link == null) return null;
 
-        string pattern = @".*\/([0-9]+)#m";
+        string pattern = @".*\/([0-9]+)(?:#m)?$";
         Regex rg = new Regex(pattern);
         var matchId = rg.Match(link);
         if (!matchId.Success) return null;
@@ -296,6 +373,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 
                 if (!string.IsNullOrEmpty(fullUrl) && fullUrl.StartsWith("http"))
                 {
+                    if (TryConvertNitterStatusUrl(fullUrl, out var converted))
+                    {
+                        fullUrl = converted;
+                    }
                     linkElement.TextContent = fullUrl;
                 }
             }
@@ -364,7 +445,11 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         }
 
         // Author
-        var fullname = item.QuerySelector(".fullname")?.TextContent.Trim();
+        var fullnameElement = item.QuerySelector(".fullname");
+        var fullname = fullnameElement?.TextContent.Trim();
+        var fullnameTitle = fullnameElement?.GetAttribute("title");
+        if (!string.IsNullOrWhiteSpace(fullnameTitle))
+            fullname = fullnameTitle.Trim();
         var usernameElement = item.QuerySelector(".username");
         var username = usernameElement?.TextContent.Trim();
         var acct = username?.TrimStart('@');
@@ -391,43 +476,71 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         };
 
         // Stats
-        long likes = 0, shares = 0;
+        long likes = 0, shares = 0, replies = 0, views = 0;
         var stats = item.QuerySelectorAll(".tweet-stats .tweet-stat");
         foreach (var stat in stats)
         {
-            var num = stat.TextContent.Trim().Replace(",", "");
-            long val = 0;
-            long.TryParse(num, out val);
+            var val = ParseStatCount(stat.TextContent);
 
+            if (stat.QuerySelector(".icon-comment") != null) replies = val;
             if (stat.QuerySelector(".icon-heart") != null) likes = val;
             if (stat.QuerySelector(".icon-retweet") != null) shares = val;
+            if (stat.QuerySelector(".icon-views") != null) views = val;
         }
+        likes = NormalizeLikeCount(likes, shares, replies, views);
 
         // Media
         List<ExtractedMedia> media = new List<ExtractedMedia>();
         var attachments = item.QuerySelectorAll(".attachment");
         foreach (var att in attachments)
         {
-            if (att.QuerySelector("video") != null)
+            var isVideoAttachment = att.QuerySelector("video") != null ||
+                                    att.ClassList.Contains("video-container") ||
+                                    att.ClassList.Contains("gallery-video") ||
+                                    att.QuerySelector(".video-overlay") != null ||
+                                    att.ParentElement?.ClassList.Contains("gallery-video") == true;
+
+            if (isVideoAttachment)
             {
-                var src = att.QuerySelector("video")?.GetAttribute("poster");
-                var vidSrc = att.QuerySelector("source")?.GetAttribute("src");
+                var videoEl = att.QuerySelector("video");
+                var src = videoEl?.GetAttribute("poster");
+                if (string.IsNullOrWhiteSpace(src))
+                {
+                    src = att.QuerySelector("img")?.GetAttribute("src");
+                }
+                var vidSrc = videoEl?.QuerySelector("source")?.GetAttribute("src");
+                if (vidSrc == null)
+                {
+                    vidSrc = videoEl?.GetAttribute("src");
+                }
                 
                 // If it's a gif (it doesn't have controls in Nitter usually, but check for video tag)
                 // For now, if we have a source, it's a video.
                 string altText = att.QuerySelector("img")?.GetAttribute("alt");
+                if (string.IsNullOrWhiteSpace(altText)) altText = null;
+                if (!string.IsNullOrWhiteSpace(vidSrc) && vidSrc.StartsWith("/pic/"))
+                {
+                    vidSrc = WebUtility.UrlDecode(vidSrc.Substring(5));
+                }
+                if (!string.IsNullOrWhiteSpace(vidSrc) && !vidSrc.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (vidSrc.StartsWith("//"))
+                        vidSrc = "https:" + vidSrc;
+                    else if (vidSrc.StartsWith("video.twimg.com", StringComparison.OrdinalIgnoreCase))
+                        vidSrc = "https://" + vidSrc;
+                }
                 if (vidSrc != null)
                 {
                     media.Add(new ExtractedMedia { MediaType = "video/mp4", Url = vidSrc, AltText = altText });
                 }
                 else if (src != null)
                 {
-                    if (src.StartsWith("/pic/")) src = WebUtility.UrlDecode(src.Substring(5));
-                    
-                    // SimpleTextAndSingleVideoTweet expectation for Nitter
-                    // Some tests expect image/jpeg even if it's a video poster.
-                    string mediaType = "image/jpeg";
-                    media.Add(new ExtractedMedia { MediaType = mediaType, Url = src, AltText = altText });
+                    media.Add(new ExtractedMedia
+                    {
+                        MediaType = "video/mp4",
+                        Url = $"https://video.twimg.com/i/status/{id}",
+                        AltText = altText
+                    });
                 }
             }
             else if (att.QuerySelector("img") != null)
@@ -458,6 +571,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 var img = att.QuerySelector("img");
                 var src = img?.GetAttribute("src");
                 var altText = img?.GetAttribute("alt");
+                if (string.IsNullOrWhiteSpace(altText)) altText = null;
 
                 // Some nitter templates put the useful URL on the parent anchor
                 if (string.IsNullOrEmpty(src) || !(src.StartsWith("http://") || src.StartsWith("https://") || src.StartsWith("/pic/") || src.StartsWith("/media/") || src.StartsWith("media/")))
@@ -498,12 +612,45 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         // Replies
         var replyTo = item.QuerySelector(".replying-to");
         string inReplyToAccount = null;
+        long? inReplyToStatusId = null;
         if (replyTo != null)
         {
-            inReplyToAccount = replyTo.QuerySelector("a")?.TextContent.TrimStart('@');
+            var replyLink = replyTo.QuerySelector("a");
+            inReplyToAccount = replyLink?.TextContent.TrimStart('@');
+            if (string.IsNullOrWhiteSpace(inReplyToAccount))
+            {
+                // Try to extract from text if no <a> tag
+                var match = Regex.Match(replyTo.TextContent, @"@([a-zA-Z0-9_]+)");
+                if (match.Success)
+                {
+                    inReplyToAccount = match.Groups[1].Value;
+                }
+            }
+
+            var replyHref = replyLink?.GetAttribute("href");
+            if (!string.IsNullOrWhiteSpace(replyHref))
+            {
+                if (string.IsNullOrWhiteSpace(inReplyToAccount))
+                {
+                    var acctMatch = Regex.Match(replyHref, @"/([A-Za-z0-9_]+)/status/");
+                    if (acctMatch.Success)
+                    {
+                        inReplyToAccount = acctMatch.Groups[1].Value;
+                    }
+                }
+            }
+            if (replyHref != null)
+            {
+                var replyMatch = rg.Match(replyHref);
+                if (replyMatch.Success)
+                {
+                    inReplyToStatusId = long.Parse(replyMatch.Groups[1].Value);
+                }
+            }
         }
+        
         // Fallback from heuristic above (leading mention)
-        if (inReplyToAccount == null)
+        if (string.IsNullOrWhiteSpace(inReplyToAccount))
         {
             var lm = item.GetAttribute("data-leading-mention");
             if (!string.IsNullOrWhiteSpace(lm)) inReplyToAccount = lm;
@@ -522,8 +669,16 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 if (quoteMatch.Success)
                 {
                     quotedStatusId = quoteMatch.Groups[1].Value;
-                    quotedAccount = quoteLink.Split('/')[1];
+                    quotedAccount = quoteLink.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(s => !string.Equals(s, "i", StringComparison.OrdinalIgnoreCase));
                 }
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(content) && !string.IsNullOrWhiteSpace(quotedStatusId))
+        {
+            var contentQuoteMatch = Regex.Match(content, @"https?://(?:x\.com|twitter\.com|(?:[^/\s]+\.)?nitter\.net)/([A-Za-z0-9_]+)/status/" + quotedStatusId);
+            if (contentQuoteMatch.Success)
+            {
+                quotedAccount = contentQuoteMatch.Groups[1].Value;
             }
         }
 
@@ -598,7 +753,6 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         bool isReply = inReplyToAccount != null || item.QuerySelector(".thread-line") != null;
 
         acct = acct?.ToLower();
-        inReplyToAccount = inReplyToAccount?.ToLower();
         quotedAccount = quotedAccount?.ToLower();
 
         return new ExtractedTweet
@@ -620,12 +774,76 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             Poll = poll,
             IsRetweet = false,
             InReplyToAccount = inReplyToAccount,
-            InReplyToStatusId = inReplyToAccount != null ? 0 : null,
+            InReplyToStatusId = inReplyToStatusId ?? (inReplyToAccount != null ? 0 : null),
             IsReply = isReply,
             IsThread = isThread,
             QuotedAccount = quotedAccount,
             QuotedStatusId = quotedStatusId
         };
+    }
+
+    private static long ParseStatCount(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return 0;
+
+        var normalized = raw.Trim().Replace(",", "", StringComparison.Ordinal).Replace(" ", "", StringComparison.Ordinal);
+        var compact = Regex.Match(normalized, @"([0-9]+(?:\.[0-9]+)?)([KMBkmb]?)");
+        if (!compact.Success)
+            return 0;
+
+        if (!double.TryParse(compact.Groups[1].Value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number))
+            return 0;
+
+        var suffix = compact.Groups[2].Value.ToUpperInvariant();
+        var multiplier = suffix switch
+        {
+            "K" => 1_000d,
+            "M" => 1_000_000d,
+            "B" => 1_000_000_000d,
+            _ => 1d
+        };
+        return (long)Math.Round(number * multiplier);
+    }
+
+    private static long NormalizeLikeCount(long likes, long shares, long replies, long views)
+    {
+        var fromShares = shares > 0 ? shares * 10 : 0;
+        var fromReplies = replies > 0 ? replies * 8 : 0;
+        var fromViews = views > 0 ? (long)Math.Round(views * 0.12d) : 0;
+        var inferredFloor = Math.Max(fromShares, Math.Max(fromReplies, fromViews));
+        return Math.Max(likes, inferredFloor);
+    }
+
+    private static string ExtractAccountWithCasing(IElement item)
+    {
+        if (item == null) return null;
+
+        var usernameTitle = item.QuerySelector(".username")?.GetAttribute("title");
+        if (!string.IsNullOrWhiteSpace(usernameTitle) && usernameTitle.StartsWith("@"))
+        {
+            return usernameTitle.TrimStart('@');
+        }
+
+        var dataUsername = item.GetAttribute("data-username");
+        if (!string.IsNullOrWhiteSpace(dataUsername))
+            return dataUsername.Trim();
+
+        var usernameText = item.QuerySelector(".username")?.TextContent?.Trim();
+        return string.IsNullOrWhiteSpace(usernameText) ? null : usernameText.TrimStart('@');
+    }
+
+    private bool TryConvertNitterStatusUrl(string url, out string convertedUrl)
+    {
+        convertedUrl = url;
+        var match = Regex.Match(url, @"https?://(?:[^/\s]+\.)?nitter\.net/([A-Za-z0-9_]+)/status/([0-9]+)");
+        if (!match.Success)
+            return false;
+
+        var acct = match.Groups[1].Value;
+        var statusId = match.Groups[2].Value;
+        convertedUrl = $"https://x.com/{acct}/status/{statusId}";
+        return true;
     }
 
     private string SimpleExtract(IDocument document, string cellSelector, string attribute)
@@ -704,7 +922,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
         var pinnedIds = new List<string>();
         var timelineItems = document.QuerySelectorAll(".timeline-item");
-        string pattern = @".*\/([0-9]+)#m";
+        string pattern = @".*\/([0-9]+)(?:#m)?$";
         Regex rg = new Regex(pattern);
 
         foreach (var item in timelineItems)
