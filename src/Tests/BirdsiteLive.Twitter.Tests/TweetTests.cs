@@ -87,6 +87,21 @@ namespace BirdsiteLive.Twitter.Tests
 
         [TestMethod]
         [DynamicData(nameof(Implementations))]
+        public async Task ReplyWithGif(StrategyHints s)
+        {
+            var tweet = await _tweetService.GetTweetAsync(2025229241386983913, s);
+            if (tweet is null)
+                Assert.Inconclusive();
+            
+            Assert.AreEqual(tweet.InReplyToAccount, "blakeandersonj");
+            Assert.AreEqual(tweet.InReplyToStatusId, 2025227821828759893);
+            Assert.IsTrue(tweet.IsReply);
+
+            Assert.AreEqual(tweet.Media.Length, 1);
+            Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
+        }
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
         public async Task LeadingDotTextAndSinglePictureTweet_2(StrategyHints s)
         {
             var tweet = await _tweetService.GetTweetAsync(1908137050907558326, s);
