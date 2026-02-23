@@ -1,11 +1,12 @@
 ﻿.nounderline {
-    text-decoration: none !important
+    text-decoration: none !important;
 }
 
 .logo {
-    width: 25px;
-    height: 25px;
+    width: 26px;
+    height: 26px;
     float: right;
+    margin-top: 0.1rem;
 }
 
 .logo-twitter {
@@ -15,64 +16,78 @@
 .logo-ig {
     filter: brightness(0) saturate(100%) invert(14%) sepia(84%) saturate(5617%) hue-rotate(322deg) brightness(102%) contrast(107%);
     transform: scale(1.5, 1.5);
-    padding: 10px;
+    padding: 0.35rem;
+}
+
+.profile-link {
+    display: block;
 }
 
 .profile {
-    border: 1px #dddddd solid;
-    border-radius: 15px;
-    /*background-repeat: no-repeat;*/
-    /*background-attachment: fixed;*/
-    /*background-position: center;*/
-    color: black;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
 }
 
-    .profile:hover {
-        transition: all .2s;
-        background-color: #f5f8fa;
-    }
+.profile:hover {
+    transition: all 0.2s ease;
+    transform: translateY(-2px);
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-hover);
+}
 
-    .profile h1 {
-        font-size: 18px;
-        margin-left: 60px;
-        padding-top: 0px;
-    }
-
-    .profile h2 {
-        font-size: 20px;
-        margin-left: 0px;
-    }
-
-/*.profile a {
-        color: black;
-    }
-
-        .profile a:hover {
-            color: #555555;
-        }*/
+.profile h1 {
+    margin: 0 0 0 74px;
+    padding-top: 0.12rem;
+    font-size: 1.18rem;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    font-family: var(--font-heading);
+}
 
 .handle {
-    color: gray;
-    font-weight: normal;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.95rem;
 }
 
 .sub-profile {
-    padding: 10px 15px;
-    min-height: 80px;
+    padding: 1rem 1.2rem;
+    min-height: 90px;
 }
-
-/*.sub-profile a {
-        color: black;
-    }*/
 
 .avatar {
     float: left;
-    width: 50px;
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
     border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 8px 20px rgba(20, 31, 46, 0.14);
 }
 
 .description {
-    margin-top: 0px;
-    margin-left: 60px;
-    /*font-weight: bold;*/
+    margin: 0.45rem 0 0 74px;
+    color: var(--text-muted);
+    line-height: 1.45;
+    white-space: pre-line;
+    word-break: break-word;
+}
+
+@media (max-width: 576px) {
+    .profile h1 {
+        margin-left: 68px;
+        font-size: 1.05rem;
+    }
+
+    .description {
+        margin-left: 68px;
+    }
+
+    .avatar {
+        width: 54px;
+        height: 54px;
+    }
 }

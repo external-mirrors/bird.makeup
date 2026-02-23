@@ -1,30 +1,24 @@
 ﻿@using BirdsiteLive.Controllers;
 @model HomeViewModel
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>
-        <br />
-        bird.makeup is a @ViewData.Model.ServiceName to ActivityPub bridge.<br />
-        Find a @ViewData.Model.ServiceName account below:
+<section class="hero-card">
+    <p class="hero-eyebrow">ActivityPub bridge</p>
+    <h1 class="hero-title">Follow @ViewData.Model.ServiceName accounts from the fediverse</h1>
+    <p class="hero-lead">
+        bird.makeup mirrors public @ViewData.Model.ServiceName accounts into ActivityPub.
+        Enter a handle to open its profile page.
     </p>
-    
-    <form method="POST">
-        <div class="form-group">
-            <input type="text" class="form-control col-8 col-sm-8 col-md-6 col-lg-4 mx-auto" id="handle" name="handle" autocomplete="off" placeholder="@ViewData.Model.ServiceName Handle">
-        </div>
-        <button type="submit" class="btn btn-primary">Show</button>
-    </form>
 
-    <p style = "padding-top: 100px;">
-        <br />
-        bird.makeup is made with ❤️ by <a href="https://r.town/@@vincent">Vincent Cloutier</a> in 🇨🇦
-        <br />
-        <br />
-        Many thanks to our Patreon supporters <br/>
-        
-    </p>
-</div>
+    <form class="hero-form" method="POST">
+        <input type="text" class="form-control hero-input" id="handle" name="handle" autocomplete="off" placeholder="@ViewData.Model.ServiceName handle" />
+        <button type="submit" class="btn btn-primary hero-button">Show</button>
+    </form>
+</section>
+
+<p class="home-note">
+    bird.makeup is made by <a href="https://r.town/@@vincent">Vincent Cloutier</a>.
+    Many thanks to Patreon supporters.
+</p>

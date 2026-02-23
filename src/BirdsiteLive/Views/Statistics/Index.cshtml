@@ -4,12 +4,28 @@
     ViewBag.Title = "Statistics";
 }
 
-<h2>Statistics</h2>
+<div class="col-12 col-sm-12 col-md-10 col-lg-8 mx-auto">
+    <section class="surface-card">
+        <p class="section-eyebrow">Instance</p>
+        <h1 class="section-title section-title--compact">Statistics</h1>
 
-<h4>Instance</h4>
-<ul>
-    <li>Twitter Users: @Model.TwitterUserCount</li>
-    <li>Failing Twitter Users: @Model.FailingTwitterUserCount</li>
-    <li>Followers: @Model.FollowersCount</li>
-    <li>Failing Followers: @Model.FailingFollowersCount</li>
-</ul>
+        <div class="stats-grid">
+            <article class="stat-item">
+                <p class="stat-label">Twitter Users</p>
+                <p class="stat-value">@Model.TwitterUserCount</p>
+            </article>
+            <article class="stat-item">
+                <p class="stat-label">Failing Twitter Users</p>
+                <p class="stat-value">@Model.FailingTwitterUserCount</p>
+            </article>
+            <article class="stat-item">
+                <p class="stat-label">Followers</p>
+                <p class="stat-value">@Model.FollowersCount</p>
+            </article>
+            <article class="stat-item">
+                <p class="stat-label">Failing Followers</p>
+                <p class="stat-value">@Model.FailingFollowersCount</p>
+            </article>
+        </div>
+    </section>
+</div>

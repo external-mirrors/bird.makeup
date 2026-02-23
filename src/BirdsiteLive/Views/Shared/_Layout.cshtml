@@ -1,11 +1,19 @@
 ﻿@using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
+@{
+    var instanceSettings = Configuration.GetSection("Instance");
+    var currentNetwork = instanceSettings["SocialNetwork"] ?? "Twitter";
+    var switcher = Configuration.GetSection("InstanceSwitching");
+    var twitterUrl = switcher["TwitterUrl"] ?? "#";
+    var instagramUrl = switcher["InstagramUrl"] ?? "#";
+    var hackerNewsUrl = switcher["HackerNewsUrl"] ?? "#";
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@Configuration.GetSection("Instance")["Name"] - @ViewData["Title"]</title>
+    <title>@instanceSettings["Name"] - @ViewData["Title"]</title>
     @if(ViewData["AlternateLink"] != null) 
     {
     <link href='@ViewData["AlternateLink"]' rel='alternate' type='application/activity+json'>
@@ -24,50 +32,41 @@
     {
     <meta content='@ViewData["MetaImage"]' property="og:image" />
     }
+    <meta content="#f4f6f8" name="theme-color" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" />
     <link rel="stylesheet" href="~/css/birdsite.css" />
     <link rel="stylesheet" href="~/css/pattern.css" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">@Configuration.GetSection("Instance")["Name"]</a>
-                @*<button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                            aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse">
-                        <ul class="navbar-nav flex-grow-1">
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                            </li>
-                        </ul>
-                    </div>*@
-            </div>
-        </nav>
+    <header class="app-header">
+        <div class="container app-header__inner">
+            <a class="app-brand nounderline" asp-area="" asp-controller="Home" asp-action="Index" aria-label=".makeup">
+                <span class="app-brand__dot" aria-hidden="true"></span>
+                <span class="app-brand__text">makeup</span>
+            </a>
+            <nav class="app-nav" aria-label="Main navigation">
+                <a class="app-nav__link nounderline @(currentNetwork == "Twitter" ? "is-active" : null)" href="@twitterUrl">Twitter</a>
+                <a class="app-nav__link nounderline @(currentNetwork == "Instagram" ? "is-active" : null)" href="@instagramUrl">Instagram</a>
+                <a class="app-nav__link nounderline @(currentNetwork == "HackerNews" ? "is-active" : null)" href="@hackerNewsUrl">Hacker News</a>
+            </nav>
+        </div>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+    <div class="container app-main">
+        <main role="main">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="app-footer">
         <div class="wrapper-nodeinfo">
             <div class="container container-nodeinfo">
                 @await Component.InvokeAsync("NodeInfo")
             </div>
         </div>
-        <div class="container">
-
+        <div class="container app-footer__links">
             <a href="https://sr.ht/~cloutier/bird.makeup/">Source Code</a> @*<a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>*@
-
-            <a class="btn btn-primary" href="https://www.patreon.com/birddotmakeup" style="float: right; margin:10px;">Support us on Patreon</a>
+            <a class="btn btn-primary footer-cta" href="https://www.patreon.com/birddotmakeup">Support on Patreon</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

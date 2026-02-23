@@ -4,8 +4,8 @@
 }
 
 
-<div class="col-12 col-sm-10 col-md-8 col-lg-6 mx-auto">
-    <a href="@ViewData.Model.Url" class="nounderline" title="@ViewData.Model.Url">
+<div class="page-stack col-12 col-sm-10 col-md-8 col-lg-6 mx-auto">
+    <a href="@ViewData.Model.Url" class="nounderline profile-link" title="@ViewData.Model.Url">
         @*<div class="profile" style="background-image: url('@ViewData.Model.ProfileBannerURL');">*@
         <div class="profile">
 
@@ -36,11 +36,9 @@
 
         </div>
     </a>
-    <br />
-    <div>
+    <div class="surface-card">
         This account has @ViewData.Model.FollowerCount followers on the fediverse. The server with the most followers for this account is: @ViewData.Model.MostPopularServer
     </div>
-    <br />
 
     @if (ViewData.Model.Protected)
     {
@@ -50,19 +48,17 @@
     }
     else
     {
-        <div>
-            <p>Search this handle to find it in your instance:</p>
+        <div class="surface-card">
+            <p class="surface-card__title">Search this handle in your instance:</p>
 
-            <input type="text" name="textbox" value="@ViewData.Model.InstanceHandle" onclick="this.select()" class="form-control" readonly />
+            <input type="text" name="textbox" value="@ViewData.Model.InstanceHandle" onclick="this.select()" class="form-control surface-input" readonly />
         </div>
     }
     @if (ViewData.Model.FediverseAccount != null)
     {
-        <br/>
-        <br/>
-        <div>
-            <p>There is a native fediverse account associated with this Twitter account:</p>
-            <input type="text" name="textbox" value="@ViewData.Model.FediverseAccount" onclick="this.select()" class="form-control" readonly />
+        <div class="surface-card">
+            <p class="surface-card__title">A native fediverse account is associated with this profile:</p>
+            <input type="text" name="textbox" value="@ViewData.Model.FediverseAccount" onclick="this.select()" class="form-control surface-input" readonly />
         </div>
     }
 </div>
