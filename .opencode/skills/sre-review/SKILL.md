@@ -19,19 +19,37 @@ investigating them is not part of an SRE review session with this skill.
 ## MCP / tooling limitations
 
 The Grafana MCP integration currently exposes **Tempo only** (traces). Logs (Loki)
-and metrics (Prometheus/Mimir) are not yet queryable via MCP tools, but support is
-expected in a future Grafana MCP release.
+and metrics (Prometheus/Mimir) are still not queryable via MCP tools.
 
-This means:
-- Log-only signals (e.g. AP delivery failures, dead follower accumulation, proxy
-  rotation events) cannot be queried during a session — ask the user to check Loki
-  manually if those signals are relevant.
-- OTel metrics emitted by `StatisticsHandler` and the `DotMakeup` meter (e.g.
-  `dotmakeup_api_called_count`, `dotmakeup_twitter_new_tweets_count`) are visible
-  in Grafana dashboards but not queryable here.
+However, logs/metrics can be queried in-session via Grafana Cloud HTTP APIs when
+the user provides read-only credentials as environment variables.
 
-Despite this, improvements to logs and metrics **can still be suggested** during a
-session — they just can't be validated in-session. Suggestions worth making:
+Required env vars:
+- `GRAFANA_TOKEN` (Grafana Cloud Access Policy token)
+- `LOKI_URL`, `LOKI_USER`
+- `MIMIR_URL`, `MIMIR_USER`
+
+Auth pattern:
+- Loki: `curl -u "$LOKI_USER:$GRAFANA_TOKEN" "$LOKI_URL/loki/api/v1/..."`
+- Mimir: `curl -u "$MIMIR_USER:$GRAFANA_TOKEN" "$MIMIR_URL/api/v1/..."`
+
+Important URL note:
+- `MIMIR_URL` may already include `/api/prom` (e.g.
+  `https://prometheus-<region>.grafana.net/api/prom`); in that case use
+  `/api/v1/...` after it (not `/api/prom/api/v1/...`).
+
+If those env vars are missing or auth fails, fall back to Tempo-only analysis and
+ask the user to verify Loki/Mimir manually.
+
+Observability budget constraints:
+- Traces budget: 50GB/month.
+- Logs budget: 50GB/month (counted separately from traces).
+- Metrics budget: 10k metric-series limit.
+- When suggesting new labels/tags, keep cardinality low (avoid per-user/per-post
+  labels in metrics) so the 10k metrics limit is not exhausted.
+
+Even when logs/metrics are unavailable, improvements to logs and metrics **can still
+be suggested**. Suggestions worth making:
 
 **Logs:**
 - Structured log fields (e.g. `acct`, `strategy`, `postCount`) on key events in
@@ -59,9 +77,79 @@ Key files for this skill:
 - Span filter: `src/BirdsiteLive/Middleware/FilterProcessor.cs`
 - Settings model: `src/BirdsiteLive.Common/Settings/InstanceSettings.cs`
 
+## Interaction rule
+
+When this skill asks the user a question, always use the OpenCode native
+`question` tool instead of plain-text prompts. This applies to all prompts,
+including the Step 2 "What would you like to dig into?" menu and Section D
+"Would you like me to implement this now?" confirmations.
+
 ---
 
-## Step 1 — Auto-bootstrap (run silently before responding)
+## Step 1 — Per-instance baseline (run silently before responding)
+
+Before anything else, assess how each instance is doing over the last few days:
+`bird`, `kilogram`, and `hacker`.
+
+- Default lookback window: last 72 hours.
+- Use all three signal types: traces (Tempo), metrics (Mimir), logs (Loki).
+- If Loki/Mimir credentials are unavailable or fail, do a traces-only baseline and
+  explicitly state that logs/metrics were unavailable.
+
+### 1A. Traces (Tempo)
+
+Run per-instance trace checks for each of `bird`, `kilogram`, and `hacker`.
+Use whichever attribute currently identifies instance in spans (prefer
+`span.instance`, otherwise use a resource attribute such as
+`resource.service.name` / `resource.k8s.namespace.name`).
+
+For each instance, gather at least:
+
+```
+# throughput by operation
+{ <instance-attr> = "bird" } | rate() by (span:name)
+
+# error rate by operation
+{ <instance-attr> = "bird" && status = error } | rate() by (span:name)
+
+# crawl latency distribution
+{ <instance-attr> = "bird" && span:name = "RetrieveTweetsProcessor" } | histogram_over_time(span:duration)
+```
+
+Repeat for `kilogram` and `hacker`.
+
+### 1B. Metrics (Mimir, when available)
+
+Use Mimir to compare instances over the same window. Prefer these queries (or
+equivalent label names in your deployment):
+
+```promql
+sum by (instance) (rate(dotmakeup_api_called_count[15m]))
+sum by (instance, error_type, strategy) (increase(dotmakeup_crawl_errors_total[72h]))
+sum by (instance, strategy) (increase(dotmakeup_token_refresh_total[72h]))
+```
+
+### 1C. Logs (Loki, when available)
+
+Use Loki to identify recurring error patterns by instance over the same window.
+Prefer structured filters if labels/fields exist; otherwise use best-effort text
+filters and note the limitation.
+
+Minimum checks:
+- Error log volume by instance
+- Top recurring crawl-related error messages per instance
+- Any repeated rate-limit/proxy/auth patterns per instance
+
+### 1D. Opening response requirement
+
+Start every session with a short per-instance health block (3 lines minimum):
+- `bird`: status, dominant failure mode (if any), and latency note
+- `kilogram`: status, dominant failure mode (if any), and latency note
+- `hacker`: status, dominant failure mode (if any), and latency note
+
+Then continue with the cross-instance summary and guided question menu.
+
+## Step 2 — Auto-bootstrap (run silently before responding)
 
 Run all four of these TraceQL queries in parallel before presenting anything to
 the user. Use them to build the opening summary.
@@ -88,6 +176,25 @@ After running these, present a 3-5 line summary of current health, then ask:
 > C. Settings tuning recommendations
 > D. Tracing gaps (I can implement fixes)
 > Or describe what you're seeing / worried about."
+
+### Optional preflight — Loki/Mimir access (when env vars are present)
+
+If `GRAFANA_TOKEN`, `LOKI_URL`, `LOKI_USER`, `MIMIR_URL`, and `MIMIR_USER` are set,
+run these smoke tests (via Bash) and include pass/fail in your opening context:
+
+```bash
+# Loki labels endpoint
+curl -sS -u "$LOKI_USER:$GRAFANA_TOKEN" "$LOKI_URL/loki/api/v1/labels"
+
+# Mimir metric names endpoint
+curl -sS -u "$MIMIR_USER:$GRAFANA_TOKEN" "$MIMIR_URL/api/v1/label/__name__/values"
+
+# Mimir basic query (may return empty result vector but should be HTTP 200)
+curl -sS -G -u "$MIMIR_USER:$GRAFANA_TOKEN" "$MIMIR_URL/api/v1/query" \
+  --data-urlencode "query=up"
+```
+
+If available, use Loki/Mimir evidence to support Section A-C conclusions.
 
 ---
 
@@ -194,165 +301,53 @@ has no trace signal — it is invisible until you query the database directly.
 
 ---
 
-## Section D — Tracing gaps
+## Section D — Tracing gaps (audit then log)
 
-For each gap below: describe the problem, show the exact fix, then ask the user
-"Would you like me to implement this now?" before writing any code.
+Do not treat this section as a static backlog. At the start of each investigation:
 
-### Gap 1 — `posts.count` not set on error path
+1. Re-check every previously known gap against current code.
+2. If a gap is fixed, remove it from active gap tracking and record a short
+   "Fixed on <date>" note in `## Learned Notes`.
+3. If a gap is still open, keep it in `## Learned Notes` under a single current
+   "Open tracing gaps" entry (problem + exact fix), instead of keeping a long
+   duplicate list here.
 
-**File:** `src/BirdsiteLive.Pipeline/Processors/RetrieveTweetsProcessor.cs:60-88`
+When presenting an open gap to the user, describe the problem and exact fix, then
+ask via the OpenCode native `question` tool whether to implement it now.
 
-**Problem:** `posts.count` is only set after a successful fetch (line 66). On any
-error path the tag is absent, making it impossible to distinguish "fetched 0 posts"
-from "fetch failed" using `{ span.posts.count = 0 }`.
-
-**Fix:** Move `activity?.SetTag("posts.count", 0)` to just before the `try` block,
-then overwrite it with the real count on success.
-
-```csharp
-// Before try block:
-activity?.SetTag("posts.count", 0);
-try
-{
-    var tweets = await _socialMediaService.GetNewPosts(user);
-    activity?.SetTag("posts.count", tweets.Length);  // overwrites 0 on success
-    ...
-}
-```
-
-### Gap 2 — Exception type not queryable
-
-**File:** `src/BirdsiteLive.Pipeline/Processors/RetrieveTweetsProcessor.cs:78-88`
-
-**Problem:** Both catch blocks set `statusMessage` to `e.Message` but never tag
-the exception type. You cannot run `{ span.error.type = "RateLimitExceededException" }`
-to isolate rate-limit errors from null-ref crashes.
-
-**Fix:** Add `activity?.SetTag("error.type", e.GetType().Name)` in both catch blocks.
-
-```csharp
-catch (RateLimitExceededException e)
-{
-    activity?.SetTag("error.type", e.GetType().Name);
-    activity?.SetStatus(ActivityStatusCode.Error, e.Message);
-    ...
-}
-catch (Exception e)
-{
-    activity?.SetTag("error.type", e.GetType().Name);
-    activity?.SetStatus(ActivityStatusCode.Error, e.Message);
-    ...
-}
-```
-
-### Gap 3 — `Sidecar.GetTimelineAsync` has no span
-
-**File:** `src/BirdsiteLive.Twitter/Strategies/Sidecar.cs:71-134`
-
-**Problem:** `Sidecar.cs` has OTel metric counters (`dotmakeup_api_called_count`)
-but no `ActivitySource` spans. `Sidecar.GetUserAsync` and `Sidecar.GetPostAsync`
-appear in Tempo (they must be instrumented elsewhere), but timeline fetches —
-the hot path — are completely invisible.
-
-**Fix:** Add an `ActivitySource` to `Sidecar.cs` (reuse the existing `"DotMakeup"`
-source) and wrap `GetTimelineAsync` in a span tagged with `endpoint`, `backend`,
-and `result` (success/rate-limit/error).
-
-```csharp
-private static readonly ActivitySource ActivitySource = new("DotMakeup");
-
-public async Task<List<ExtractedTweet>> GetTimelineAsync(...)
-{
-    using var activity = ActivitySource.StartActivity("Sidecar.GetTimelineAsync", ActivityKind.Internal);
-    activity?.SetTag("crawl.endpoint", withReplies ? "postbyuserwithreplies" : "postbyuser");
-    activity?.SetTag("crawl.strategy", "Sidecar");
-    try
-    {
-        ...
-        if (httpResponse.StatusCode != HttpStatusCode.OK)
-        {
-            activity?.SetStatus(ActivityStatusCode.Error, httpResponse.StatusCode.ToString());
-            activity?.SetTag("error.type", "HttpError");
-            ...
-        }
-        activity?.SetTag("posts.count", tweets.Count);
-        return tweets;
-    }
-    catch (Exception e)
-    {
-        activity?.SetStatus(ActivityStatusCode.Error, e.Message);
-        activity?.SetTag("error.type", e.GetType().Name);
-        throw;
-    }
-}
-```
-
-### Gap 4 — No `crawl.strategy` tag on `RetrieveTweetsProcessor`
-
-**File:** `src/BirdsiteLive.Pipeline/Processors/RetrieveTweetsProcessor.cs:60`
-
-**Problem:** When a crawl fails or is slow, there is no way to tell from the span
-whether the active strategy was `Graphql2025`, `Sidecar`, `Syndication`, or `Direct`.
-This makes it impossible to compare strategy performance or isolate strategy-specific
-failures.
-
-**Fix:** Surface the strategy name from `ISocialMediaService` and tag it:
-
-```csharp
-activity?.SetTag("crawl.strategy", _socialMediaService.GetType().Name);
-```
-
-Or if `ISocialMediaService` wraps a strategy via composition, expose a
-`StrategyName` property on the interface.
-
-### Gap 5 — `SendTweetsToFollowersProcessor` is completely uninstrumented
-
-**File:** `src/BirdsiteLive.Pipeline/Processors/SendTweetsToFollowersProcessor.cs`
-
-**Problem:** AP delivery — the second half of every pipeline cycle — has zero
-traces and zero metrics. Follower delivery failures, dead instance removals, and
-HTTP 403 responses are only visible in logs. There is no way to measure delivery
-latency, per-instance failure rates, or overall fan-out throughput from Tempo.
-
-**Fix:** Add spans at two levels:
-1. A parent span per user: `SendTweetsToFollowersProcessor` tagged with
-   `user.acct`, `posts.count`, `followers.count`
-2. Child spans per target instance: `SendTweetsToInstance` tagged with
-   `target.host`, `inbox.type` (shared/individual), `result` (ok/error/removed)
-
-Note: This would meaningfully increase trace volume. At current usage (~500MB/month
-out of a 50GB Grafana free-tier limit, ~1% used), there is substantial headroom.
-Adding fan-out spans may increase volume 2-3x but would still remain well under budget.
-
-### Gap 6 — Token refresh events not traced (`Graphql2025`)
-
-**File:** `src/BirdsiteLive.Twitter/Strategies/Graphql2025.cs:44-48`, `74-78`
-
-**Problem:** When a guest token is rejected (401/403), `RefreshClient()` is called
-silently. There is no trace event, no metric, and no counter for how often this
-happens. Frequent token refreshes are a leading indicator of impending rate-limit
-bans but are currently invisible.
-
-**Fix:** Add a metric counter to `StatisticsHandler` (or directly in the strategy):
-```csharp
-_tokenRefreshCounter.Add(1, new KeyValuePair<string, object>("strategy", "Graphql2025"));
-```
-Or tag the parent `RetrieveTweetsProcessor` span with `token.refreshed = true`
-when a refresh occurs during that crawl cycle.
+Current open gaps are tracked in `## Learned Notes`.
 
 ---
 
-## Trace volume budget
+## Observability budget
 
-- **Current usage:** ~500MB/month
-- **Grafana free tier limit:** 50GB/month
-- **Usage:** ~1% of budget
-- **Span rate:** ~0.37 spans/sec (~960K spans/month at ~520 bytes/span)
+- **Traces:** ~500MB/month today vs 50GB/month limit (~1% used).
+- **Logs:** 50GB/month limit, tracked separately from traces.
+- **Metrics:** 10k metric-series limit.
+- **Current span rate:** ~0.37 spans/sec (~960K spans/month at ~520 bytes/span).
 
-Adding all gaps above (Gaps 1-6) would increase span count roughly 3-4x, to
-~3-4M spans/month — still well under 1GB/month, far below the 50GB limit.
-**It is safe to add significantly more tracing without any cost concern.**
+### Pre-change impact check (required)
+
+Before proposing or implementing any change that adds/removes observability
+(new spans, new log fields, new metrics, or label changes), run a quick impact
+baseline first:
+
+- Metrics usage (direct): `count({__name__=~".+"})` via Mimir query API.
+- Logs usage (direct for time window): Loki `index/volume_range` over a recent
+  window (default 72h), then project monthly roughly.
+- Traces usage: no single direct usage API in current tooling; estimate from
+  span rate and expected span cardinality/size change.
+
+Include that estimate before making the change and call out risk against:
+- traces 50GB/month
+- logs 50GB/month
+- metrics 10k series
+
+Instrumenting the currently open tracing gaps would still increase span volume by
+only a few multiples, which remains well below 1GB/month and far below the traces
+budget. It is safe to add crawl-pipeline tracing. For logs/metrics changes, prefer
+low-cardinality dimensions (`strategy`, `instance`, `result`, `error_type`) and avoid
+high-cardinality labels (e.g., raw account names) on metrics.
 
 ---
 
@@ -378,7 +373,7 @@ Things worth adding:
 - A setting interaction or edge case discovered
 - A code path found to be misbehaving in a non-obvious way
 - Any correlation discovered between two signals (e.g. "high jitter correlates with lower error rate")
-- A gap from Section D that has since been implemented (move it to a "Fixed" note)
+- A tracing gap that has since been implemented (move it to a "Fixed" note)
 
 ### Removing stale content
 
@@ -389,8 +384,8 @@ At the end of a session, scan for staleness and say:
 > Want me to remove or update it?"
 
 Things to watch for:
-- A tracing gap in Section D that has been implemented — the gap entry should be
-  removed (or replaced with a brief "Fixed on [date]" note in Learned Notes)
+- A tracing gap that has been implemented — remove it from the active "Open tracing
+  gaps" note and add a brief "Fixed on [date]" note in Learned Notes
 - An error type in Section A that hasn't appeared in traces for several sessions —
   may be resolved; flag for removal if confirmed
 - A settings recommendation that contradicts what is now deployed in `k8s/dotmakeup.yaml`
@@ -401,15 +396,44 @@ Things to watch for:
 When proposing a deletion, always quote the exact text to be removed so the user
 can confirm before you use the Edit tool.
 
+### Work log retention
+
+Treat `## Learned Notes` as the session work log and keep at most 5 entries.
+
+- When adding a new note and there are already 5 entries, remove one first.
+- Prefer removing the oldest or most stale/superseded note.
+- Keep the most recent 5 notes that are still useful for current investigations.
+
 ---
 
 ## Learned Notes
+
+### 2026-02-23 — Loki/Mimir access works via Grafana Cloud API credentials
+
+Logs and metrics are still unavailable through MCP tools, but are queryable during
+sessions via `curl` when these env vars are set:
+`GRAFANA_TOKEN`, `LOKI_URL`, `LOKI_USER`, `MIMIR_URL`, `MIMIR_USER`.
+
+Validated smoke tests:
+- `GET $LOKI_URL/loki/api/v1/labels` returns HTTP 200 with valid credentials.
+- `GET $MIMIR_URL/api/v1/label/__name__/values` returns HTTP 200 and includes
+  `dotmakeup_*` metrics.
+- `GET $MIMIR_URL/api/v1/query?query=up` can return an empty vector with HTTP 200;
+  this still confirms auth and endpoint wiring.
+- `sum(rate(dotmakeup_api_called_count[15m]))` returned a non-empty vector in-session.
+
+Token/scoping note:
+- Grafana UI service-account tokens may fail against Loki/Mimir with `invalid token`.
+  Prefer Grafana Cloud Access Policy tokens scoped for `logs:read` and `metrics:read`
+  (optionally `traces:read`).
+
+---
 
 ### 2026-02-22 — Scope clarification: delivery to other servers is out of scope
 
 AP delivery to remote servers (`SendTweetsToFollowersProcessor` fan-out, HTTP POST
 to remote inboxes, per-instance failure tracking) is explicitly **out of scope** for
-this skill. Gap 5 in Section D documents what instrumentation _could_ be added, but
+this skill. The open-gaps work log documents what instrumentation _could_ be added, but
 investigating or tuning delivery behaviour is not part of an SRE review session here.
 
 ---
@@ -424,13 +448,17 @@ interface changes. Use `GetType().Name` when tagging strategy in processor spans
 
 ---
 
-### 2026-02-22 — `Sidecar.GetTimelineAsync` was silently swallowing all exceptions
+### 2026-02-23 — Open tracing gaps (after code audit)
 
-Prior to the Gap 3 fix, the `catch` block in `Sidecar.GetTimelineAsync` called
-`Console.WriteLine(e)` and returned `[]`. All network errors, deserialization
-failures, and HTTP non-200 responses were invisible in Tempo — they appeared as
-`posts.count = 0` with `status = unset`, indistinguishable from a legitimate
-empty timeline. After the fix, these are tagged as span errors with `error.type`.
+Code re-check against current repo state:
+- Fixed: former gaps 1-4 are already implemented in code (`posts.count` default on
+  error path, `error.type` tagging, `Sidecar.GetTimelineAsync` span, and
+  `crawl.strategy` tag on `RetrieveTweetsProcessor`).
+- Open gap: `SendTweetsToFollowersProcessor` remains uninstrumented. Suggested fix:
+  add one parent span per user fan-out and child spans per target host/inbox route.
+- Open gap: `Graphql2025` token refresh events are still untraced. Suggested fix:
+  add `dotmakeup_token_refresh_total` counter and/or `token.refreshed=true` span tag
+  when `RefreshClient()` runs.
 
 ---
 
@@ -441,6 +469,5 @@ empty timeline. After the fix, these are tagged as span errors with `error.type`
 were unrelated (`duckduckgo`, `synacktiv`, `sg_posters`, `slpng_giants_fr`, etc.),
 ruling out account-specific causes. The consistent long duration before crash
 suggests `GetNewPosts()` completes a full upstream fetch but returns `null` (rather
-than an empty array), which then hits `.Length` without a null guard. The fix for
-Gap 2 (`error.type` tag) will make this queryable as
-`{ span.error.type = "NullReferenceException" }` once deployed.
+than an empty array), which then hits `.Length` without a null guard. This is now
+queryable via `{ span.error.type = "NullReferenceException" }`.
