@@ -16,6 +16,19 @@ remote inbox POSTs, per-instance failure tracking) is out of scope — those pat
 are either filtered out by `FilterProcessor` or currently untraced, and
 investigating them is not part of an SRE review session with this skill.
 
+## Operator priorities
+
+For this operator, optimize for **coverage first** (how many accounts can be
+checked effectively under rate limits and crawl budget), not request latency.
+
+- Treat latency as secondary unless it directly hurts coverage (timeouts,
+  backoffs, long lockouts, or reduced effective recrawl frequency).
+- Prioritize recommendations that increase useful coverage under constraints:
+  lower wasted retries, smarter scheduling fairness, and better strategy
+  selection/cooldown behavior.
+- In summaries and menus, emphasize coverage and freshness outcomes before
+  latency distributions.
+
 ## MCP / tooling limitations
 
 The Grafana MCP integration currently exposes **Tempo only** (traces). Logs (Loki)
@@ -200,7 +213,7 @@ After running these, present a 3-5 line summary of current health, then ask:
 
 > "What would you like to dig into?
 > A. Error breakdown & affected accounts
-> B. Latency & throughput analysis
+> B. Coverage & throughput analysis (latency only where it affects coverage)
 > C. Settings tuning recommendations
 > D. Tracing gaps (I can implement fixes)
 > Or describe what you're seeing / worried about."
@@ -260,12 +273,18 @@ To surface them, run:
 { span:name = "RetrieveTweetsProcessor" && span.posts.count = 0 } | rate()
 ```
 A high zero-post rate that doesn't match the error rate is a sign of silent failures.
-Ask the user if this rate looks abnormal, and if so suggest adding error tagging in
-`Graphql2025.cs:74-78`.
+Do not ask the user to judge this manually. Compare each instance's zero-post ratio
+(`rate(posts.count=0) / rate(RetrieveTweetsProcessor)`) against the trailing 72h
+baseline (chunked windows if needed). If an instance rises materially above its own
+baseline while error-rate stays low, flag likely silent failures and suggest adding
+error tagging in `Graphql2025.cs:74-78`.
 
 ---
 
-## Section B — Latency analysis
+## Section B — Coverage and throughput analysis
+
+Coverage is the primary objective. Use latency analysis only when it helps
+explain coverage loss (for example, high timeout rates or very long retries).
 
 ### Queries to run
 
@@ -474,24 +493,12 @@ Token/scoping note:
 
 ---
 
-### 2026-02-22 — `ISocialMediaService.ServiceName` vs `GetType().Name` for `crawl.strategy`
-
-`ISocialMediaService` has a `ServiceName` string property, but it returns a
-human-readable display name (e.g. `"Twitter"`). For the `crawl.strategy` span tag,
-`_socialMediaService.GetType().Name` is more useful because it distinguishes concrete
-implementations (`TwitterService`, `InstagramService`, `HnService`) without requiring
-interface changes. Use `GetType().Name` when tagging strategy in processor spans.
-
----
-
 ### 2026-02-23 — Open tracing gaps (after code audit)
 
 Code re-check against current repo state:
 - Fixed: former gaps 1-4 are already implemented in code (`posts.count` default on
   error path, `error.type` tagging, `Sidecar.GetTimelineAsync` span, and
   `crawl.strategy` tag on `RetrieveTweetsProcessor`).
-- Open gap: `SendTweetsToFollowersProcessor` remains uninstrumented. Suggested fix:
-  add one parent span per user fan-out and child spans per target host/inbox route.
 - Open gap: `Graphql2025` token refresh events are still untraced. Suggested fix:
   add `dotmakeup_token_refresh_total` counter and/or `token.refreshed=true` span tag
   when `RefreshClient()` runs.
@@ -523,3 +530,15 @@ Loki query note validated in-session:
 - Error fields such as `detected_level` and `scope_name` worked reliably as
   pipeline filters (`| detected_level="error"`), while treating them as stream
   labels can return empty results.
+
+---
+
+### 2026-02-24 — Operator preference: coverage over latency
+
+Priority for this environment is crawl coverage/freshness under rate limits,
+not request latency in isolation.
+
+Working rule:
+- Optimize for fewer wasted requests, better account coverage fairness, and
+  improved effective recrawl interval.
+- Use latency only as a supporting signal when it explains coverage loss.

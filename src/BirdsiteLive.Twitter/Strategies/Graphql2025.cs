@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -17,6 +19,9 @@ namespace BirdsiteLive.Twitter.Strategies;
 
 public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 {
+    private static readonly ActivitySource ActivitySource = new("DotMakeup");
+    private static readonly Meter Meter = new("DotMakeup", "1.0.0");
+    private static readonly Counter<int> TokenRefreshCounter = Meter.CreateCounter<int>("dotmakeup_token_refresh_total");
     private readonly ITwitterAuthenticationInitializer _twitterAuthenticationInitializer;
     private readonly ITwitterTweetsService _tweetsService;
     private readonly InstanceSettings _instanceSettings;
@@ -34,31 +39,58 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
     }
     public async Task<TwitterUser> GetUserAsync(string username)
     {
+        using var activity = ActivitySource.StartActivity("Graphql2025.GetUserAsync", ActivityKind.Internal);
+        activity?.SetTag("crawl.strategy", "Graphql2025");
+        activity?.SetTag("user.acct", username);
+
         var endpoint = "https://api.x.com/graphql/1F38Jtjett-7b8eQKstioA/UserByScreenName?variables=%7B%22screen_name%22%3A%22askvenice%22%7D&features=%7B%22responsive_web_grok_bio_auto_translation_is_enabled%22%3Afalse%2C%22hidden_profile_subscriptions_enabled%22%3Atrue%2C%22payments_enabled%22%3Afalse%2C%22profile_label_improvements_pcf_label_in_post_enabled%22%3Atrue%2C%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22subscriptions_verification_info_is_identity_verified_enabled%22%3Atrue%2C%22subscriptions_verification_info_verified_since_enabled%22%3Atrue%2C%22highlights_tweets_tab_ui_enabled%22%3Atrue%2C%22responsive_web_twitter_article_notes_tab_enabled%22%3Atrue%2C%22subscriptions_feature_can_gift_premium%22%3Atrue%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Atrue%7D";
 
-        JsonDocument res;
-        var client = await _twitterAuthenticationInitializer.MakeHttpClient();
-        using var request = _twitterAuthenticationInitializer.MakeHttpRequest(new HttpMethod("GET"), endpoint.Replace("askvenice", username), true);
-
-        var httpResponse = await client.SendAsync(request);
-        if (httpResponse.StatusCode == HttpStatusCode.Unauthorized || httpResponse.StatusCode == HttpStatusCode.Forbidden)
+        try
         {
-            _logger.LogError("Error retrieving user {Username}, Refreshing client", username);
-            await _twitterAuthenticationInitializer.RefreshClient(request);
-            return null;
-        }
-        httpResponse.EnsureSuccessStatusCode();
+            JsonDocument res;
+            var client = await _twitterAuthenticationInitializer.MakeHttpClient();
+            using var request = _twitterAuthenticationInitializer.MakeHttpRequest(new HttpMethod("GET"), endpoint.Replace("askvenice", username), true);
 
-        var c = await httpResponse.Content.ReadAsStringAsync();
-        res = JsonDocument.Parse(c);
-        var result = res.RootElement.GetProperty("data").GetProperty("user").GetProperty("result");
-        var user = ExtractUser(result);
-        return user;
+            var httpResponse = await client.SendAsync(request);
+            activity?.SetTag("http.status_code", (int)httpResponse.StatusCode);
+            if (httpResponse.StatusCode == HttpStatusCode.Unauthorized || httpResponse.StatusCode == HttpStatusCode.Forbidden)
+            {
+                activity?.SetTag("error.type", "AuthThrottle");
+                activity?.SetStatus(ActivityStatusCode.Error, httpResponse.StatusCode.ToString());
+                var socialNetwork = string.IsNullOrWhiteSpace(_instanceSettings.SocialNetwork) ? "Twitter" : _instanceSettings.SocialNetwork;
+                TokenRefreshCounter.Add(1,
+                    new KeyValuePair<string, object>("strategy", "Graphql2025"),
+                    new KeyValuePair<string, object>("operation", "GetUserAsync"),
+                    new KeyValuePair<string, object>("social_network", socialNetwork)
+                );
+                _logger.LogError("Error retrieving user {Username}, Refreshing client", username);
+                await _twitterAuthenticationInitializer.RefreshClient(request);
+                return null;
+            }
+            httpResponse.EnsureSuccessStatusCode();
+
+            var c = await httpResponse.Content.ReadAsStringAsync();
+            res = JsonDocument.Parse(c);
+            var result = res.RootElement.GetProperty("data").GetProperty("user").GetProperty("result");
+            var user = ExtractUser(result);
+            return user;
+        }
+        catch (Exception e)
+        {
+            activity?.SetTag("error.type", e.GetType().Name);
+            activity?.SetStatus(ActivityStatusCode.Error, e.Message);
+            throw;
+        }
 
     }
 
     public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long userId, long fromTweetId, bool withReplies)
     {
+        using var activity = ActivitySource.StartActivity("Graphql2025.GetTimelineAsync", ActivityKind.Internal);
+        activity?.SetTag("crawl.strategy", "Graphql2025");
+        activity?.SetTag("user.acct", user.Acct);
+        activity?.SetTag("posts.count", 0);
+
         var client = await _twitterAuthenticationInitializer.MakeHttpClient();
         string username = user.Acct;
 
@@ -70,9 +102,18 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         {
 
             var httpResponse = await client.SendAsync(request);
+            activity?.SetTag("http.status_code", (int)httpResponse.StatusCode);
             var c = await httpResponse.Content.ReadAsStringAsync();
             if (httpResponse.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
             {
+                activity?.SetTag("error.type", "AuthThrottle");
+                activity?.SetStatus(ActivityStatusCode.Error, httpResponse.StatusCode.ToString());
+                var socialNetwork = string.IsNullOrWhiteSpace(_instanceSettings.SocialNetwork) ? "Twitter" : _instanceSettings.SocialNetwork;
+                TokenRefreshCounter.Add(1,
+                    new KeyValuePair<string, object>("strategy", "Graphql2025"),
+                    new KeyValuePair<string, object>("operation", "GetTimelineAsync"),
+                    new KeyValuePair<string, object>("social_network", socialNetwork)
+                );
                 _logger.LogError("Error retrieving timeline of {Username}; refreshing client", username);
                 await _twitterAuthenticationInitializer.RefreshClient(request);
                 return [];
@@ -82,7 +123,9 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error retrieving timeline ", username);
+            activity?.SetTag("error.type", e.GetType().Name);
+            activity?.SetStatus(ActivityStatusCode.Error, e.Message);
+            _logger.LogError(e, "Error retrieving timeline of {Username}", username);
             return null;
         }
 
@@ -127,6 +170,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             }
         }
         extractedTweets = extractedTweets.OrderByDescending(x => x.CreatedAt).Where(x => x.IdLong > fromTweetId).ToList();
+        activity?.SetTag("posts.count", extractedTweets.Count);
 
         return extractedTweets;
     }

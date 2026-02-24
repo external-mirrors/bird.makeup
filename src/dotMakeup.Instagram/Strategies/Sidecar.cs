@@ -43,32 +43,44 @@ public class Sidecar : IUserExtractor, IPostExtractor
     {
         using var activity = ActivitySource.StartActivity("Sidecar.GetPostAsync", ActivityKind.Internal);
         activity?.SetTag("post.id", id);
-        
-        var client = _httpClientFactory.CreateClient();
-        string requestUrl;
-        requestUrl = (await GetWebSidecar()) + "/instagram/post2/" + id;
-        var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var httpResponse = await client.SendAsync(request, cts.Token);
-
-        if (httpResponse.StatusCode != HttpStatusCode.OK)
+        try
         {
-            activity?.SetTag("http.status_code", (int)httpResponse.StatusCode);
-            return null;
-        }
-        var c = await httpResponse.Content.ReadAsStringAsync();
-        InstagramPost? post = JsonSerializer.Deserialize<InstagramPost>(c, _serializerOptions);
-        if (post == null)
-        {
-            activity?.SetStatus(ActivityStatusCode.Error, "Failed to deserialize post");
-            return null;
-        }
+            var client = _httpClientFactory.CreateClient();
+            string requestUrl;
+            requestUrl = (await GetWebSidecar()) + "/instagram/post2/" + id;
+            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-        var mirrored = await _ipfs.Mirror(post, true);
-        await _dal.UpdatePostCacheAsync(mirrored);
-        
-        return (InstagramPost)mirrored;
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var httpResponse = await client.SendAsync(request, cts.Token);
+
+            if (httpResponse.StatusCode != HttpStatusCode.OK)
+            {
+                activity?.SetTag("http.status_code", (int)httpResponse.StatusCode);
+                activity?.SetTag("error.type", "HttpError");
+                activity?.SetStatus(ActivityStatusCode.Error, httpResponse.StatusCode.ToString());
+                return null;
+            }
+
+            var c = await httpResponse.Content.ReadAsStringAsync();
+            InstagramPost? post = JsonSerializer.Deserialize<InstagramPost>(c, _serializerOptions);
+            if (post == null)
+            {
+                activity?.SetTag("error.type", "DeserializeError");
+                activity?.SetStatus(ActivityStatusCode.Error, "Failed to deserialize post");
+                return null;
+            }
+
+            var mirrored = await _ipfs.Mirror(post, true);
+            await _dal.UpdatePostCacheAsync(mirrored);
+
+            return (InstagramPost)mirrored;
+        }
+        catch (Exception e)
+        {
+            activity?.SetTag("error.type", e.GetType().Name);
+            activity?.SetStatus(ActivityStatusCode.Error, e.Message);
+            throw;
+        }
 
     }
     public async Task<InstagramUser> GetUserAsync(string username)
