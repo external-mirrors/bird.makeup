@@ -314,9 +314,151 @@ a:hover {
     line-height: 1.1;
 }
 
-.tweet-card blockquote.twitter-tweet {
+.post-card {
+    padding: 1.2rem;
+}
+
+.post-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.post-card__avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ffffff;
+    box-shadow: 0 8px 18px rgba(20, 31, 46, 0.14);
+    flex: 0 0 52px;
+}
+
+.post-card__avatar--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent-strong);
+    background-color: rgba(13, 138, 131, 0.12);
+    border-color: rgba(13, 138, 131, 0.12);
+    box-shadow: none;
+}
+
+.post-card__identity {
+    min-width: 0;
+}
+
+.post-card__name {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.04rem;
+    line-height: 1.2;
+}
+
+.post-card__meta {
+    margin: 0.18rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.32rem;
+    align-items: center;
+}
+
+.post-card__repost {
+    margin: 0.9rem 0 0;
+    padding: 0.48rem 0.65rem;
+    border-radius: 10px;
+    background-color: rgba(13, 138, 131, 0.1);
+    color: var(--accent-strong);
+    font-size: 0.9rem;
+}
+
+.post-card__text {
+    margin: 0.9rem 0 0;
+    line-height: 1.62;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.post-media-grid {
+    margin-top: 0.95rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.post-media-grid__item {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    overflow: hidden;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.post-media-grid__image,
+.post-media-grid__video {
+    width: 100%;
+    display: block;
+    max-height: 420px;
+    object-fit: cover;
+}
+
+.post-media-grid__file {
+    color: var(--accent-strong);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.post-poll {
+    margin-top: 0.95rem;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    background: var(--surface-muted);
+    padding: 0.72rem;
+}
+
+.post-poll__title {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.post-poll__option {
+    margin-top: 0.45rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.8rem;
+    font-size: 0.93rem;
+}
+
+.post-card__footer {
     margin-top: 1rem;
-    margin-bottom: 0;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.post-card__stats {
+    display: flex;
+    gap: 0.7rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.post-card__links {
+    display: flex;
+    gap: 0.8rem;
+    font-size: 0.9rem;
 }
 
 .form-control {
@@ -389,6 +531,10 @@ a:hover {
     }
 
     .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .post-media-grid {
         grid-template-columns: 1fr;
     }
 }

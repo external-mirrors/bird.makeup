@@ -1,19 +1,114 @@
 ﻿@using Microsoft.AspNetCore.Http.Extensions
-@model DisplayTweet
+@using System
+@model DisplayPost
 @{
-    ViewData["Title"] = "Tweet";
+    ViewData["Title"] = "Post";
     ViewData["AlternateLink"] = Context.Request.GetDisplayUrl().Replace("http", "https");
-    ViewData["MetaDescription"] = ViewData.Model.Text;
-    ViewData["MetaImage"] = ViewData.Model.UserProfileImage;
-    ViewData["MetaTitle"] = ViewData.Model.UserName;
+    ViewData["MetaDescription"] = string.IsNullOrWhiteSpace(ViewData.Model.Text) ? $"{ViewData.Model.ServiceName} post" : ViewData.Model.Text;
+    ViewData["MetaImage"] = ViewData.Model.Media.Length > 0 ? ViewData.Model.Media[0].Url : ViewData.Model.AuthorProfileImage;
+    ViewData["MetaTitle"] = $"{ViewData.Model.AuthorName} on {ViewData.Model.ServiceName}";
 }
 
 <div class="col-12 col-sm-10 col-md-8 col-lg-7 mx-auto">
-    <section class="surface-card tweet-card text-center">
-        <h1 class="section-title section-title--compact">Post Preview</h1>
-        <blockquote class="twitter-tweet">
-            <p lang="en" dir="ltr">@ViewData.Model.Text<br /><a href="@ViewData.Model.OgUrl">See Tweet</a></p>
-        </blockquote>
-    </section>
+    <article class="surface-card post-card">
+        <header class="post-card__header">
+            @if (!string.IsNullOrWhiteSpace(Model.AuthorProfileImage))
+            {
+                <img class="post-card__avatar" src="@Model.AuthorProfileImage" alt="@Model.AuthorName" />
+            }
+            else
+            {
+                <div class="post-card__avatar post-card__avatar--placeholder" aria-hidden="true">•</div>
+            }
+
+            <div class="post-card__identity">
+                <p class="post-card__name">@Model.AuthorName</p>
+                <p class="post-card__meta">
+                    <span>@@@Model.AuthorHandle</span>
+                    <span>·</span>
+                    <span>@Model.ServiceName</span>
+                    @if (Model.CreatedAt != default)
+                    {
+                        <span>·</span>
+                        <time datetime="@Model.CreatedAt.ToString("o")">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm") UTC</time>
+                    }
+                </p>
+            </div>
+        </header>
+
+        @if (Model.IsRepost && !string.IsNullOrWhiteSpace(Model.RepostFromHandle))
+        {
+            <p class="post-card__repost">Repost from @Model.RepostFromName (@@Model.RepostFromHandle)</p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.Text))
+        {
+            <p class="post-card__text">@Model.Text</p>
+        }
+
+        @if (Model.Media.Length > 0)
+        {
+            <div class="post-media-grid">
+                @foreach (var media in Model.Media)
+                {
+                    var mediaType = media.MediaType ?? string.Empty;
+                    var isVideo = mediaType.StartsWith("video", StringComparison.OrdinalIgnoreCase);
+                    var isImage = mediaType.StartsWith("image", StringComparison.OrdinalIgnoreCase);
+                    <a class="post-media-grid__item" href="@media.Url" target="_blank" rel="noopener noreferrer">
+                        @if (isVideo)
+                        {
+                            <video class="post-media-grid__video" controls preload="metadata">
+                                <source src="@media.Url" type="@media.MediaType" />
+                            </video>
+                        }
+                        else if (isImage)
+                        {
+                            <img class="post-media-grid__image" src="@media.Url" alt="@(media.AltText ?? "Post media")" loading="lazy" />
+                        }
+                        else
+                        {
+                            <span class="post-media-grid__file">Open media</span>
+                        }
+                    </a>
+                }
+            </div>
+        }
+
+        @if (Model.PollOptions.Length > 0)
+        {
+            <div class="post-poll">
+                <p class="post-poll__title">Poll options</p>
+                @foreach (var option in Model.PollOptions)
+                {
+                    <div class="post-poll__option">
+                        <span>@option.Label</span>
+                        <span>@option.Votes</span>
+                    </div>
+                }
+            </div>
+        }
+
+        <footer class="post-card__footer">
+            <div class="post-card__stats">
+                @if (Model.LikeCount > 0)
+                {
+                    <span>@Model.LikeCount likes</span>
+                }
+                @if (Model.ShareCount > 0)
+                {
+                    <span>@Model.ShareCount shares</span>
+                }
+            </div>
+            <div class="post-card__links">
+                @if (!string.IsNullOrWhiteSpace(Model.AuthorUrl))
+                {
+                    <a href="@Model.AuthorUrl" target="_blank" rel="noopener noreferrer">Author profile</a>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.OriginalUrl))
+                {
+                    <a href="@Model.OriginalUrl" target="_blank" rel="noopener noreferrer">Original post</a>
+                }
+            </div>
+        </footer>
+    </article>
 </div>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>

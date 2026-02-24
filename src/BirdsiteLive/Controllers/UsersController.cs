@@ -166,8 +166,12 @@ namespace BirdsiteLive.Controllers
             var tweet = await _socialMediaService.GetPostAsync(statusId);
             if (tweet == null)
                 return NotFound();
+            if (tweet.Author == null || string.IsNullOrWhiteSpace(tweet.Author.Acct))
+                return NotFound();
 
-            if (tweet.Author.Acct != id)
+            var requestedAcct = _socialMediaService.MakeUserNameCanonical(id);
+            var postAuthorAcct = _socialMediaService.MakeUserNameCanonical(tweet.Author.Acct);
+            if (postAuthorAcct != requestedAcct)
                 return NotFound();
             
             var status = await _statusService.GetStatus(id, tweet);
@@ -187,15 +191,74 @@ namespace BirdsiteLive.Controllers
                 }
             }
 
-            //return Redirect($"https://twitter.com/{id}/status/{statusId}");
-            var displayTweet = new DisplayTweet 
+            var displayPost = new DisplayPost
             {
                 Text = tweet.MessageContent,
-                OgUrl = $"https://twitter.com/{id}/status/{statusId}",
-                UserProfileImage = tweet.Author.ProfileImageUrl,
-                UserName = tweet.Author.Name,
+                OriginalUrl = BuildOriginalPostUrl(_socialMediaService.ServiceName, tweet.Author.Acct, statusId, tweet.RetweetId, tweet.IsRetweet),
+                AuthorProfileImage = tweet.Author.ProfileImageUrl,
+                AuthorName = tweet.Author.Name,
+                AuthorHandle = tweet.Author.Acct,
+                AuthorUrl = BuildAuthorProfileUrl(_socialMediaService.ServiceName, tweet.Author.Acct, tweet.Author.Url),
+                ServiceName = _socialMediaService.ServiceName,
+                CreatedAt = tweet.CreatedAt,
+                LikeCount = tweet.LikeCount,
+                ShareCount = tweet.ShareCount,
+                IsRepost = tweet.IsRetweet,
+                RepostFromName = tweet.OriginalAuthor?.Name,
+                RepostFromHandle = tweet.OriginalAuthor?.Acct,
+                Media = tweet.Media ?? Array.Empty<ExtractedMedia>(),
+                PollOptions = tweet.Poll?.options?.Select(x => new DisplayPollOption
+                {
+                    Label = x.First,
+                    Votes = x.Second,
+                }).ToArray() ?? Array.Empty<DisplayPollOption>(),
             };
-            return View(displayTweet);
+            return View(displayPost);
+        }
+
+        private static string BuildOriginalPostUrl(string serviceName, string authorAcct, string statusId, long retweetId, bool isRetweet)
+        {
+            if (string.IsNullOrWhiteSpace(statusId))
+                return null;
+            switch (serviceName)
+            {
+                case "Twitter":
+                {
+                    if (string.IsNullOrWhiteSpace(authorAcct))
+                        return null;
+                    var targetStatus = isRetweet && retweetId != default ? retweetId.ToString() : statusId;
+                    return $"https://twitter.com/{authorAcct}/status/{targetStatus}";
+                }
+                case "Instagram":
+                    return $"https://www.instagram.com/p/{statusId}/";
+                case "Hacker News":
+                    return $"https://news.ycombinator.com/item?id={statusId}";
+                default:
+                    return null;
+            }
+        }
+
+        private static string BuildAuthorProfileUrl(string serviceName, string acct, string extractedProfileUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(extractedProfileUrl))
+            {
+                if (Uri.TryCreate(extractedProfileUrl, UriKind.Absolute, out var absolute))
+                    return absolute.ToString();
+                if (Uri.TryCreate($"https://{extractedProfileUrl.TrimStart('/')}", UriKind.Absolute, out var withScheme))
+                    return withScheme.ToString();
+            }
+
+            switch (serviceName)
+            {
+                case "Twitter":
+                    return $"https://twitter.com/{acct}";
+                case "Instagram":
+                    return $"https://www.instagram.com/{acct}/";
+                case "Hacker News":
+                    return $"https://news.ycombinator.com/user?id={acct}";
+                default:
+                    return null;
+            }
         }
 
         [Route("/users/{userId}/stamps/{postId}/{remote}")]
