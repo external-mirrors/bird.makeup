@@ -38,6 +38,17 @@ Important URL note:
   `https://prometheus-<region>.grafana.net/api/prom`); in that case use
   `/api/v1/...` after it (not `/api/prom/api/v1/...`).
 
+Tempo/Loki query notes:
+- Tempo TraceQL **metrics** queries can fail when the time range is too large.
+  Query-range limits depend on backend/service settings and can change. For
+  multi-day baselines, chunk metrics queries into smaller windows and aggregate,
+  or fall back to a recent window and state the limitation explicitly.
+- In Loki for this stack, fields such as `detected_level`, `scope_name`,
+  `exception_type`, and `exception_message` may be parsed metadata rather than
+  indexed stream labels. Prefer pipeline filters (for example
+  `{service_name="dotmakeup"} | detected_level="error"`) over label selectors
+  like `{..., detected_level="error"}`.
+
 If those env vars are missing or auth fails, fall back to Tempo-only analysis and
 ask the user to verify Loki/Mimir manually.
 
@@ -95,6 +106,9 @@ Before anything else, assess how each instance is doing over the last few days:
 - Use all three signal types: traces (Tempo), metrics (Mimir), logs (Loki).
 - If Loki/Mimir credentials are unavailable or fail, do a traces-only baseline and
   explicitly state that logs/metrics were unavailable.
+- For Tempo metrics/histogram queries over 72h, chunk into smaller windows if
+  query-range limits are hit. If chunking is not practical, use a recent window
+  and call it out.
 
 ### 1A. Traces (Tempo)
 
@@ -118,6 +132,9 @@ For each instance, gather at least:
 
 Repeat for `kilogram` and `hacker`.
 
+If Tempo returns a range-limit error, rerun throughput/error-rate/histogram
+queries in smaller windows and aggregate by operation for the per-instance view.
+
 ### 1B. Metrics (Mimir, when available)
 
 Use Mimir to compare instances over the same window. Prefer these queries (or
@@ -134,6 +151,13 @@ sum by (instance, strategy) (increase(dotmakeup_token_refresh_total[72h]))
 Use Loki to identify recurring error patterns by instance over the same window.
 Prefer structured filters if labels/fields exist; otherwise use best-effort text
 filters and note the limitation.
+
+Example filter shape when error fields are parsed metadata:
+```logql
+sum by (service_instance_id) (
+  count_over_time({service_name="dotmakeup"} | detected_level="error" [72h])
+)
+```
 
 Minimum checks:
 - Error log volume by instance
@@ -153,6 +177,10 @@ Then continue with the cross-instance summary and guided question menu.
 
 Run all four of these TraceQL queries in parallel before presenting anything to
 the user. Use them to build the opening summary.
+
+If the metric queries (`rate`, `histogram_over_time`) fail due time-range limits,
+rerun those in smaller windows (or a recent-window fallback) and keep the
+`select(...)` error search at the full 72h window.
 
 ```
 # 1. Overall span throughput by operation
@@ -271,33 +299,50 @@ it may mean they are active high-post accounts creating more parsing work.
 
 ---
 
-## Section C — Settings tuning
+## Section C — Settings, scheduler, and strategy tuning
 
-All settings live in `src/BirdsiteLive.Common/Settings/InstanceSettings.cs` and
-are overridden via environment variables in `k8s/dotmakeup.yaml`.
+Tuning is not just `InstanceSettings`. In practice, crawl behaviour is shaped by
+three layers:
+1. `InstanceSettings` env vars (`k8s/*.yaml`)
+2. Per-service scheduler SQL (`GetNextUsersToCrawlAsync` in DALs)
+3. Strategy policy settings from DB (`nitter`, `ig_crawling`, `twitteraccounts`)
+
+### C1. InstanceSettings knobs (env vars)
+
+Core model: `src/BirdsiteLive.Common/Settings/InstanceSettings.cs`
 
 | Setting | Default | Signal to look for | Recommendation |
 |---|---|---|---|
-| `ParallelTwitterRequests` | 10 | High `RateLimitExceededException` rate on `Direct.GetUserAsync` (currently ~12% error rate) | Reduce to 5 if using Direct strategy to reduce ban risk |
+| `ParallelTwitterRequests` | 10 | Sustained `RateLimitExceededException` / auth-throttle errors while crawls overlap heavily | For Direct-heavy instances start at 1-2; increase only if rate limits stay low |
 | `SocialNetworkRequestJitter` | 0 | Any rate limit errors | Set to 1000-3000ms to randomise request spacing |
 | `TwitterRequestDelay` | 0 | Tight burst pattern visible in span timestamps | Set to 500-1000ms between batches |
-| `ParallelFediversePosts` | 10 | No traces available for fan-out, check logs | Leave unless log errors spike |
 | `FailingTwitterUserCleanUpThreshold` | unset (0) | `UserNotFoundException` or 404 errors recurring for same accounts | Set to e.g. 5 to auto-remove dead accounts after 5 consecutive failures |
-| `FailingFollowerCleanUpThreshold` | -1 (disabled!) | Dead followers accumulate silently — no trace signal | **This is a dangerous default.** Set to e.g. 10 to prevent unbounded dead-follower growth |
 | `UserCacheCapacity` | 40,000 | No trace signal — monitor memory | Leave unless memory pressure observed |
 | `TweetCacheCapacity` | 20,000 | No trace signal | Leave unless memory pressure observed |
 | `PostCacheRetentionDays` | 28 | No trace signal | Fine for current usage |
 | `PipelineStartupDelay` | 15 min | Slow-start after pod restart visible as gap in traces | Reduce to 5 min if restarts are frequent |
 
-**Note on `FailingFollowerCleanUpThreshold = -1`:**
-The check in `SendTweetsToFollowersProcessor.cs:152` is:
-```csharp
-if (follower.PostingErrorCount > _instanceSettings.FailingFollowerCleanUpThreshold
-    && _instanceSettings.FailingFollowerCleanUpThreshold > 0 ...)
-```
-The `> 0` guard means `-1` effectively disables cleanup entirely. Dead followers
-accumulate indefinitely, wasting AP delivery attempts every crawl cycle. This
-has no trace signal — it is invisible until you query the database directly.
+### C2. Per-service scheduler SQL knobs (high impact, currently hardcoded)
+
+These are often the largest real-world tuning levers because they decide *which*
+accounts get crawled next.
+
+| Service | File / method | Current behaviour | Tuning direction |
+|---|---|---|---|
+| Twitter | `TwitterUserPostgresDal.GetNextUsersToCrawlAsync` | `maxNumber=2000`, shard gate (`n_start/n_end/m`), and recency filter with Monday exception | Externalize max batch size + recency horizon as settings; tune for fairness vs freshness |
+| Instagram | `InstagramUserPostgresDal.GetNextUsersToCrawlAsync` | VIP/wikidata/day-of-week predicates, `LIMIT 20` | Externalize limit and predicate thresholds; tune VIP share vs broad coverage |
+| HackerNews | `HackerNewsUserPostgresDal.GetNextUsersToCrawlAsync` | `frontpage` forced priority, `LIMIT 20` | Externalize limit/frontpage weight if backlog grows |
+
+### C3. Strategy policy + endpoint quality settings (DB-backed)
+
+| Policy key | Used by | Why it matters | Recommended checks |
+|---|---|---|---|
+| `nitter` | `TwitterTweetsService`, `Nitter` | Controls thresholds, endpoint pool, and post-Nitter pacing | Compare success per endpoint with `dotmakeup_nitter_called_count` by `source,success`; remove low-quality endpoints |
+| `ig_crawling` (`WebSidecars`) | Instagram `Sidecar.GetWebSidecar` | Controls sidecar endpoint rotation for Instagram | Track `dotmakeup_api_called_count{sidecar!=""}` by `domain,status`; demote endpoints with persistent 5xx |
+| `twitteraccounts` | `TwitterAuthenticationInitializer` | Affects credential/token refresh behaviour and fallback quality | Monitor auth/throttle errors and token refresh churn; rotate/replenish account pool |
+
+When giving recommendations, combine trace symptoms (errors/latency) with these
+policy metrics so advice is strategy-specific, not only global env-var changes.
 
 ---
 
@@ -429,15 +474,6 @@ Token/scoping note:
 
 ---
 
-### 2026-02-22 — Scope clarification: delivery to other servers is out of scope
-
-AP delivery to remote servers (`SendTweetsToFollowersProcessor` fan-out, HTTP POST
-to remote inboxes, per-instance failure tracking) is explicitly **out of scope** for
-this skill. The open-gaps work log documents what instrumentation _could_ be added, but
-investigating or tuning delivery behaviour is not part of an SRE review session here.
-
----
-
 ### 2026-02-22 — `ISocialMediaService.ServiceName` vs `GetType().Name` for `crawl.strategy`
 
 `ISocialMediaService` has a `ServiceName` string property, but it returns a
@@ -471,3 +507,19 @@ ruling out account-specific causes. The consistent long duration before crash
 suggests `GetNewPosts()` completes a full upstream fetch but returns `null` (rather
 than an empty array), which then hits `.Length` without a null guard. This is now
 queryable via `{ span.error.type = "NullReferenceException" }`.
+
+---
+
+### 2026-02-24 — Tuning surface is broader than env vars
+
+This review showed that useful tuning decisions require three layers, not just
+`InstanceSettings`:
+- Scheduler SQL (`GetNextUsersToCrawlAsync`) drives effective crawl priority,
+  freshness, and fairness per service.
+- Strategy policy settings (`nitter`, `ig_crawling`, `twitteraccounts`) strongly
+  affect rate limits, endpoint quality, and data coverage.
+
+Loki query note validated in-session:
+- Error fields such as `detected_level` and `scope_name` worked reliably as
+  pipeline filters (`| detected_level="error"`), while treating them as stream
+  labels can return empty results.
