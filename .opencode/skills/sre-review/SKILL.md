@@ -1,13 +1,14 @@
 ---
 name: sre-review
-description: Interactive SRE review of the dotmakeup crawling pipeline using Grafana Tempo traces. Analyzes error rates, latency, settings tuning opportunities, and tracing coverage gaps across RetrieveTweetsProcessor, Sidecar, and Direct strategies. Offers to implement tracing fixes directly in code.
+description: Interactive SRE review of the dotmakeup crawling pipeline using Grafana Tempo traces. Analyzes error rates, latency, settings tuning opportunities, and tracing coverage gaps across RetrieveTweetsProcessor plus Graphql2025, Sidecar, and Direct strategy spans. Offers to implement tracing fixes directly in code.
 ---
 
 ## Scope
 
 This skill covers the **crawling pipeline only**:
 - `RetrieveTweetsProcessor` — main per-user crawl loop
-- `Sidecar.GetUserAsync` / `Sidecar.GetPostAsync` — sidecar-backed fetches
+- `Graphql2025.GetUserAsync` / `Graphql2025.GetTimelineAsync` — GraphQL-backed Twitter fetches
+- `Sidecar.GetUserAsync` / `Sidecar.GetPostAsync` / `Sidecar.GetTimelineAsync` — sidecar-backed fetches
 - `Direct.GetUserAsync` — direct API user fetches
 
 It does **not** cover HTTP server spans, ActivityPub delivery to remote servers,
@@ -86,7 +87,8 @@ be suggested**. Suggestions worth making:
 - A `dotmakeup_crawl_errors_total` counter broken down by `error_type` and
   `strategy` would give a durable rate signal independent of trace sampling.
 - A `dotmakeup_token_refresh_total` counter in `Graphql2025.cs` would surface
-  token churn as a Grafana alertable metric (see Gap 6 in Section D).
+  token churn as a Grafana alertable metric (see the open tracing gap in
+  `## Learned Notes`).
 - Gauge for active follower count per instance host would make dead-follower
   accumulation visible without a direct DB query.
 
@@ -94,8 +96,10 @@ be suggested**. Suggestions worth making:
 
 Key files for this skill:
 - Pipeline entry: `src/BirdsiteLive.Pipeline/Processors/RetrieveTweetsProcessor.cs`
-- Sidecar strategy: `src/BirdsiteLive.Twitter/Strategies/Sidecar.cs`
+- Twitter Sidecar strategy: `src/BirdsiteLive.Twitter/Strategies/Sidecar.cs`
 - GraphQL strategy: `src/BirdsiteLive.Twitter/Strategies/Graphql2025.cs`
+- Instagram Direct strategy: `src/dotMakeup.Instagram/Strategies/Direct.cs`
+- Instagram Sidecar strategy: `src/dotMakeup.Instagram/Strategies/Sidecar.cs`
 - Fan-out (untraced): `src/BirdsiteLive.Pipeline/Processors/SendTweetsToFollowersProcessor.cs`
 - OTel setup: `src/BirdsiteLive/Startup.cs:51-83`
 - Span filter: `src/BirdsiteLive/Middleware/FilterProcessor.cs`
@@ -108,12 +112,28 @@ When this skill asks the user a question, always use the OpenCode native
 including the Step 2 "What would you like to dig into?" menu and Section D
 "Would you like me to implement this now?" confirmations.
 
+## Useful outputs
+
+In addition to trace/log/metric analysis and code fixes, suggesting Grafana
+dashboard changes is a useful output for this skill.
+
+Good examples:
+- New or updated panels that improve coverage/freshness visibility
+- Strategy success/error views using Tempo/Loki/Mimir evidence
+- Query and panel-title rewrites that make actionable signals clearer
+
+When suggesting dashboard changes, prefer low-cardinality dimensions and align
+recommendations with the coverage-first priority.
+
 ---
 
 ## Step 1 — Per-instance baseline (run silently before responding)
 
 Before anything else, assess how each instance is doing over the last few days:
 `bird`, `kilogram`, and `hacker`.
+
+- Naming note: operator-facing `kilogram` often appears as `kilo` in telemetry
+  labels/pod IDs (for example `dotmakeup-kilo-*`). Treat them as the same instance.
 
 - Default lookback window: last 72 hours.
 - Use all three signal types: traces (Tempo), metrics (Mimir), logs (Loki).
@@ -129,6 +149,10 @@ Run per-instance trace checks for each of `bird`, `kilogram`, and `hacker`.
 Use whichever attribute currently identifies instance in spans (prefer
 `span.instance`, otherwise use a resource attribute such as
 `resource.service.name` / `resource.k8s.namespace.name`).
+
+If instance values are pod-style (for example `resource.service.instance.id`),
+use regex filters like `dotmakeup-bird-.*`, `dotmakeup-kilo-.*`,
+`dotmakeup-hacker-.*` for per-instance views.
 
 For each instance, gather at least:
 
@@ -147,6 +171,24 @@ Repeat for `kilogram` and `hacker`.
 
 If Tempo returns a range-limit error, rerun throughput/error-rate/histogram
 queries in smaller windows and aggregate by operation for the per-instance view.
+
+### 1A.1. Strategy tag semantics (important)
+
+`RetrieveTweetsProcessor` sets `crawl.strategy` to the service class name
+(`TwitterService`, `InstagramService`, `HnService`). That tag is useful for
+service-level splits but **does not** split extractor behavior (Direct vs Sidecar
+vs Graphql).
+
+For extractor-level strategy success/failure, query child spans and group by
+operation + status:
+
+```
+# Instagram extractor status split (kilo)
+{ resource.service.instance.id =~ "dotmakeup-kilo-.*" && (span:name = "Direct.GetUserAsync" || span:name = "Sidecar.GetUserAsync" || span:name = "Sidecar.GetPostAsync") } | rate() by (span:name, status)
+
+# Twitter extractor status split (bird)
+{ resource.service.instance.id =~ "dotmakeup-bird-.*" && (span:name = "Graphql2025.GetUserAsync" || span:name = "Graphql2025.GetTimelineAsync" || span:name = "Sidecar.GetTimelineAsync") } | rate() by (span:name, status)
+```
 
 ### 1B. Metrics (Mimir, when available)
 
@@ -181,7 +223,7 @@ Minimum checks:
 
 Start every session with a short per-instance health block (3 lines minimum):
 - `bird`: status, dominant failure mode (if any), and latency note
-- `kilogram`: status, dominant failure mode (if any), and latency note
+- `kilogram` (`kilo` in labels): status, dominant failure mode (if any), and latency note
 - `hacker`: status, dominant failure mode (if any), and latency note
 
 Then continue with the cross-instance summary and guided question menu.
@@ -499,21 +541,12 @@ Code re-check against current repo state:
 - Fixed: former gaps 1-4 are already implemented in code (`posts.count` default on
   error path, `error.type` tagging, `Sidecar.GetTimelineAsync` span, and
   `crawl.strategy` tag on `RetrieveTweetsProcessor`).
+- Fixed on 2026-02-25: Instagram extractor spans now emit `crawl.strategy`
+  (`Direct.GetUserAsync` => `Direct`; `Sidecar.GetUserAsync` /
+  `Sidecar.GetPostAsync` => `Sidecar`).
 - Open gap: `Graphql2025` token refresh events are still untraced. Suggested fix:
   add `dotmakeup_token_refresh_total` counter and/or `token.refreshed=true` span tag
   when `RefreshClient()` runs.
-
----
-
-### 2026-02-22 — Dominant error pattern: NullReferenceException in RetrieveTweetsProcessor
-
-7 of 11 error traces in the past hour were `NullReferenceException` in
-`RetrieveTweetsProcessor`, all with durations of ~14–17 seconds. Affected accounts
-were unrelated (`duckduckgo`, `synacktiv`, `sg_posters`, `slpng_giants_fr`, etc.),
-ruling out account-specific causes. The consistent long duration before crash
-suggests `GetNewPosts()` completes a full upstream fetch but returns `null` (rather
-than an empty array), which then hits `.Length` without a null guard. This is now
-queryable via `{ span.error.type = "NullReferenceException" }`.
 
 ---
 
@@ -542,3 +575,19 @@ Working rule:
 - Optimize for fewer wasted requests, better account coverage fairness, and
   improved effective recrawl interval.
 - Use latency only as a supporting signal when it explains coverage loss.
+
+---
+
+### 2026-02-25 — Strategy splits should use extractor spans
+
+Observed in-session:
+- `RetrieveTweetsProcessor` emits `crawl.strategy` as service-level values
+  (`TwitterService`, `InstagramService`, `HnService`), so grouping that span by
+  `crawl.strategy` does not show Direct vs Sidecar vs Graphql splits.
+- For strategy success/failure views, query extractor spans and group by
+  `(span:name, status)` per instance. This produced stable splits for bird/kilo/hacker.
+
+Implementation update:
+- Added `crawl.strategy` tags for Instagram extractor spans:
+  `Direct.GetUserAsync` => `Direct`; `Sidecar.GetUserAsync` /
+  `Sidecar.GetPostAsync` => `Sidecar`.

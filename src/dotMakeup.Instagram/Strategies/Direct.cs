@@ -28,6 +28,7 @@ public class Direct : IUserExtractor
     public async Task<InstagramUser> GetUserAsync(string username)
     {
         using var activity = ActivitySource.StartActivity("Direct.GetUserAsync", ActivityKind.Internal);
+        activity?.SetTag("crawl.strategy", "Direct");
         activity?.SetTag("user.username", username);
         
         InstagramUser user = null;

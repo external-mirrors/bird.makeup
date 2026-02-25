@@ -42,6 +42,7 @@ public class Sidecar : IUserExtractor, IPostExtractor
     public async Task<InstagramPost?> GetPostAsync(string id)
     {
         using var activity = ActivitySource.StartActivity("Sidecar.GetPostAsync", ActivityKind.Internal);
+        activity?.SetTag("crawl.strategy", "Sidecar");
         activity?.SetTag("post.id", id);
         try
         {
@@ -86,6 +87,7 @@ public class Sidecar : IUserExtractor, IPostExtractor
     public async Task<InstagramUser> GetUserAsync(string username)
     {
         using var activity = ActivitySource.StartActivity("Sidecar.GetUserAsync", ActivityKind.Internal);
+        activity?.SetTag("crawl.strategy", "Sidecar");
         activity?.SetTag("user.username", username);
         activity?.SetTag("user.isPremium", _isPremium);
         
