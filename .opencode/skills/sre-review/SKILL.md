@@ -514,80 +514,26 @@ Treat `## Learned Notes` as the session work log and keep at most 5 entries.
 
 ## Learned Notes
 
-### 2026-02-23 — Loki/Mimir access works via Grafana Cloud API credentials
+### 2026-02-23 — Loki/Mimir auth gotchas
 
-Logs and metrics are still unavailable through MCP tools, but are queryable during
-sessions via `curl` when these env vars are set:
-`GRAFANA_TOKEN`, `LOKI_URL`, `LOKI_USER`, `MIMIR_URL`, `MIMIR_USER`.
-
-Validated smoke tests:
-- `GET $LOKI_URL/loki/api/v1/labels` returns HTTP 200 with valid credentials.
-- `GET $MIMIR_URL/api/v1/label/__name__/values` returns HTTP 200 and includes
-  `dotmakeup_*` metrics.
-- `GET $MIMIR_URL/api/v1/query?query=up` can return an empty vector with HTTP 200;
+- Grafana UI service-account tokens may fail against Loki/Mimir with `invalid token`;
+  prefer Grafana Cloud Access Policy tokens scoped for `logs:read` and
+  `metrics:read` (optionally `traces:read`).
+- `GET $MIMIR_URL/api/v1/query?query=up` may return an empty vector with HTTP 200;
   this still confirms auth and endpoint wiring.
-- `sum(rate(dotmakeup_api_called_count[15m]))` returned a non-empty vector in-session.
-
-Token/scoping note:
-- Grafana UI service-account tokens may fail against Loki/Mimir with `invalid token`.
-  Prefer Grafana Cloud Access Policy tokens scoped for `logs:read` and `metrics:read`
-  (optionally `traces:read`).
 
 ---
 
-### 2026-02-23 — Open tracing gaps (after code audit)
+### 2026-02-23 — Open tracing gap
 
-Code re-check against current repo state:
-- Fixed: former gaps 1-4 are already implemented in code (`posts.count` default on
-  error path, `error.type` tagging, `Sidecar.GetTimelineAsync` span, and
-  `crawl.strategy` tag on `RetrieveTweetsProcessor`).
-- Fixed on 2026-02-25: Instagram extractor spans now emit `crawl.strategy`
-  (`Direct.GetUserAsync` => `Direct`; `Sidecar.GetUserAsync` /
-  `Sidecar.GetPostAsync` => `Sidecar`).
-- Open gap: `Graphql2025` token refresh events are still untraced. Suggested fix:
-  add `dotmakeup_token_refresh_total` counter and/or `token.refreshed=true` span tag
+- `Graphql2025` token refresh events are still untraced. Suggested fix: add
+  `dotmakeup_token_refresh_total` counter and/or `token.refreshed=true` span tag
   when `RefreshClient()` runs.
 
 ---
 
-### 2026-02-24 — Tuning surface is broader than env vars
+### 2026-02-25 — Implementation update
 
-This review showed that useful tuning decisions require three layers, not just
-`InstanceSettings`:
-- Scheduler SQL (`GetNextUsersToCrawlAsync`) drives effective crawl priority,
-  freshness, and fairness per service.
-- Strategy policy settings (`nitter`, `ig_crawling`, `twitteraccounts`) strongly
-  affect rate limits, endpoint quality, and data coverage.
-
-Loki query note validated in-session:
-- Error fields such as `detected_level` and `scope_name` worked reliably as
-  pipeline filters (`| detected_level="error"`), while treating them as stream
-  labels can return empty results.
-
----
-
-### 2026-02-24 — Operator preference: coverage over latency
-
-Priority for this environment is crawl coverage/freshness under rate limits,
-not request latency in isolation.
-
-Working rule:
-- Optimize for fewer wasted requests, better account coverage fairness, and
-  improved effective recrawl interval.
-- Use latency only as a supporting signal when it explains coverage loss.
-
----
-
-### 2026-02-25 — Strategy splits should use extractor spans
-
-Observed in-session:
-- `RetrieveTweetsProcessor` emits `crawl.strategy` as service-level values
-  (`TwitterService`, `InstagramService`, `HnService`), so grouping that span by
-  `crawl.strategy` does not show Direct vs Sidecar vs Graphql splits.
-- For strategy success/failure views, query extractor spans and group by
-  `(span:name, status)` per instance. This produced stable splits for bird/kilo/hacker.
-
-Implementation update:
 - Added `crawl.strategy` tags for Instagram extractor spans:
   `Direct.GetUserAsync` => `Direct`; `Sidecar.GetUserAsync` /
   `Sidecar.GetPostAsync` => `Sidecar`.
