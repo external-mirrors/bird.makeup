@@ -214,7 +214,7 @@ public class HnService : ISocialMediaService
             {
                 post = await _getPostAsync(p.ToString());
             }
-            catch (Exception _)
+            catch (Exception)
             {
                 continue;
             }

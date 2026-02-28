@@ -36,7 +36,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         public async Task CreateUpdateAndGetUser()
         {
             var acct = "myid";
-            var lastTweetId = 1548L;
 
             var dal = new TwitterUserPostgresDal(_settings);
 
@@ -45,7 +44,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
 
 
             var updatedLastTweetId = 1600L;
-            var updatedLastSyncId = 1550L;
             var now = DateTime.Now;
             var errors = 15;
             await dal.UpdateTwitterUserAsync(result.Id, updatedLastTweetId, errors, now);
@@ -62,7 +60,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         public async Task CreateUpdate2AndGetUser()
         {
             var acct = "myid";
-            var lastTweetId = 1548L;
 
             var dal = new TwitterUserPostgresDal(_settings);
 
@@ -71,7 +68,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
 
 
             var updatedLastTweetId = 1600L;
-            var updatedLastSyncId = 1550L;
             var now = DateTime.Now;
             var errors = 15;
 
@@ -92,7 +88,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         public async Task CreateUpdate3AndGetUser()
         {
             var acct = "myid";
-            var lastTweetId = 1548L;
 
             var dal = new TwitterUserPostgresDal(_settings);
 
@@ -101,7 +96,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
 
 
             var updatedLastTweetId = 1600L;
-            var updatedLastSyncId = 1550L;
             var now = DateTime.Now;
             var errors = 32768;
 
@@ -150,7 +144,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
             for (var i = 0; i < 1000; i++)
             {
                 var acct = $"myid{i}";
-                var lastTweetId = 1548L;
 
                 await dal.CreateUserAsync(acct);
             }
@@ -234,7 +227,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
             for (var i = 0; i < 20; i++)
             {
                 var acct = $"myid{i}";
-                var lastTweetId = 1548L;
 
                 await dal.CreateUserAsync(acct);
             }
@@ -264,7 +256,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
             for (var i = 0; i < 1000; i++)
             {
                 var acct = $"myid{i}";
-                var lastTweetId = 1548L;
 
                 await dal.CreateUserAsync(acct);
             }
@@ -283,7 +274,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
             for (var i = 0; i < 10; i++)
             {
                 var acct = $"myid{i}";
-                var lastTweetId = 1548L;
 
                 await dal.CreateUserAsync(acct);
             }
@@ -301,7 +291,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
             for (var i = 0; i < 10; i++)
             {
                 var acct = $"myid{i}";
-                var lastTweetId = 1548L;
 
                 await dal.CreateUserAsync(acct);
 

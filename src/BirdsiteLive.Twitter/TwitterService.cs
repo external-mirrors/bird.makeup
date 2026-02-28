@@ -57,7 +57,7 @@ namespace BirdsiteLive.Twitter
                 else
                     tweets = await _twitterTweetsService.GetTimelineAsync(user, user.LastTweetPostedId);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 await _userDal.UpdateTwitterUserAsync(user.Id, user.LastTweetPostedId, user.FetchingErrorCount++, user.LastSync);
             }

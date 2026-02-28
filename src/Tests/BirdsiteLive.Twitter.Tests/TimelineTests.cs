@@ -63,7 +63,6 @@ namespace BirdsiteLive.Twitter.Tests
         };
 
         private TwitterTweetsService _tweetService;
-        private ITwitterUserService _twitterUserService;
         private ITwitterUserDal _twitterUserDalMoq;
         private ITwitterAuthenticationInitializer _tweetAuth = null;
 
@@ -186,7 +185,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 var tweet = await _tweetAuth.Login();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Assert.Inconclusive();
             }
@@ -201,7 +200,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser)user);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Assert.Inconclusive();
                 return;
@@ -225,7 +224,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser)user, s);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Assert.Inconclusive();
                 return;
@@ -263,7 +262,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 tweets = await _tweetService.GetTimelineAsync((SyncTwitterUser) user, s);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Assert.Inconclusive();
                 return;

@@ -87,17 +87,17 @@ public class SocialNetworkCache
                     return u;
 
             }
-            catch (RateLimitExceededException _)
+            catch (RateLimitExceededException)
             {
             }
-            catch (HttpRequestException _)
+            catch (HttpRequestException)
             {
             }
-            catch (UserNotFoundException _)
+            catch (UserNotFoundException)
             {
                 throw;
             }
-            catch (Exception _)
+            catch (Exception)
             {
             }
         }
@@ -143,13 +143,13 @@ public class SocialNetworkCache
                     return u;
 
             }
-            catch (RateLimitExceededException _)
+            catch (RateLimitExceededException)
             {
             }
-            catch (HttpRequestException _)
+            catch (HttpRequestException)
             {
             }
-            catch (UserNotFoundException _)
+            catch (UserNotFoundException)
             {
                 throw;
             }

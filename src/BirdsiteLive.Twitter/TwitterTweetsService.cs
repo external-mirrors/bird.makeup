@@ -115,7 +115,7 @@ namespace BirdsiteLive.Twitter
                 {
                     backupTweet = await _tweetFromSyndication.GetTweetAsync(statusId);
                 }
-                catch (Exception _) {}
+                catch (Exception) {}
                 _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_tweet"),
                     new KeyValuePair<string, object>("result", backupTweet is null ? "5xx" : "2xx_backup")
                 );
@@ -239,7 +239,7 @@ namespace BirdsiteLive.Twitter
                     var longlink = response.RequestMessage.RequestUri.ToString();
                     input.MessageContent = input.MessageContent.Replace(match.ToString(), longlink);
                 }
-            } catch (Exception _) {}
+            } catch (Exception) {}
             
             return input;
         }

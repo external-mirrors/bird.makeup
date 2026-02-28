@@ -86,7 +86,7 @@ namespace BirdsiteLive.Moderation
                         {
                             await _ipfs.Unpin(h);
                         }
-                        catch (Exception _)
+                        catch (Exception)
                         {
                             _logger.LogCritical($"Error unpinning {h} from ipfs");
                         }
@@ -117,7 +117,7 @@ namespace BirdsiteLive.Moderation
                 {
                     await _ipfs.Unpin(h);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     unpirErrors++;
                 }

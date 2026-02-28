@@ -192,7 +192,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
             await _twitterUserDal.UpdateUserCacheAsync(profile);
             return profile;
         }
-        catch (Exception e)
+        catch (Exception)
         {
         }
 

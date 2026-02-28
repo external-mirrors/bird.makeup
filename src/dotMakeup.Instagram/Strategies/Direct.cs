@@ -31,7 +31,6 @@ public class Direct : IUserExtractor
         activity?.SetTag("crawl.strategy", "Direct");
         activity?.SetTag("user.username", username);
         
-        InstagramUser user = null;
         using var client = _httpClientFactory.CreateClient("WithProxy");
         // Ensure HttpClient doesn't add its own headers that might conflict
         client.DefaultRequestHeaders.Clear();
@@ -157,7 +156,7 @@ public class Direct : IUserExtractor
                 {
                     likes = node.GetProperty("edge_liked_by").GetProperty("count").GetInt64();
                 }
-                catch (Exception _) { }
+                catch (Exception) { }
 
                 var isPinned = false;
                 if (node.TryGetProperty("pinned_for_users", out var pinnedForUsers))
@@ -182,7 +181,7 @@ public class Direct : IUserExtractor
                 };
                 userPosts.Add(parsedPost);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //Console.WriteLine($"Error fetching post: {ex.Message}");
             }

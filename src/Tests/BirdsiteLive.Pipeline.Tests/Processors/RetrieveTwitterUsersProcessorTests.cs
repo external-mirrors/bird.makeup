@@ -30,7 +30,6 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
                 new SyncUser(),
                 new SyncUser(),
             };
-            var maxUsers = 1000;
             var instanceSettings = new InstanceSettings()
             {
                 n_start = 1,
@@ -75,7 +74,6 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             for (var i = 0; i < 30; i++)
                 users.Add(new SyncTwitterUser());
 
-            var maxUsers = 1000;
             var instanceSettings = new InstanceSettings()
             {
                 n_start = 1,
@@ -126,7 +124,6 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             for (var i = 0; i < 200; i++)
                 users.Add(new SyncTwitterUser());
 
-            var maxUsers = 1000;
             var instanceSettings = new InstanceSettings()
             {
                 n_start = 0,
@@ -181,7 +178,6 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             for (var i = 0; i < 200; i++)
                 users.Add(new SyncTwitterUser());
 
-            var maxUsers = 1000;
             var instanceSettings = new InstanceSettings()
             {
                 n_start = 0,
@@ -235,7 +231,6 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             for (var i = 0; i < 31; i++)
                 users.Add(new SyncUser());
 
-            var maxUsers = 1000;
             var instanceSettings = new InstanceSettings()
             {
                 n_start = 1,
@@ -282,7 +277,6 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             #region Stubs
             var buffer = new BufferBlock<UserWithDataToSync[]>();
 
-            var maxUsers = 1000;
             var instanceSettings = new InstanceSettings()
             {
                 n_start = 1,
@@ -321,7 +315,6 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             #region Stubs
             var buffer = new BufferBlock<UserWithDataToSync[]>();
 
-            var maxUsers = 1000;
             var instanceSettings = new InstanceSettings()
             {
                 n_start = 1,
@@ -360,7 +353,6 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             var canTokenS = new CancellationTokenSource();
             canTokenS.Cancel();
 
-            var maxUsers = 1000;
             var instanceSettings = new InstanceSettings()
             {
                 n_start = 1,

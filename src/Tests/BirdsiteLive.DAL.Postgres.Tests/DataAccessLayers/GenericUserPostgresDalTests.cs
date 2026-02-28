@@ -81,7 +81,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         public async Task CreateAndDeleteUser(SocialMediaUserPostgresDal dal)
         {
             var acct = "myacct";
-            var lastTweetId = 1548L;
 
             await dal.CreateUserAsync(acct);
             var result = await dal.GetUserAsync(acct);
@@ -105,7 +104,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         public async Task CreateAndDeleteUser_byId(SocialMediaUserPostgresDal dal)
         {
             var acct = "myacct";
-            var lastTweetId = 1548L;
 
             await dal.CreateUserAsync(acct);
             var result = await dal.GetUserAsync(acct);
@@ -129,7 +127,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         public async Task Wikidata_Insert(SocialMediaUserPostgresDal dal)
         {
             var acct = "myacct";
-            var lastTweetId = 1548L;
             var wiki = new WikidataEntry()
             {
                 QCode = "Q123"
@@ -150,7 +147,6 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
         public async Task Wikidata_Empty(SocialMediaUserPostgresDal dal)
         {
             var acct = "myacct";
-            var lastTweetId = 1548L;
 
             await dal.CreateUserAsync(acct);
             var result = await dal.GetUserAsync(acct);

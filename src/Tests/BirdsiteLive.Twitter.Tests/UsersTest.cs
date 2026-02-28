@@ -65,7 +65,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 user = await _tweetService.GetUserAsync("kobebryant", s);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Assert.Inconclusive();
                 return;
@@ -89,7 +89,7 @@ namespace BirdsiteLive.Twitter.Tests
             {
                 user = await _tweetService.GetUserAsync("grantimahara", s);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Assert.Inconclusive();
                 return;

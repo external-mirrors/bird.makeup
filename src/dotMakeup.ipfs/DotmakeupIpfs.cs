@@ -63,7 +63,7 @@ public class DotmakeupIpfs : IIpfsService
         {
             await gatewayClient.GetAsync(GetIpfsPublicLink(i.Id));
         }
-        catch (Exception e)
+        catch (Exception)
         {
             Console.WriteLine("Timeout during warmup of {0}", i.Id);
         }
@@ -113,7 +113,7 @@ public class DotmakeupIpfs : IIpfsService
                     return;
                 _diskUsage = a.RepoSize = a.RepoSize / 1024 / 1024 / 1024;
             }
-            catch (Exception _)
+            catch (Exception)
             {
                 // ignored
             }

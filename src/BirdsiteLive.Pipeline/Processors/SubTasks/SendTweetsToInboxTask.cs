@@ -22,7 +22,6 @@ namespace BirdsiteLive.Pipeline.Processors.SubTasks
     {
         private readonly IActivityPubService _activityPubService;
         private readonly IStatusService _statusService;
-        private readonly IFollowersDal _followersDal;
         private readonly InstanceSettings _settings;
         private readonly ILogger<SendTweetsToInboxTask> _logger;
 

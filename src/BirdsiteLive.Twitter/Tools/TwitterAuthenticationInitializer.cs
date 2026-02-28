@@ -27,7 +27,6 @@ namespace BirdsiteLive.Twitter.Tools
     public class TwitterAuthenticationInitializer : ITwitterAuthenticationInitializer
     {
         private readonly ILogger<TwitterService> _logger;
-        private static bool _initialized;
         private readonly IHttpClientFactory _httpClientFactory;
         private ConcurrentDictionary<String, String> _token2 = new ConcurrentDictionary<string, string>();
         static Random rnd = new Random();
@@ -35,7 +34,6 @@ namespace BirdsiteLive.Twitter.Tools
         private const int TargetClients = 15;
         private InstanceSettings _instanceSettings;
         private ISettingsDal _settingsDal;
-        private WebProxy _proxy;
 
         private readonly (string, string)[] _apiKeys = new[]
         {

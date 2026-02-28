@@ -12,7 +12,6 @@ namespace dotMakeup.Instagram.Tests;
 public class UserTest
 {
     private ISocialMediaService _instaService;
-    private IIpfsService _ipfsService;
     [TestInitialize]
     public async Task TestInit()
     {
@@ -42,7 +41,7 @@ public class UserTest
         {
             user = (InstagramUser)await _instaService.GetUserAsync("kobebryant");
         }
-        catch (Exception _)
+        catch (Exception)
         {
             Assert.Inconclusive();
             return;
@@ -66,7 +65,7 @@ public class UserTest
         {
             user = (InstagramUser)await _instaService.GetUserAsync("virgilabloh");
         }
-        catch (Exception _)
+        catch (Exception)
         {
             Assert.Inconclusive();
             return;
@@ -91,7 +90,7 @@ public class UserTest
         {
             user = (InstagramUser)await _instaService.GetUserAsync("lisampresley");
         }
-        catch (Exception _)
+        catch (Exception)
         {
             Assert.Inconclusive();
             return;
