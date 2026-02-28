@@ -34,11 +34,11 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
             return users;
         }
 
-        public async Task<SyncTwitterUser> GetUserAsync(int id)
+        public new async Task<SyncTwitterUser> GetUserAsync(int id)
         {
             return await GetUserAsync(null, id);
         }
-        public async Task<SyncTwitterUser> GetUserAsync(string acct)
+        public new async Task<SyncTwitterUser> GetUserAsync(string acct)
         {
             return await GetUserAsync(acct, null);
         }

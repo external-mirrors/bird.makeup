@@ -18,7 +18,7 @@ namespace BirdsiteLive.ActivityPub.Models
             { ["@id"] = "gts:interactionTarget", ["@type"] = "@id" },
         };
         [JsonPropertyName("@context")]
-        public new object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
+        public object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
         public string id { get; set; }
         public string type { get; set; } = "QuoteAuthorization";
         public string attributedTo { get; set; }
