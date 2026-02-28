@@ -1,6 +1,6 @@
 ---
 name: sre-review
-description: Interactive SRE review of the dotmakeup crawling pipeline using Grafana Tempo traces. Analyzes error rates, latency, settings tuning opportunities, and tracing coverage gaps across RetrieveTweetsProcessor plus Graphql2025, Sidecar, and Direct strategy spans. Offers to implement tracing fixes directly in code.
+description: Interactive SRE review of the dotmakeup crawling pipeline using Grafana Tempo traces and the production PostgreSQL database. Analyzes error rates, latency, coverage freshness, settings tuning opportunities, and tracing coverage gaps across RetrieveTweetsProcessor plus Graphql2025, Sidecar, and Direct strategy spans. Uses DB ground-truth data for crawl staleness, error accumulation, and strategy policy checks. Offers to implement tracing fixes directly in code.
 ---
 
 ## Scope
@@ -30,12 +30,58 @@ checked effectively under rate limits and crawl budget), not request latency.
 - In summaries and menus, emphasize coverage and freshness outcomes before
   latency distributions.
 
-## MCP / tooling limitations
+## MCP / tooling
 
-The Grafana MCP integration currently exposes **Tempo only** (traces). Logs (Loki)
-and metrics (Prometheus/Mimir) are still not queryable via MCP tools.
+Two MCP integrations are available: **Tempo** (traces) and **PostgreSQL**
+(production database). Logs (Loki) and metrics (Prometheus/Mimir) are accessible
+via Grafana Cloud HTTP APIs when credentials are provided.
 
-However, logs/metrics can be queried in-session via Grafana Cloud HTTP APIs when
+### Tempo MCP (traces — primary signal)
+
+Tempo is the primary signal for runtime behaviour: error rates, latency, span
+throughput, and per-account crawl outcomes. All `tempo_*` tools are available.
+
+Tempo/Loki query notes:
+- Tempo TraceQL **metrics** queries can fail when the time range is too large.
+  Query-range limits depend on backend/service settings and can change. For
+  multi-day baselines, chunk metrics queries into smaller windows and aggregate,
+  or fall back to a recent window and state the limitation explicitly.
+
+### PostgreSQL MCP (production DB — secondary signal)
+
+The production database is accessible via the `postgres_*` MCP tools. Use it as
+a **secondary signal** that provides ground-truth coverage, freshness, error
+accumulation, and strategy policy data that traces cannot easily show.
+
+Connection details:
+- Role: `opencode_sre` (read-only)
+- Database: `dotmakeup`
+
+Accessible tables (SELECT only):
+
+| Table | Key columns for SRE | Purpose |
+|---|---|---|
+| `twitter_users` | `acct`, `lastsync`, `fetchingerrorcount`, `wikidata`, `extradata` | Twitter account inventory, crawl freshness, error accumulation |
+| `instagram_users` | `acct`, `lastsync`, `wikidata`, `extradata` | Instagram account inventory and crawl freshness |
+| `hn_users` | `acct`, `lastsync`, `type`, `wikidata` | HackerNews account inventory and crawl freshness |
+| `followers` | `acct`, `host`, `followings`, `followings_instagram`, `followings_hn`, `postingerrorcount` | Follower demand, VIP detection (r.town), delivery error tracking |
+| `settings` | `setting_key`, `setting_value` (JSONB) | Strategy policy settings (`nitter`, `ig_crawling`, etc.) |
+
+Inaccessible tables (permission denied):
+- `workers`, `twitter_crawling_users`, `cached_tweets`, `cached_insta_posts`, `db_version`
+
+Usage guidelines:
+- Use `postgres_execute_sql` for custom queries. All other `postgres_list_*`
+  tools are also available but less useful for SRE-specific queries.
+- DB queries have **zero impact** on observability budgets (traces/logs/metrics).
+- Prefer DB for ground-truth counts and freshness checks; prefer Tempo for
+  runtime error patterns and latency analysis.
+- Do not query for individual user credentials or sensitive data — focus on
+  aggregate statistics and account-level crawl metadata.
+
+### Loki / Mimir (optional — via HTTP APIs)
+
+Logs/metrics can be queried in-session via Grafana Cloud HTTP APIs when
 the user provides read-only credentials as environment variables.
 
 Required env vars:
@@ -52,18 +98,14 @@ Important URL note:
   `https://prometheus-<region>.grafana.net/api/prom`); in that case use
   `/api/v1/...` after it (not `/api/prom/api/v1/...`).
 
-Tempo/Loki query notes:
-- Tempo TraceQL **metrics** queries can fail when the time range is too large.
-  Query-range limits depend on backend/service settings and can change. For
-  multi-day baselines, chunk metrics queries into smaller windows and aggregate,
-  or fall back to a recent window and state the limitation explicitly.
+Loki query notes:
 - In Loki for this stack, fields such as `detected_level`, `scope_name`,
   `exception_type`, and `exception_message` may be parsed metadata rather than
   indexed stream labels. Prefer pipeline filters (for example
   `{service_name="dotmakeup"} | detected_level="error"`) over label selectors
   like `{..., detected_level="error"}`.
 
-If those env vars are missing or auth fails, fall back to Tempo-only analysis and
+If those env vars are missing or auth fails, fall back to Tempo + DB analysis and
 ask the user to verify Loki/Mimir manually.
 
 Observability budget constraints:
@@ -90,7 +132,8 @@ be suggested**. Suggestions worth making:
   token churn as a Grafana alertable metric (see the open tracing gap in
   `## Learned Notes`).
 - Gauge for active follower count per instance host would make dead-follower
-  accumulation visible without a direct DB query.
+  accumulation visible without a direct DB query (though the `followers` table
+  can now be queried directly via PostgreSQL MCP for ground-truth counts).
 
 ## Codebase reference
 
@@ -104,6 +147,16 @@ Key files for this skill:
 - OTel setup: `src/BirdsiteLive/Startup.cs:51-83`
 - Span filter: `src/BirdsiteLive/Middleware/FilterProcessor.cs`
 - Settings model: `src/BirdsiteLive.Common/Settings/InstanceSettings.cs`
+
+### Database schema (accessible tables)
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `twitter_users` | `id` (PK), `acct` (unique), `lastsync` (timestamp), `fetchingerrorcount` (int), `lasttweetpostedid`, `twitteruserid`, `statusescount`, `wikidata` (JSONB), `extradata` (JSONB), `cache` (JSONB) | ~200k rows. `fetchingerrorcount` tracks consecutive crawl failures. `lastsync` is the ground-truth crawl freshness timestamp. |
+| `instagram_users` | `id` (PK), `acct` (unique), `lastsync` (timestamp), `data` (JSONB), `wikidata` (JSONB), `extradata` (JSONB), `cache` (JSONB) | ~21k rows. No `fetchingerrorcount` column — error tracking is trace-only for Instagram. |
+| `hn_users` | `id` (PK), `acct` (unique), `lastsync` (timestamp), `type` (char: `u`=user, `s`=story), `wikidata` (JSONB), `extradata` (JSONB) | ~87 rows. Small table. |
+| `followers` | `id` (PK), `acct`+`host` (unique), `followings` (int[]), `followings_instagram` (int[]), `followings_hn` (int[]), `postingerrorcount` (int), `inboxroute`, `sharedinboxroute` | ~124k rows across ~5.7k unique hosts. `followings` arrays reference user IDs in the corresponding user tables. `host` includes `r.town` for VIP detection. |
+| `settings` | `setting_key` (PK, text), `setting_value` (JSONB) | Strategy policy settings. Known keys: `nitter`, `ig_crawling`, `twitter_user_cache`, `key.json`. |
 
 ## Interaction rule
 
@@ -139,8 +192,9 @@ Before anything else, assess how each instance is doing over the last few days:
   labels/pod IDs (for example `dotmakeup-kilo-*`). Treat them as the same instance.
 
 - Default lookback window: last 72 hours.
-- Use all three signal types: traces (Tempo), metrics (Mimir), logs (Loki).
-- If Loki/Mimir credentials are unavailable or fail, do a traces-only baseline and
+- Use all available signal types: traces (Tempo), database (PostgreSQL MCP),
+  and optionally metrics (Mimir) and logs (Loki).
+- If Loki/Mimir credentials are unavailable or fail, do a Tempo + DB baseline and
   explicitly state that logs/metrics were unavailable.
 - For Tempo metrics/histogram queries over 72h, chunk into smaller windows if
   query-range limits are hit. If chunking is not practical, use a recent window
@@ -222,12 +276,78 @@ Minimum checks:
 - Top recurring crawl-related error messages per instance
 - Any repeated rate-limit/proxy/auth patterns per instance
 
-### 1D. Opening response requirement
+### 1D. Database (PostgreSQL MCP)
+
+Use the production database to get ground-truth coverage and freshness data that
+traces can only approximate. Run these queries using `postgres_execute_sql`:
+
+```sql
+-- 1. Coverage freshness: lastsync age distribution per service
+SELECT 'twitter' AS service,
+  count(*) AS total,
+  count(*) FILTER (WHERE lastsync > now() - interval '1 day') AS synced_1d,
+  count(*) FILTER (WHERE lastsync > now() - interval '7 days') AS synced_7d,
+  count(*) FILTER (WHERE lastsync < now() - interval '30 days') AS stale_30d
+FROM twitter_users
+UNION ALL
+SELECT 'instagram', count(*),
+  count(*) FILTER (WHERE lastsync > now() - interval '1 day'),
+  count(*) FILTER (WHERE lastsync > now() - interval '7 days'),
+  count(*) FILTER (WHERE lastsync < now() - interval '30 days')
+FROM instagram_users
+UNION ALL
+SELECT 'hn', count(*),
+  count(*) FILTER (WHERE lastsync > now() - interval '1 day'),
+  count(*) FILTER (WHERE lastsync > now() - interval '7 days'),
+  count(*) FILTER (WHERE lastsync < now() - interval '30 days')
+FROM hn_users;
+
+-- 2. Error accumulation hotspots (Twitter only — has fetchingerrorcount)
+SELECT acct, fetchingerrorcount, lastsync,
+  now() - lastsync AS staleness
+FROM twitter_users
+WHERE fetchingerrorcount > 5
+ORDER BY fetchingerrorcount DESC
+LIMIT 20;
+
+-- 3. Strategy policy snapshot
+SELECT setting_key, setting_value FROM settings
+WHERE setting_key IN ('nitter', 'ig_crawling');
+
+-- 4. Follower demand summary (how many unique users are followed per service)
+SELECT
+  count(DISTINCT u) AS twitter_followed,
+  (SELECT count(DISTINCT u) FROM followers, unnest(followings_instagram) AS u) AS instagram_followed,
+  (SELECT count(DISTINCT u) FROM followers, unnest(followings_hn) AS u) AS hn_followed,
+  count(DISTINCT host) AS unique_follower_hosts
+FROM followers, unnest(followings) AS u;
+
+-- 5. VIP demand (r.town followers and what they follow)
+SELECT
+  count(*) AS rtown_followers,
+  count(DISTINCT u) AS rtown_twitter_followed,
+  (SELECT count(DISTINCT u) FROM followers, unnest(followings_instagram) AS u WHERE host = 'r.town') AS rtown_instagram_followed
+FROM followers, unnest(followings) AS u
+WHERE host = 'r.town';
+```
+
+Use these results to:
+- Compare "users followed" vs "total users" to find orphan accounts nobody follows
+- Identify the stalest high-demand accounts (followed by many but rarely synced)
+- Cross-reference `fetchingerrorcount` hotspots with trace error patterns
+- Read current strategy policy values before making tuning recommendations
+
+### 1E. Opening response requirement
 
 Start every session with a short per-instance health block (3 lines minimum):
 - `bird`: status, dominant failure mode (if any), and latency note
 - `kilogram` (`kilo` in labels): status, dominant failure mode (if any), and latency note
 - `hacker`: status, dominant failure mode (if any), and latency note
+
+Then include a DB-sourced coverage summary:
+- Per-service crawl freshness (what % synced in last 1d / 7d, how many stale >30d)
+- Top error-accumulation accounts if `fetchingerrorcount` hotspots exist
+- Follower demand vs coverage gaps (users followed but rarely synced)
 
 Then continue with the cross-instance summary and ranked proposal shortlist.
 
@@ -245,7 +365,8 @@ When available, use the OpenCode `Task` tool to run packs 2A-2E concurrently.
 
 - Recommended mapping:
   - `general` subagent: 2A bootstrap, 2B error pack, 2C coverage pack
-  - `general` subagent: 2D settings/strategy evidence and Loki/Mimir preflight
+  - `general` subagent: 2D settings/strategy evidence, 2F-DB database pack,
+    and Loki/Mimir preflight
   - `explore` subagent: 2E tracing-gap code audit
 - Keep each subagent prompt tightly scoped to its pack, lookback window, and
   required outputs only.
@@ -292,6 +413,33 @@ the silent-failure detector:
 { span:name = "RetrieveTweetsProcessor" && span.posts.count = 0 } | rate()
 ```
 
+Also run the DB error-accumulation query to cross-reference with trace errors:
+
+```sql
+-- Accounts with high error counts that may need cleanup
+SELECT acct, fetchingerrorcount, lastsync, now() - lastsync AS staleness
+FROM twitter_users
+WHERE fetchingerrorcount > 5
+ORDER BY fetchingerrorcount DESC LIMIT 20;
+
+-- Error count distribution to understand the shape
+SELECT
+  CASE
+    WHEN fetchingerrorcount = 0 THEN '0 (clean)'
+    WHEN fetchingerrorcount BETWEEN 1 AND 5 THEN '1-5'
+    WHEN fetchingerrorcount BETWEEN 6 AND 20 THEN '6-20'
+    ELSE '20+'
+  END AS error_bucket,
+  count(*) AS accounts
+FROM twitter_users
+GROUP BY 1 ORDER BY min(fetchingerrorcount);
+```
+
+Cross-reference: if an account appears in both trace errors and DB
+`fetchingerrorcount > 5`, it is a confirmed persistent failure. If it only
+appears in traces but has `fetchingerrorcount = 0` in DB, the error may be
+recent/transient.
+
 Reuse this pack's outputs in Section A by default; rerun only when narrowing
 filters/time range.
 
@@ -300,12 +448,71 @@ filters/time range.
 Run the Section B query set in parallel to precompute coverage/freshness
 proposals.
 
+Also run DB coverage queries to provide ground-truth freshness data:
+
+```sql
+-- Crawl freshness distribution per service (same as Step 1E query 1)
+SELECT 'twitter' AS service,
+  count(*) AS total,
+  count(*) FILTER (WHERE lastsync > now() - interval '1 day') AS synced_1d,
+  count(*) FILTER (WHERE lastsync > now() - interval '7 days') AS synced_7d,
+  count(*) FILTER (WHERE lastsync < now() - interval '30 days') AS stale_30d
+FROM twitter_users
+UNION ALL
+SELECT 'instagram', count(*),
+  count(*) FILTER (WHERE lastsync > now() - interval '1 day'),
+  count(*) FILTER (WHERE lastsync > now() - interval '7 days'),
+  count(*) FILTER (WHERE lastsync < now() - interval '30 days')
+FROM instagram_users
+UNION ALL
+SELECT 'hn', count(*),
+  count(*) FILTER (WHERE lastsync > now() - interval '1 day'),
+  count(*) FILTER (WHERE lastsync > now() - interval '7 days'),
+  count(*) FILTER (WHERE lastsync < now() - interval '30 days')
+FROM hn_users;
+
+-- Orphan accounts: users that exist but nobody follows
+-- (Twitter: users whose id is not in any followers.followings array)
+SELECT count(*) AS orphan_twitter_users
+FROM twitter_users t
+WHERE NOT EXISTS (
+  SELECT 1 FROM followers f WHERE t.id = ANY(f.followings)
+);
+
+-- Stalest high-demand accounts (followed by many, but not recently synced)
+SELECT t.acct, t.lastsync, now() - t.lastsync AS staleness,
+  count(f.id) AS follower_count
+FROM twitter_users t
+JOIN followers f ON t.id = ANY(f.followings)
+WHERE t.lastsync < now() - interval '7 days'
+GROUP BY t.id, t.acct, t.lastsync
+ORDER BY follower_count DESC
+LIMIT 20;
+```
+
+Cross-reference DB freshness with Tempo throughput: if Tempo shows healthy span
+rates but DB shows many stale accounts, the crawl is cycling through the same
+active accounts while neglecting the long tail.
+
 Reuse this pack's outputs in Section B by default; rerun only when narrowing
 filters/time range.
 
 ### 2D. Settings/strategy tuning pack (Section C inputs)
 
 Run Section C4 evidence queries in parallel to precompute tuning proposals.
+
+Also read current strategy policy settings directly from the database:
+
+```sql
+-- Read all strategy policy settings
+SELECT setting_key, jsonb_pretty(setting_value) AS value
+FROM settings
+WHERE setting_key IN ('nitter', 'ig_crawling');
+```
+
+Use the DB policy values as ground-truth when making tuning recommendations.
+For example, compare the `nitter.endpoints` list against Tempo error rates per
+endpoint, or check `ig_crawling.WebSidecars` against sidecar span success rates.
 
 Reuse this pack's outputs in Section C by default; rerun only when narrowing
 filters/time range.
@@ -381,6 +588,28 @@ drilldowns.
 | `HTTP NotFound` returning HTML page | `RetrieveTweetsProcessor` | Instagram 404 — user no longer exists | Same as above: enable `FailingTwitterUserCleanUpThreshold` |
 | Proxy `502` from `geo.iproyal.com` | `RetrieveTweetsProcessor` | Outbound proxy is intermittently failing | Check proxy health; consider increasing proxy pool or failover |
 
+### DB error correlation
+
+Cross-reference trace errors with the `fetchingerrorcount` column in
+`twitter_users` to distinguish persistent vs transient failures:
+
+```sql
+-- Accounts stuck in error loops (candidates for cleanup)
+SELECT acct, fetchingerrorcount, lastsync, now() - lastsync AS staleness
+FROM twitter_users
+WHERE fetchingerrorcount >= 5
+ORDER BY fetchingerrorcount DESC LIMIT 20;
+
+-- Compare against FailingTwitterUserCleanUpThreshold:
+-- If threshold is set (e.g. 5), accounts above it should have been cleaned.
+-- If they persist, the cleanup logic may not be running.
+```
+
+When an account appears in trace errors **and** has `fetchingerrorcount > 5` in
+the DB, recommend it for cleanup via `FailingTwitterUserCleanUpThreshold`.
+When an account appears in traces but has `fetchingerrorcount = 0`, treat it as a
+recent/transient issue and monitor rather than clean up.
+
 ### Silent errors (not visible as span errors)
 
 `Graphql2025.GetTimelineAsync` (`src/BirdsiteLive.Twitter/Strategies/Graphql2025.cs:74-78`)
@@ -438,6 +667,55 @@ it may indicate upstream API slowness, proxy latency, or token exhaustion.
 to boost their crawl priority. If VIPs are consistently slower than non-VIPs,
 it may mean they are active high-post accounts creating more parsing work.
 
+### DB coverage ground truth
+
+Tempo span rates approximate throughput but cannot show accounts that are
+**never reached** by the crawl. Use the DB to find coverage gaps:
+
+```sql
+-- Crawl freshness: what percentage of accounts were synced recently?
+SELECT 'twitter' AS service,
+  count(*) AS total,
+  round(100.0 * count(*) FILTER (WHERE lastsync > now() - interval '1 day') / count(*), 1) AS pct_1d,
+  round(100.0 * count(*) FILTER (WHERE lastsync > now() - interval '7 days') / count(*), 1) AS pct_7d
+FROM twitter_users
+UNION ALL
+SELECT 'instagram', count(*),
+  round(100.0 * count(*) FILTER (WHERE lastsync > now() - interval '1 day') / count(*), 1),
+  round(100.0 * count(*) FILTER (WHERE lastsync > now() - interval '7 days') / count(*), 1)
+FROM instagram_users;
+
+-- Stalest accounts that people actually follow (coverage gap with demand)
+SELECT t.acct, t.lastsync, now() - t.lastsync AS staleness,
+  count(f.id) AS follower_count
+FROM twitter_users t
+JOIN followers f ON t.id = ANY(f.followings)
+WHERE t.lastsync < now() - interval '7 days'
+GROUP BY t.id, t.acct, t.lastsync
+ORDER BY follower_count DESC LIMIT 15;
+
+-- VIP accounts from DB (r.town followers)
+SELECT t.acct, t.lastsync, now() - t.lastsync AS staleness,
+  t.fetchingerrorcount
+FROM twitter_users t
+WHERE t.id IN (
+  SELECT unnest(followings) FROM followers WHERE host = 'r.town'
+)
+ORDER BY t.lastsync ASC LIMIT 15;
+
+-- Orphan users: accounts nobody follows (candidates for deprioritization)
+SELECT count(*) AS orphan_count
+FROM twitter_users t
+WHERE NOT EXISTS (
+  SELECT 1 FROM followers f WHERE t.id = ANY(f.followings)
+);
+```
+
+When DB freshness shows a service has many stale accounts but Tempo throughput
+looks healthy, the crawl may be cycling through the same active accounts. This
+is a scheduling fairness issue — recommend tuning the scheduler SQL (Section C2)
+to improve long-tail coverage.
+
 ---
 
 ## Section C — Settings, scheduler, and strategy tuning
@@ -476,11 +754,22 @@ accounts get crawled next.
 
 ### C3. Strategy policy + endpoint quality settings (DB-backed)
 
-| Policy key | Used by | Why it matters | Recommended checks |
+These settings are stored in the `settings` table and can be read directly via
+the PostgreSQL MCP. **Always read current values before making recommendations.**
+
+```sql
+-- Read current strategy policies
+SELECT setting_key, jsonb_pretty(setting_value) AS value
+FROM settings WHERE setting_key IN ('nitter', 'ig_crawling');
+```
+
+Known policy structure:
+
+| Policy key | Known JSONB fields | Used by | Why it matters |
 |---|---|---|---|
-| `nitter` | `TwitterTweetsService`, `Nitter` | Controls thresholds, endpoint pool, and post-Nitter pacing | Compare success per endpoint with `dotmakeup_nitter_called_count` by `source,success`; remove low-quality endpoints |
-| `ig_crawling` (`WebSidecars`) | Instagram `Sidecar.GetWebSidecar` | Controls sidecar endpoint rotation for Instagram | Track `dotmakeup_api_called_count{sidecar!=""}` by `domain,status`; demote endpoints with persistent 5xx |
-| `twitteraccounts` | `TwitterAuthenticationInitializer` | Affects credential/token refresh behaviour and fallback quality | Monitor auth/throttle errors and token refresh churn; rotate/replenish account pool |
+| `nitter` | `endpoints` (array), `lowtrustendpoints` (array), `postnitterdelay` (int ms), `followersThreshold` / `followersThreshold0` / `followersThreshold2` / `followersThreshold3` (int), `twitterFollowersThreshold` (int) | `TwitterTweetsService`, `Nitter` | Controls endpoint pool, pacing, and follower-count thresholds for strategy selection. Compare per-endpoint success in traces; remove endpoints with persistent failures. |
+| `ig_crawling` | `WebSidecars` (array of `host:port`), `WebSidecars2` (array), `non_vip_threshold` (int) | Instagram `Sidecar.GetWebSidecar` | Controls sidecar endpoint rotation. Track sidecar span success rates; demote endpoints with persistent 5xx. `non_vip_threshold` controls how aggressively non-VIP accounts are crawled. |
+| `twitteraccounts` | (not readable — table `twitter_crawling_users` is inaccessible) | `TwitterAuthenticationInitializer` | Affects credential/token refresh behaviour and fallback quality. Monitor auth/throttle errors and token refresh churn via Tempo; recommend rotate/replenish when churn is high. |
 
 ### C4. Evidence queries (used by Step 2D)
 
@@ -505,8 +794,9 @@ sum by (source, success) (increase(dotmakeup_nitter_called_count[72h]))
 sum by (domain, status) (increase(dotmakeup_api_called_count{sidecar!=""}[72h]))
 ```
 
-When giving recommendations, combine trace symptoms (errors/latency) with these
-policy metrics so advice is strategy-specific, not only global env-var changes.
+When giving recommendations, combine trace symptoms (errors/latency) with DB
+policy values and (when available) Mimir metrics so advice is strategy-specific,
+not only global env-var changes.
 
 ---
 
@@ -581,9 +871,10 @@ When you discover something not yet documented:
 Things worth adding:
 - A new error message seen in traces not listed in Section A
 - A TraceQL query that proved useful during investigation
+- A useful DB query pattern discovered during investigation
 - A setting interaction or edge case discovered
 - A code path found to be misbehaving in a non-obvious way
-- Any correlation discovered between two signals (e.g. "high jitter correlates with lower error rate")
+- Any correlation discovered between two signals (e.g. "high jitter correlates with lower error rate", or "DB staleness contradicts trace throughput")
 - A tracing gap that has since been implemented (move it to a "Fixed" note)
 
 ### Removing stale content
