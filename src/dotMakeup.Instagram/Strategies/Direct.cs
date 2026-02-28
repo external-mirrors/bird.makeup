@@ -59,7 +59,10 @@ public class Direct : IUserExtractor
         if (response.StatusCode != HttpStatusCode.OK)
         {
             var body = await response.Content.ReadAsStringAsync();
-            activity?.SetStatus(ActivityStatusCode.Error, $"HTTP {response.StatusCode}: {body}");
+            var normalizedBody = string.IsNullOrWhiteSpace(body) ? "empty response" : body.Replace('\n', ' ').Replace('\r', ' ').Trim();
+            var bodyPreview = normalizedBody.Length > 240 ? normalizedBody.Substring(0, 240) + "..." : normalizedBody;
+            activity?.SetTag("error.type", "HttpError");
+            activity?.SetStatus(ActivityStatusCode.Error, $"HTTP {(int)response.StatusCode} {response.StatusCode}: {bodyPreview}");
             throw new RateLimitExceededException();
         }
         response.EnsureSuccessStatusCode();

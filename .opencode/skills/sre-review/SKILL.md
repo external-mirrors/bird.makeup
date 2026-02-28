@@ -108,22 +108,25 @@ Key files for this skill:
 ## Interaction rule
 
 When this skill asks the user a question, always use the OpenCode native
-`question` tool instead of plain-text prompts. This applies to all prompts,
-including the Step 2 "What would you like to dig into?" menu and Section D
-"Would you like me to implement this now?" confirmations.
+`question` tool instead of plain-text prompts.
+- Proposal approvals must be asked as explicit yes/no choices.
+- This applies to all prompts, including the ranked top-5 proposal questions
+  and any follow-up implementation confirmations.
 
-## Useful outputs
+## Proposal types
 
-In addition to trace/log/metric analysis and code fixes, suggesting Grafana
-dashboard changes is a useful output for this skill.
+After analysis, turn findings into concrete proposals. Useful proposal types
+include:
+- Error remediation and reliability fixes
+- Coverage/freshness and throughput improvements
+- Settings/scheduler/strategy tuning
+- Tracing/logging/metrics instrumentation improvements
+- Grafana dashboard/query/panel improvements
+- Code-level fixes for identified root causes
 
-Good examples:
-- New or updated panels that improve coverage/freshness visibility
-- Strategy success/error views using Tempo/Loki/Mimir evidence
-- Query and panel-title rewrites that make actionable signals clearer
-
-When suggesting dashboard changes, prefer low-cardinality dimensions and align
-recommendations with the coverage-first priority.
+When building proposals, prioritize expected coverage and freshness impact
+first, then reliability gains, then latency improvements tied to coverage.
+For dashboard/metrics suggestions, prefer low-cardinality dimensions.
 
 ---
 
@@ -226,12 +229,41 @@ Start every session with a short per-instance health block (3 lines minimum):
 - `kilogram` (`kilo` in labels): status, dominant failure mode (if any), and latency note
 - `hacker`: status, dominant failure mode (if any), and latency note
 
-Then continue with the cross-instance summary and guided question menu.
+Then continue with the cross-instance summary and ranked proposal shortlist.
 
-## Step 2 — Auto-bootstrap (run silently before responding)
+## Step 2 — Full parallel exploration (run silently before responding)
 
-Run all four of these TraceQL queries in parallel before presenting anything to
-the user. Use them to build the opening summary.
+Before asking the user any question, run all analysis packs in parallel and use
+their outputs to build proposals.
+
+For context-window efficiency, prefer using subagents for parallel packs so the
+main agent only keeps condensed findings and proposal candidates.
+
+### 2.0 Execution model (subagents preferred)
+
+When available, use the OpenCode `Task` tool to run packs 2A-2E concurrently.
+
+- Recommended mapping:
+  - `general` subagent: 2A bootstrap, 2B error pack, 2C coverage pack
+  - `general` subagent: 2D settings/strategy evidence and Loki/Mimir preflight
+  - `explore` subagent: 2E tracing-gap code audit
+- Keep each subagent prompt tightly scoped to its pack, lookback window, and
+  required outputs only.
+- Require each subagent to return a compact payload:
+  - pack id (`2A`/`2B`/...)
+  - up to 5 key findings
+  - "interesting findings" to bubble up to the main conversation
+    (unexpected regressions, cross-signal contradictions, or high-impact wins)
+  - proposal candidates with: title, expected coverage/freshness impact,
+    supporting evidence, and implementation effort
+- Merge only those compact payloads into the parent context; do not paste large
+  raw query/result dumps unless needed for a specific follow-up.
+- If subagents are unavailable, run equivalent direct tool calls in parallel.
+
+### 2A. Bootstrap pack (Tempo)
+
+Run all four of these TraceQL queries in parallel. Use them for opening health
+context and proposal ranking.
 
 If the metric queries (`rate`, `histogram_over_time`) fail due time-range limits,
 rerun those in smaller windows (or a recent-window fallback) and keep the
@@ -251,19 +283,44 @@ rerun those in smaller windows (or a recent-window fallback) and keep the
 { status = error } | select(span:name, statusMessage, span.user.acct, span:duration)
 ```
 
-After running these, present a 3-5 line summary of current health, then ask:
+### 2B. Error pack (Section A inputs)
 
-> "What would you like to dig into?
-> A. Error breakdown & affected accounts
-> B. Coverage & throughput analysis (latency only where it affects coverage)
-> C. Settings tuning recommendations
-> D. Tracing gaps (I can implement fixes)
-> Or describe what you're seeing / worried about."
+Run the Section A query set in parallel to precompute error proposals, then add
+the silent-failure detector:
+
+```
+{ span:name = "RetrieveTweetsProcessor" && span.posts.count = 0 } | rate()
+```
+
+Reuse this pack's outputs in Section A by default; rerun only when narrowing
+filters/time range.
+
+### 2C. Coverage/throughput pack (Section B inputs)
+
+Run the Section B query set in parallel to precompute coverage/freshness
+proposals.
+
+Reuse this pack's outputs in Section B by default; rerun only when narrowing
+filters/time range.
+
+### 2D. Settings/strategy tuning pack (Section C inputs)
+
+Run Section C4 evidence queries in parallel to precompute tuning proposals.
+
+Reuse this pack's outputs in Section C by default; rerun only when narrowing
+filters/time range.
+
+### 2E. Tracing-gap audit pack (Section D inputs)
+
+Re-check all known gaps against current code and current signals during the same
+parallel exploration pass. Convert each still-open gap into a proposal candidate
+with problem, exact fix, and expected impact.
 
 ### Optional preflight — Loki/Mimir access (when env vars are present)
 
 If `GRAFANA_TOKEN`, `LOKI_URL`, `LOKI_USER`, `MIMIR_URL`, and `MIMIR_USER` are set,
-run these smoke tests (via Bash) and include pass/fail in your opening context:
+run these smoke tests (via Bash) during Step 2 and include pass/fail in your
+opening context:
 
 ```bash
 # Loki labels endpoint
@@ -277,13 +334,33 @@ curl -sS -G -u "$MIMIR_USER:$GRAFANA_TOKEN" "$MIMIR_URL/api/v1/query" \
   --data-urlencode "query=up"
 ```
 
-If available, use Loki/Mimir evidence to support Section A-C conclusions.
+If available, use Loki/Mimir evidence to support Section A-C conclusions and
+proposal ranking.
+
+### 2F. Proposal synthesis and yes/no flow
+
+After all parallel packs complete:
+
+1. Present a concise 3-5 line cross-instance summary.
+2. Present interesting findings bubbled up from subtask outputs before asking
+   any proposal question (no hard cap; prioritize highest-impact first).
+3. Build one combined proposal list from all packs.
+4. Rank proposals by (a) coverage/freshness impact, (b) reliability/risk
+   reduction, then (c) latency impact only when it improves coverage.
+5. Keep only the top 5 proposals.
+6. Ask each of the 5 proposals as its own yes/no question using the
+   OpenCode native `question` tool.
+7. Keep parent-context retention minimal by carrying forward only final top-5
+   proposals plus supporting evidence snippets.
 
 ---
 
 ## Section A — Error analysis
 
 ### Queries to run
+
+These queries are executed during Step 2B by default; rerun only for focused
+drilldowns.
 
 ```
 # Top errors by message
@@ -329,6 +406,9 @@ Coverage is the primary objective. Use latency analysis only when it helps
 explain coverage loss (for example, high timeout rates or very long retries).
 
 ### Queries to run
+
+These queries are executed during Step 2C by default; rerun only for focused
+drilldowns.
 
 ```
 # p95 duration by operation
@@ -402,6 +482,29 @@ accounts get crawled next.
 | `ig_crawling` (`WebSidecars`) | Instagram `Sidecar.GetWebSidecar` | Controls sidecar endpoint rotation for Instagram | Track `dotmakeup_api_called_count{sidecar!=""}` by `domain,status`; demote endpoints with persistent 5xx |
 | `twitteraccounts` | `TwitterAuthenticationInitializer` | Affects credential/token refresh behaviour and fallback quality | Monitor auth/throttle errors and token refresh churn; rotate/replenish account pool |
 
+### C4. Evidence queries (used by Step 2D)
+
+These queries are executed during Step 2D by default; rerun only for focused
+drilldowns.
+
+```
+# Extractor status split (Twitter)
+{ resource.service.instance.id =~ "dotmakeup-bird-.*" && (span:name = "Graphql2025.GetUserAsync" || span:name = "Graphql2025.GetTimelineAsync" || span:name = "Sidecar.GetTimelineAsync") } | rate() by (span:name, status)
+
+# Extractor status split (Instagram)
+{ resource.service.instance.id =~ "dotmakeup-kilo-.*" && (span:name = "Direct.GetUserAsync" || span:name = "Sidecar.GetUserAsync" || span:name = "Sidecar.GetPostAsync") } | rate() by (span:name, status)
+```
+
+When Mimir is available, also run:
+
+```promql
+sum by (instance) (rate(dotmakeup_api_called_count[15m]))
+sum by (instance, error_type, strategy) (increase(dotmakeup_crawl_errors_total[72h]))
+sum by (instance, strategy) (increase(dotmakeup_token_refresh_total[72h]))
+sum by (source, success) (increase(dotmakeup_nitter_called_count[72h]))
+sum by (domain, status) (increase(dotmakeup_api_called_count{sidecar!=""}[72h]))
+```
+
 When giving recommendations, combine trace symptoms (errors/latency) with these
 policy metrics so advice is strategy-specific, not only global env-var changes.
 
@@ -418,8 +521,10 @@ Do not treat this section as a static backlog. At the start of each investigatio
    "Open tracing gaps" entry (problem + exact fix), instead of keeping a long
    duplicate list here.
 
-When presenting an open gap to the user, describe the problem and exact fix, then
-ask via the OpenCode native `question` tool whether to implement it now.
+When an open gap is found, describe the problem and exact fix, then convert it
+into a proposal candidate. Rank it with all other proposals from Step 2; if it
+lands in the top 5, ask it as its own yes/no question via the OpenCode native
+`question` tool.
 
 Current open gaps are tracked in `## Learned Notes`.
 
@@ -524,11 +629,12 @@ Treat `## Learned Notes` as the session work log and keep at most 5 entries.
 
 ---
 
-### 2026-02-23 — Open tracing gap
+### 2026-02-28 — Fixed tracing gap
 
-- `Graphql2025` token refresh events are still untraced. Suggested fix: add
-  `dotmakeup_token_refresh_total` counter and/or `token.refreshed=true` span tag
-  when `RefreshClient()` runs.
+- `Graphql2025` token refresh instrumentation is now implemented via
+  `dotmakeup_token_refresh_total` in both `GetUserAsync` and `GetTimelineAsync`.
+- Verified in telemetry: `sum by (instance, strategy) (increase(dotmakeup_token_refresh_total[72h]))`
+  returns non-zero values on bird instances.
 
 ---
 

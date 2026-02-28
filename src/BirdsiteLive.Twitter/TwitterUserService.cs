@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net;
@@ -40,7 +41,9 @@ namespace BirdsiteLive.Twitter
         private readonly Graphql2025 _tweetFromGraphql2025;
         private readonly Sidecar _tweetFromSidecar;
         private readonly Nitter _tweetFromNitter;
-        private readonly IUserExtractor[] _userExtractors;
+        private readonly (string Name, IUserExtractor Extractor)[] _userExtractors;
+        private readonly ConcurrentDictionary<string, DateTime> _notFoundCooldownUntil = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly TimeSpan NotFoundCooldown = TimeSpan.FromHours(6);
 
         #region Ctor
         public TwitterUserService(ITwitterAuthenticationInitializer twitterAuthenticationInitializer, ITwitterUserDal twitterUserDal, InstanceSettings instanceSettings, ISettingsDal settingsDal, IHttpClientFactory httpClientFactory, ILogger<TwitterService> logger)
@@ -56,7 +59,11 @@ namespace BirdsiteLive.Twitter
             _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
             _tweetFromNitter = new Nitter(_tweetFromGraphql2025, settingsDal, _twitterUserDal, logger);
             _tweetFromSidecar = new Sidecar(_twitterUserDal, null, httpClientFactory, instanceSettings, logger);
-            _userExtractors = [_tweetFromGraphql2024, _tweetFromGraphql2025];
+            _userExtractors =
+            [
+                ("Graphql2024", _tweetFromGraphql2024),
+                ("Graphql2025", _tweetFromGraphql2025),
+            ];
         }
         #endregion
 
@@ -87,24 +94,51 @@ namespace BirdsiteLive.Twitter
         }
         public async Task<TwitterUser> GetUserAsync(string username)
         {
-            var rnd = new Random();
-            var u = _userExtractors[rnd.Next(_userExtractors.Length)];
+            var canonicalUsername = username.Trim().ToLowerInvariant();
+            if (IsNotFoundInCooldown(canonicalUsername))
+            {
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_cached_not_found")
+                    , new KeyValuePair<string, object>("result", "4xx_cached") );
+                throw new UserNotFoundException();
+            }
+
+            var strategy = _userExtractors[Random.Shared.Next(_userExtractors.Length)];
             try
             {
-                var user = await u.GetUserAsync(username);
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + u.GetType().Name)
+                var user = await strategy.Extractor.GetUserAsync(canonicalUsername);
+                if (user is null)
+                    throw new InvalidOperationException($"{strategy.Name} returned null user");
+
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + strategy.Name)
                 , new KeyValuePair<string, object>("result", "2xx") );
+
+                _notFoundCooldownUntil.TryRemove(canonicalUsername, out _);
                 return user;
+            }
+            catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+            {
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + strategy.Name)
+                    , new KeyValuePair<string, object>("result", "4xx") );
+                _notFoundCooldownUntil[canonicalUsername] = DateTime.UtcNow.Add(NotFoundCooldown);
+                throw new UserNotFoundException();
             }
             catch (System.Collections.Generic.KeyNotFoundException)
             {
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + u.GetType().Name)
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + strategy.Name)
                 , new KeyValuePair<string, object>("result", "4xx") );
+                _notFoundCooldownUntil[canonicalUsername] = DateTime.UtcNow.Add(NotFoundCooldown);
+                throw new UserNotFoundException();
+            }
+            catch (UserNotFoundException)
+            {
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + strategy.Name)
+                    , new KeyValuePair<string, object>("result", "4xx") );
+                _notFoundCooldownUntil[canonicalUsername] = DateTime.UtcNow.Add(NotFoundCooldown);
                 throw new UserNotFoundException();
             }
             catch (Exception e)
             {
-                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + u.GetType().Name)
+                _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_account_" + strategy.Name)
                 , new KeyValuePair<string, object>("result", "5xx") );
                 _logger.LogError(e, "Error retrieving user {Username}", username);
                 throw;
@@ -137,6 +171,18 @@ namespace BirdsiteLive.Twitter
 
         public bool IsUserApiRateLimited()
         {
+            return false;
+        }
+
+        private bool IsNotFoundInCooldown(string username)
+        {
+            if (!_notFoundCooldownUntil.TryGetValue(username, out var cooldownUntil))
+                return false;
+
+            if (cooldownUntil > DateTime.UtcNow)
+                return true;
+
+            _notFoundCooldownUntil.TryRemove(username, out _);
             return false;
         }
     }

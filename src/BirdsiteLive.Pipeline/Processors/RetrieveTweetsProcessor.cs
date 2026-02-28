@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Pipeline.Contracts;
@@ -22,6 +23,8 @@ namespace BirdsiteLive.Pipeline.Processors
         private readonly IStatisticsHandler _statisticsHandler;
         private readonly InstanceSettings _settings;
         private static readonly ActivitySource ActivitySource = new("DotMakeup");
+        private static readonly Meter Meter = new("DotMakeup", "1.0.0");
+        private static readonly Counter<int> CrawlErrorsCounter = Meter.CreateCounter<int>("dotmakeup_crawl_errors_total");
 
         #region Ctor
         public RetrieveTweetsProcessor(ISocialMediaService socialMediaService, IStatisticsHandler statisticsHandler, InstanceSettings settings, ILogger<RetrieveTweetsProcessor> logger)
@@ -65,6 +68,9 @@ namespace BirdsiteLive.Pipeline.Processors
                     try 
                     {
                         var tweets = await _socialMediaService.GetNewPosts(user);
+                        if (tweets is null)
+                            throw new InvalidOperationException("GetNewPosts returned null");
+
                         activity?.SetTag("posts.count", tweets.Length);
                         _logger.LogInformation(requestIndex + "/" + syncTwitterUsers.Count() + " Got " + tweets.Length + " posts from user " + user.Acct + " " );
                         if (tweets.Length > 0)
@@ -81,6 +87,11 @@ namespace BirdsiteLive.Pipeline.Processors
                     {
                         activity?.SetTag("error.type", e.GetType().Name);
                         activity?.SetStatus(ActivityStatusCode.Error, e.Message);
+                        CrawlErrorsCounter.Add(1,
+                            new KeyValuePair<string, object>("instance", _settings.MachineName),
+                            new KeyValuePair<string, object>("strategy", _socialMediaService.GetType().Name),
+                            new KeyValuePair<string, object>("error_type", e.GetType().Name)
+                        );
                         await Task.Delay(_settings.SocialNetworkRequestJitter);
                         _logger.LogError(e.Message);
                     }
@@ -88,6 +99,11 @@ namespace BirdsiteLive.Pipeline.Processors
                     {
                         activity?.SetTag("error.type", e.GetType().Name);
                         activity?.SetStatus(ActivityStatusCode.Error, e.Message);
+                        CrawlErrorsCounter.Add(1,
+                            new KeyValuePair<string, object>("instance", _settings.MachineName),
+                            new KeyValuePair<string, object>("strategy", _socialMediaService.GetType().Name),
+                            new KeyValuePair<string, object>("error_type", e.GetType().Name)
+                        );
                         _logger.LogError(e.Message);
                     }
                 });

@@ -71,6 +71,8 @@ spec:
               value: "1200"
             - name: Instance__ParallelTwitterRequests
               value: "1"
+            - name: Instance__FailingTwitterUserCleanUpThreshold
+              value: "5"
             - name: Instance__ParallelFediversePosts
               value: "10"
             - name: Instance__UserCacheCapacity

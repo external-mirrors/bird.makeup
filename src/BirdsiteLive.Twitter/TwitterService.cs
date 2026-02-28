@@ -1,8 +1,11 @@
-﻿using System;
+using System;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
@@ -20,6 +23,7 @@ namespace BirdsiteLive.Twitter
         private readonly ITwitterUserService _twitterUserService;
         private readonly ITwitterUserDal _userDal;
         private readonly ISettingsDal _settings;
+        private readonly InstanceSettings _instanceSettings;
         private readonly SocialNetworkCache _socialNetworkCache;
 
         #region Ctor
@@ -30,6 +34,7 @@ namespace BirdsiteLive.Twitter
             _userDal = userDal;
             UserDal = userDal;
             _settings = settingsDal;
+            _instanceSettings = settings;
             _socialNetworkCache = new SocialNetworkCache(settings);
         }
         #endregion
@@ -57,9 +62,21 @@ namespace BirdsiteLive.Twitter
                 else
                     tweets = await _twitterTweetsService.GetTimelineAsync(user, user.LastTweetPostedId);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                await _userDal.UpdateTwitterUserAsync(user.Id, user.LastTweetPostedId, user.FetchingErrorCount++, user.LastSync);
+                var nextErrorCount = user.FetchingErrorCount + 1;
+                await _userDal.UpdateTwitterUserAsync(user.Id, user.LastTweetPostedId, nextErrorCount, user.LastSync);
+
+                var shouldCleanup = _instanceSettings.FailingTwitterUserCleanUpThreshold > 0
+                                    && nextErrorCount >= _instanceSettings.FailingTwitterUserCleanUpThreshold
+                                    && (e is UserNotFoundException
+                                        || e is HttpRequestException { StatusCode: HttpStatusCode.NotFound });
+                if (shouldCleanup)
+                {
+                    await _userDal.DeleteUserAsync(user.Id);
+                }
+
+                throw;
             }
             if (tweets.Length > 0)
             {
