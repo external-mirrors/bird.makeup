@@ -328,6 +328,22 @@ namespace BirdsiteLive.Twitter.Tests
         }
         [TestMethod]
         [DynamicData(nameof(Implementations))]
+        public async Task ThreadWithImages(StrategyHints s)
+        {
+            var tweet = await _tweetService.GetTweetAsync(2027439790107275429, s);
+            if (tweet is null)
+                Assert.Inconclusive();
+
+            Assert.AreEqual(tweet.InReplyToAccount, "edzitron");
+            Assert.AreEqual(tweet.InReplyToStatusId, 2027439787557146883);
+            Assert.AreEqual(tweet.Media.Length, 2);
+            Assert.IsTrue(tweet.IsReply);
+            Assert.IsTrue(tweet.IsThread);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
+        }
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
         public async Task SimpleThread2(StrategyHints s)
         {
             var tweet = await _tweetService.GetTweetAsync(2024378849446793643, s);
