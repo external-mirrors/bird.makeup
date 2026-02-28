@@ -76,8 +76,11 @@ namespace BirdsiteLive.Twitter.Tools
             using (var request = new HttpRequestMessage(new HttpMethod("POST"),
                        "https://api.twitter.com/oauth2/token?grant_type=client_credentials"))
             {
-                int r1 = rnd.Next(_bTokens.Length);
-                return _bTokens[r1];
+                if (_bTokens.Length > 0)
+                {
+                    int r1 = rnd.Next(_bTokens.Length);
+                    return _bTokens[r1];
+                }
 
                 int r = rnd.Next(_apiKeys.Length);
                 var (login, password) = _apiKeys[r];

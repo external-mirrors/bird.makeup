@@ -128,7 +128,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error retrieving timeline ", username);
+            _logger.LogError(e, "Error retrieving timeline for {Username}", username);
             return null;
         }
 

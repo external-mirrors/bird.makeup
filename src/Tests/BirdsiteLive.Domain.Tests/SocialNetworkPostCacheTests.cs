@@ -147,15 +147,13 @@ namespace BirdsiteLive.Domain.Tests
                 () =>
                 {
                     counter++;
-                    throw new UserNotFoundException();
-                    return Task.FromResult(user);
+                    return Task.FromException<ExtractedTweet>(new UserNotFoundException());
                 };
             var fFailed2 =
                 () =>
                 {
                     counter++;
-                    throw new HttpRequestException();
-                    return Task.FromResult(user);
+                    return Task.FromException<ExtractedTweet>(new HttpRequestException());
                 };
             var f =
                 () =>
@@ -191,8 +189,7 @@ namespace BirdsiteLive.Domain.Tests
                 () =>
                 {
                     counter++;
-                    throw new RateLimitExceededException();
-                    return Task.FromResult(user);
+                    return Task.FromException<ExtractedTweet>(new RateLimitExceededException());
                 };
             var f =
                 () =>
