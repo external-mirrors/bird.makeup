@@ -58,7 +58,7 @@ namespace BirdsiteLive.Twitter
             
             _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, null!, httpClientFactory, instanceSettings, logger);
             _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, null!, httpClientFactory, instanceSettings, logger);
-            _tweetFromNitter = new Nitter(_tweetFromGraphql2025, settingsDal, _twitterUserDal, logger);
+            _tweetFromNitter = new Nitter(_tweetFromGraphql2025, _tweetFromGraphql2025, settingsDal, _twitterUserDal, logger);
             _tweetFromSidecar = new Sidecar(_twitterUserDal, null!, httpClientFactory, instanceSettings, logger);
             _userExtractors =
             [

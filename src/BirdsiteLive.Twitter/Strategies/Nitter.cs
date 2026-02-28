@@ -23,17 +23,19 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
     private readonly ISettingsDal _settings;
     private readonly ILogger<TwitterService> _logger;
     private readonly IUserExtractor _userExtractor;
+    private readonly ITweetExtractor _trustedTweetVerifier;
     private readonly ITwitterUserDal _twitterUserDal;
     private string Useragent = "Bird.makeup ( https://git.sr.ht/~cloutier/bird.makeup ) Bot";
     static Meter _meter = new("DotMakeup", "1.0.0");
     static Counter<int> _nCalled = _meter.CreateCounter<int>("dotmakeup_nitter_called_count");
 
-    public Nitter(IUserExtractor userExtractor, ISettingsDal settingsDal, ITwitterUserDal twitterUserDal,
+    public Nitter(IUserExtractor userExtractor, ITweetExtractor trustedTweetVerifier, ISettingsDal settingsDal, ITwitterUserDal twitterUserDal,
         ILogger<TwitterService> logger)
     {
         _settings = settingsDal;
         _logger = logger;
         _userExtractor = userExtractor;
+        _trustedTweetVerifier = trustedTweetVerifier;
         _twitterUserDal = twitterUserDal;
 
         var requester = new DefaultHttpRequester();
@@ -93,7 +95,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         return document;
     }
 
-    public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long fromId, long a, bool withReplies)
+    public async Task<List<ExtractedTweet>> GetTimelineAsync(SyncUser user, long userId, long fromTweetId, bool withReplies)
     {
         (var domain, bool lowtrust) = await GetDomain();
 
@@ -118,6 +120,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         List<ExtractedTweet> tweets = new List<ExtractedTweet>();
         string pattern = @".*\/([0-9]+)(?:#m)?$";
         Regex rg = new Regex(pattern);
+        var seenStatusIds = new HashSet<long>();
 
         // Iterate timeline items directly to preserve context (e.g., replies) without refetching
         var items = document.QuerySelectorAll(".timeline-item");
@@ -129,21 +132,50 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             if (!idMatch.Success) continue;
             var match = long.Parse(idMatch.Groups[1].Value);
 
-            if (match <= fromId)
+            if (match <= fromTweetId)
+                continue;
+            if (!seenStatusIds.Add(match))
                 continue;
 
             try
             {
+                if (lowtrust)
+                {
+                    // Low-trust instances are only used as account -> status ID discovery.
+                    // Tweet payload must be fetched from a trusted extractor and author-verified.
+                    var verifiedTweet = await _trustedTweetVerifier.GetTweetAsync(match);
+                    if (verifiedTweet?.Author?.Acct == null)
+                    {
+                        _logger.LogDebug("Nitter: low-trust verification returned empty tweet for {StatusId}", match);
+                        continue;
+                    }
+                    if (verifiedTweet.IdLong != match)
+                    {
+                        _logger.LogWarning(
+                            "Nitter: low-trust endpoint {Domain} suggested status {StatusId}, but trusted extractor returned {TrustedStatusId}; skipping",
+                            domain, match, verifiedTweet.IdLong);
+                        continue;
+                    }
+
+                    if (!string.Equals(verifiedTweet.Author.Acct, user.Acct, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogWarning(
+                            "Nitter: low-trust endpoint {Domain} suggested status {StatusId} for {Username}, but verified author is {VerifiedAuthor}; skipping",
+                            domain, match, user.Acct, verifiedTweet.Author.Acct);
+                        continue;
+                    }
+
+                    tweets.Add(verifiedTweet);
+                    await Task.Delay(50);
+                    continue;
+                }
+
                 // Parse tweet from the timeline item element (keeps reply/quote context)
                 var tweet = ParseTweetFromElement(item);
                 if (tweet == null) continue;
 
                 var sameAuthor = string.Equals(tweet.Author.Acct, user.Acct, StringComparison.OrdinalIgnoreCase);
                 var isRetweetHeader = item.QuerySelector(".retweet-header") != null;
-
-                // If low trust, ensure we don't leak other authors' tweets
-                if (!sameAuthor && lowtrust)
-                    continue;
 
                 // Skip contextual thread tweets from other authors. Keep explicit retweets.
                 if (!sameAuthor && !isRetweetHeader)
