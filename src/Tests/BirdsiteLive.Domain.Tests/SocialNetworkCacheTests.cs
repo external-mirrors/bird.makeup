@@ -200,6 +200,46 @@ namespace BirdsiteLive.Domain.Tests
 
             #endregion
         }
+
+        [TestMethod]
+        public async Task TwitterUserFetch_AllExtractorsReturnNull_ReturnsNull()
+        {
+            var username = "MyUserName";
+            var counter = 0;
+            Func<Task<TwitterUser?>> fNull = () =>
+            {
+                counter++;
+                return Task.FromResult<TwitterUser?>(null);
+            };
+
+            var service = new SocialNetworkCache(_settings);
+
+            var u = await service.GetUser(username, [fNull, fNull]);
+
+            Assert.IsNull(u);
+            Assert.AreEqual(2, counter);
+        }
+
+        [TestMethod]
+        public async Task TwitterUserFetch_AllExtractorsReturnNull_CachesNull()
+        {
+            var username = "MyUserName";
+            var counter = 0;
+            Func<Task<TwitterUser?>> fNull = () =>
+            {
+                counter++;
+                return Task.FromResult<TwitterUser?>(null);
+            };
+
+            var service = new SocialNetworkCache(_settings);
+
+            var first = await service.GetUser(username, [fNull, fNull]);
+            var second = await service.GetUser(username, [fNull, fNull]);
+
+            Assert.IsNull(first);
+            Assert.IsNull(second);
+            Assert.AreEqual(2, counter);
+        }
         
         [TestMethod]
         public async Task UseCacheOnSecondCall()

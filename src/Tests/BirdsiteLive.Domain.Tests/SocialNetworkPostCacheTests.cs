@@ -213,6 +213,46 @@ namespace BirdsiteLive.Domain.Tests
 
             #endregion
         }
+
+        [TestMethod]
+        public async Task TwitterPostFetch_AllExtractorsReturnNull_ReturnsNull()
+        {
+            var id = "vsoisdc";
+            var counter = 0;
+            Func<Task<ExtractedTweet?>> fNull = () =>
+            {
+                counter++;
+                return Task.FromResult<ExtractedTweet?>(null);
+            };
+
+            var service = new SocialNetworkCache(_settings);
+
+            var post = await service.GetPost(id, [fNull, fNull]);
+
+            Assert.IsNull(post);
+            Assert.AreEqual(2, counter);
+        }
+
+        [TestMethod]
+        public async Task TwitterPostFetch_AllExtractorsReturnNull_CachesNull()
+        {
+            var id = "vsoisdc";
+            var counter = 0;
+            Func<Task<ExtractedTweet?>> fNull = () =>
+            {
+                counter++;
+                return Task.FromResult<ExtractedTweet?>(null);
+            };
+
+            var service = new SocialNetworkCache(_settings);
+
+            var first = await service.GetPost(id, [fNull, fNull]);
+            var second = await service.GetPost(id, [fNull, fNull]);
+
+            Assert.IsNull(first);
+            Assert.IsNull(second);
+            Assert.AreEqual(2, counter);
+        }
         
         [TestMethod]
         public async Task UseCacheOnSecondCall()
