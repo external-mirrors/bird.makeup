@@ -2,6 +2,6 @@
   <PropertyGroup>
     <!-- Allow building with .NET 10 preview SDK -->
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 </Project>
-

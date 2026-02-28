@@ -2,7 +2,7 @@
 {
     public class PostgresSettings
     {
-        public string ConnString { get; set; }
+        public string ConnString { get; set; } = null!;
 
         public string DbVersionTableName { get; set; } = "db_version";
         public string TwitterUserTableName { get; set; } = "twitter_users";

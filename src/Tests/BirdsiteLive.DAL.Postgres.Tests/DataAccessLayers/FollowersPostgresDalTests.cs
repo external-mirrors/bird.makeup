@@ -147,7 +147,7 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
             var actorId = $"https://{host}/{acct}";
 
             var dal = new FollowersPostgresDal(_settings);
-            await dal.CreateFollowerAsync(acct, host, inboxRoute, sharedInboxRoute, actorId, null);
+            await dal.CreateFollowerAsync(acct, host, inboxRoute, sharedInboxRoute, actorId, null!);
 
             var result = await dal.GetFollowerAsync(acct, host);
 
@@ -182,11 +182,11 @@ namespace BirdsiteLive.DAL.Postgres.Tests.DataAccessLayers
                 {23, 167L}
             };
             var inboxRoute = "/myhandle/inbox";
-            string sharedInboxRoute = null;
+            string? sharedInboxRoute = null;
             var actorId = $"https://{host}/{acct}";
 
             var dal = new FollowersPostgresDal(_settings);
-            await dal.CreateFollowerAsync(acct, host, inboxRoute, sharedInboxRoute, actorId, following);
+            await dal.CreateFollowerAsync(acct, host, inboxRoute, sharedInboxRoute!, actorId, following);
 
             var result = await dal.GetFollowerAsync(acct, host);
 

@@ -2,9 +2,9 @@
 {
     public class ModerationSettings
     {
-        public string FollowersWhiteListing { get; set; }
-        public string FollowersBlackListing { get; set; }
-        public string TwitterAccountsWhiteListing { get; set; }
-        public string TwitterAccountsBlackListing { get; set; }
+        public string FollowersWhiteListing { get; set; } = null!;
+        public string FollowersBlackListing { get; set; } = null!;
+        public string TwitterAccountsWhiteListing { get; set; } = null!;
+        public string TwitterAccountsBlackListing { get; set; } = null!;
     }
 }

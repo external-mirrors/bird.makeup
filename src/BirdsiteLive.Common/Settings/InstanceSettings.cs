@@ -6,13 +6,13 @@ namespace BirdsiteLive.Common.Settings
     public class InstanceSettings
     {
         private readonly Regex _ordinalRegex = new Regex(".*-([0-9])");
-        public string Name { get; set; }
-        public string Domain { get; set; }
-        public string AdminEmail { get; set; }
+        public string Name { get; set; } = null!;
+        public string Domain { get; set; } = null!;
+        public string AdminEmail { get; set; } = null!;
         public bool ResolveMentionsInProfiles { get; set; }
         public string ResolveMentionsInPosts { get; set; } = "all";
         public bool PublishReplies { get; set; }
-        public string SocialNetwork { get; set; }
+        public string SocialNetwork { get; set; } = null!;
 
         public int FailingTwitterUserCleanUpThreshold { get; set; }
         public int FailingFollowerCleanUpThreshold { get; set; } = -1;
@@ -42,11 +42,11 @@ namespace BirdsiteLive.Common.Settings
         public int ParallelFediversePosts { get; set; } = 10;
         public int PipelineStartupDelay { get; set; } = 15 * 60;
         public string SidecarURL { get; set; } = "http://localhost:5000";
-        public string CrawlingSidecarURL { get; set; }
-        public string ProxyURL { get; set; }
-        public string IpfsApi { get; set; }
+        public string CrawlingSidecarURL { get; set; } = null!;
+        public string ProxyURL { get; set; } = null!;
+        public string IpfsApi { get; set; } = null!;
         public string IpfsGateway { get; set; } = "ipfs.io";
-        public string ProxyUser { get; set; }
-        public string ProxyPassword { get; set; }
+        public string ProxyUser { get; set; } = null!;
+        public string ProxyPassword { get; set; } = null!;
     }
 }

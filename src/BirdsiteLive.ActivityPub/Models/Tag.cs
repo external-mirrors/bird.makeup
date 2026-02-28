@@ -3,13 +3,13 @@
 namespace BirdsiteLive.ActivityPub.Models
 {
     public class Tag {
-        public string type { get; set; } //Hashtag
-        public string href { get; set; } //https://mastodon.social/tags/app
-        public string name { get; set; } //#app
+        public string type { get; set; } = null!; //Hashtag
+        public string href { get; set; } = null!; //https://mastodon.social/tags/app
+        public string name { get; set; } = null!; //#app
         
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string rel { get; set; }
+        public string rel { get; set; } = null!;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string mediaType { get; set; }
+        public string mediaType { get; set; } = null!;
     }
 }

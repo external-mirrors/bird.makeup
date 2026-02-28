@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Linq;
 using System.Net;
@@ -46,7 +47,7 @@ namespace BirdsiteLive.Twitter
         public async Task<SocialMediaPost> GetPostAsync(string id)
         {
             if (!long.TryParse(id, out var parsedStatusId))
-                return null;
+                return null!;
             var post = await _socialNetworkCache.GetPost(id, [() => _twitterTweetsService.GetTweetAsync(parsedStatusId)]);
             return post;
         }
@@ -80,7 +81,7 @@ namespace BirdsiteLive.Twitter
             }
             if (tweets.Length > 0)
             {
-                var mostRecentTweet = tweets.MaxBy(t => t.IdLong).IdLong;
+                var mostRecentTweet = tweets!.MaxBy(t => t.IdLong).IdLong;
                 await _userDal.UpdateTwitterUserAsync(user.Id, mostRecentTweet, 0, user.LastSync);
             }
             

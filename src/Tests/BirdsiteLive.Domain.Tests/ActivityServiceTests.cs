@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System.Net.Http;
 using System.Threading.Tasks;
 using BirdsiteLive.ActivityPub;
 using BirdsiteLive.Common.Settings;
@@ -61,7 +62,7 @@ namespace BirdsiteLive.Domain.Tests
 
             var req = await service.BuildRequest(activity, "google.com", "tata", HttpMethod.Post, "awef");
             
-            Assert.AreEqual(await req.Content.ReadAsStringAsync(), json);
+            Assert.AreEqual(await req!.Content.ReadAsStringAsync(), json);
 
             #endregion
         }
@@ -85,11 +86,11 @@ namespace BirdsiteLive.Domain.Tests
             var activityRes = ApDeserializer.ProcessActivity(jsonres) as ActivityAcceptFollow;
             #region Validations
 
-            var req = service.BuildAcceptFollow(activity);
+            var req = service.BuildAcceptFollow(activity!);
             
             string s = JsonSerializer.Serialize(req);
             
-            Assert.AreEqual(req.actor, activityRes.actor);
+            Assert.AreEqual(req.actor, activityRes!.actor);
             Assert.IsNull(req.apObject.to);
 
             #endregion
@@ -129,7 +130,7 @@ namespace BirdsiteLive.Domain.Tests
 
             #region Validations
 
-            var req = service.BuildAcceptFollow(activity);
+            var req = service.BuildAcceptFollow(activity!);
             
             string s = JsonSerializer.Serialize(req);
             
@@ -180,11 +181,11 @@ namespace BirdsiteLive.Domain.Tests
             var activityRes = ApDeserializer.ProcessActivity(jsonres) as ActivityAcceptFollow;
             #region Validations
 
-            var req = service.BuildAcceptFollow(activity);
+            var req = service.BuildAcceptFollow(activity!);
             
             string s = JsonSerializer.Serialize(req);
             
-            Assert.AreEqual(req.actor, activityRes.actor);
+            Assert.AreEqual(req.actor, activityRes!.actor);
             Assert.AreEqual(req.apObject.to[0], "http://enterprise.lemmy.ml/c/main");
 
             #endregion

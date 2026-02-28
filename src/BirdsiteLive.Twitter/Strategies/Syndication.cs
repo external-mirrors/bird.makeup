@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,17 +51,17 @@ public class Syndication : ITweetExtractor
                 _logger.LogError("Error retrieving tweet {statusId}; refreshing client", statusId);
             else
                 _logger.LogWarning("Syndication returned {StatusCode} for tweet {StatusId}", httpResponse.StatusCode, statusId);
-            return null;
+            return null!;
         }
 
         var responseContent = await httpResponse.Content.ReadAsStringAsync();
         if (string.IsNullOrWhiteSpace(responseContent))
-            return null;
+            return null!;
         using var tweet = JsonDocument.Parse(responseContent);
         var root = tweet.RootElement;
 
         if (!root.TryGetProperty("text", out var textElement))
-            return null;
+            return null!;
 
         string messageContent = textElement.GetString() ?? string.Empty;
         
@@ -82,12 +83,12 @@ public class Syndication : ITweetExtractor
 
         if (!root.TryGetProperty("user", out var userNode) ||
             !userNode.TryGetProperty("screen_name", out var usernameElement))
-            return null;
+            return null!;
         
-        string username = usernameElement.GetString()?.ToLowerInvariant();
+        string? username = usernameElement.GetString()?.ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(username))
-            return null;
-        string name = null;
+            return null!;
+        string? name = null;
         if (userNode.TryGetProperty("name", out var nameElement))
         {
             name = nameElement.GetString();
@@ -96,7 +97,7 @@ public class Syndication : ITweetExtractor
         List<ExtractedMedia> Media = new();
 
         bool isReply = root.TryGetProperty("parent", out _);
-        string inReplyTo = null;
+        string? inReplyTo = null;
         long? inReplyToId = null;
         bool isThread = false;
         if (isReply)
@@ -128,7 +129,7 @@ public class Syndication : ITweetExtractor
                     if (string.IsNullOrWhiteSpace(urlTCO) || string.IsNullOrWhiteSpace(urlOriginal))
                         continue;
 
-                    messageContent = messageContent.Replace(urlTCO, urlOriginal, StringComparison.Ordinal);
+                    messageContent = messageContent!.Replace(urlTCO, urlOriginal, StringComparison.Ordinal);
                 }
             }
             
@@ -142,7 +143,7 @@ public class Syndication : ITweetExtractor
                     if (string.IsNullOrWhiteSpace(urlTCO))
                         continue;
 
-                    messageContent = messageContent.Replace(urlTCO, string.Empty, StringComparison.Ordinal);
+                    messageContent = messageContent!.Replace(urlTCO, string.Empty, StringComparison.Ordinal);
                 }
             }
         }
@@ -157,10 +158,10 @@ public class Syndication : ITweetExtractor
                     if (string.IsNullOrWhiteSpace(url))
                         continue;
                     var type = mediaElement.TryGetProperty("type", out var typeNode) ? typeNode.GetString() : null;
-                    string altText = null;
+                    string? altText = null;
                     if (mediaElement.TryGetProperty("ext_alt_text", out var altTextNode))
                         altText = altTextNode.GetString();
-                    string returnType = null;
+                    string? returnType = null;
 
                     if (type == "photo")
                     {
@@ -199,8 +200,8 @@ public class Syndication : ITweetExtractor
             }
         }
 
-        string quoteTweetId = null;
-        string quoteTweetAcct = null;
+        string? quoteTweetId = null;
+        string? quoteTweetAcct = null;
         bool quoteAccountInferredFromMessage = false;
         if (root.TryGetProperty("quoted_tweet", out var qt))
         {
@@ -211,7 +212,7 @@ public class Syndication : ITweetExtractor
                 quoteTweetAcct = quoteScreenNameNode.GetString()?.ToLowerInvariant();
         }
         if (!string.IsNullOrWhiteSpace(quoteTweetId) &&
-            TryExtractQuotedAccountFromMessage(messageContent, quoteTweetId, out var quoteAcctFromMessage))
+            TryExtractQuotedAccountFromMessage(messageContent!, quoteTweetId, out var quoteAcctFromMessage))
         {
             if (!string.Equals(quoteTweetAcct, quoteAcctFromMessage, StringComparison.OrdinalIgnoreCase))
                 quoteAccountInferredFromMessage = true;
@@ -221,13 +222,13 @@ public class Syndication : ITweetExtractor
         {
             if (!string.IsNullOrWhiteSpace(quoteTweetAcct))
             {
-                messageContent = Regex.Replace(messageContent, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
+                messageContent = Regex.Replace(messageContent!, Regex.Escape($"https://twitter.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
                 messageContent = Regex.Replace(messageContent, Regex.Escape($"https://x.com/{quoteTweetAcct}/status/{quoteTweetId}") + "$", "", RegexOptions.IgnoreCase);
             }
-            messageContent = Regex.Replace(messageContent, @"https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/" + Regex.Escape(quoteTweetId) + "$", "", RegexOptions.IgnoreCase);
+            messageContent = Regex.Replace(messageContent!, @"https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/" + Regex.Escape(quoteTweetId) + "$", "", RegexOptions.IgnoreCase);
         }
 
-        messageContent = Regex.Replace(messageContent, @" ?https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/[0-9]+/(video|photo)/[0-9]+$", "", RegexOptions.IgnoreCase);
+        messageContent = Regex.Replace(messageContent!, @" ?https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/[0-9]+/(video|photo)/[0-9]+$", "", RegexOptions.IgnoreCase);
 
         var author = new TwitterUser()
         {
@@ -243,13 +244,13 @@ public class Syndication : ITweetExtractor
             createdaAt = parsedCreatedAt;
         }
         
-        Poll poll = null;
+        Poll? poll = null;
         if (root.TryGetProperty("card", out var cardDoc))
         {
             DateTime endDate = DateTime.Now;
             Dictionary<char, string> labels = new Dictionary<char, string>();
             Dictionary<char, long> counts = new Dictionary<char, long>();
-            string type = cardDoc.TryGetProperty("name", out var typeNode) ? typeNode.GetString() : string.Empty;
+            string? type = cardDoc.TryGetProperty("name", out var typeNode) ? typeNode.GetString() : string.Empty;
             if (cardDoc.TryGetProperty("binding_values", out var bindingValues))
             {
                 foreach (JsonProperty val in bindingValues.EnumerateObject())
@@ -267,7 +268,7 @@ public class Syndication : ITweetExtractor
                             continue;
                         var entryLabel = entryLabelNode.GetString();
                         char entryNumber = key[6];
-                        labels.TryAdd(entryNumber, entryLabel);
+                        labels.TryAdd(entryNumber, entryLabel!);
                     }
                     else if (key.StartsWith("choice") && key.EndsWith("_count"))
                     {
@@ -291,7 +292,7 @@ public class Syndication : ITweetExtractor
                 };
             }
 
-            if (!type.StartsWith("poll"))
+            if (!type!.StartsWith("poll"))
                 poll = null;
         }
 
@@ -349,7 +350,7 @@ public class Syndication : ITweetExtractor
 
     private static bool TryExtractQuotedAccountFromMessage(string content, string quoteStatusId, out string quoteAccount)
     {
-        quoteAccount = null;
+        quoteAccount = null!;
         if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(quoteStatusId))
             return false;
         

@@ -5,6 +5,6 @@ namespace BirdsiteLive.ActivityPub.Models
     public class ActivityDelete : Activity
     {
         [JsonPropertyName("object")]
-        public string apObject { get; set; }
+        public string apObject { get; set; } = null!;
     }
 }

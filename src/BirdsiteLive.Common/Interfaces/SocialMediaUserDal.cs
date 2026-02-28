@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,13 +55,13 @@ public class SyncUser
                 _twitterUserId = value;
             }
         }
-        public string Acct { get; set; }
-        public string FediAcct { get; set; }
+        public string Acct { get; set; } = null!;
+        public string FediAcct { get; set; } = null!;
 
         public long LastTweetPostedId { get; set; }
 
         public DateTime LastSync { get; set; }
-        public WikidataEntry Wikidata { get; set; }
+        public WikidataEntry Wikidata { get; set; } = null!;
 
         public DateTime LastPost
         {
@@ -90,7 +91,7 @@ public class SyncUser
                 if (!hooks.TryGetProperty("preDescription", out preDesc))
                     return "";
 
-                return preDesc.GetString();
+                return preDesc.GetString()!;
             }
         }
         public string PostDescriptionHook 
@@ -105,7 +106,7 @@ public class SyncUser
                 if(!hooks.TryGetProperty("postDescription", out preDesc))
                     return "";
 
-                return preDesc.GetString();
+                return preDesc.GetString()!;
             }
         }
         public (string, string)[] AdditionnalAttachments 
@@ -140,7 +141,7 @@ public class SyncUser
                 if(!hooks.TryGetProperty("disclaimerReplacement", out preDesc))
                     return "";
 
-                return preDesc.GetString();
+                return preDesc.GetString()!;
             }
         }
 }

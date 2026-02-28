@@ -16,7 +16,7 @@ namespace BirdsiteLive.Domain.Tools
 
         public static string GetSharedInbox(SignatureValidationResult result)
         {
-            return result.User?.endpoints?.sharedInbox;
+            return result.User?.endpoints?.sharedInbox!;
         }
     }
 }

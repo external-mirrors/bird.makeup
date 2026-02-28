@@ -16,7 +16,7 @@ namespace BirdsiteLive.Services
         private readonly IFollowersDal _followersDal;
 
         private readonly ISocialMediaService _socialMediaService;
-        private static Task<CachedStatistics> _cachedStatistics;
+        private static Task<CachedStatistics> _cachedStatistics = null!;
         private readonly InstanceSettings _instanceSettings;
 
         #region Ctor

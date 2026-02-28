@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,7 +72,7 @@ public class CryptoServiceTest
         };
         var req = await _activityPubService.BuildRequest(activity, "domain.name", actor.id, HttpMethod.Post, "/inbox");
         
-        var res = CryptoService.ValidateSignature(actor, req.Headers.GetValues("Signature").First(), "post", "/inbox", "",req.Headers.ToDictionary(a => a.Key.ToLower(), a => a.Value.First()), await req.Content.ReadAsStringAsync());
+        var res = CryptoService.ValidateSignature(actor, req.Headers.GetValues("Signature").First(), "post", "/inbox", "",req.Headers.ToDictionary(a => a.Key.ToLower(), a => a.Value.First()), await req!.Content.ReadAsStringAsync());
         Assert.IsTrue(res.SignatureIsValidated);
     }
 
@@ -177,7 +178,7 @@ public class CryptoServiceTest
             { "content-type", "application/activity+json"}
         };
 
-        var res = CryptoService.ValidateSignature(remote, rawSig, method, path, queryString, headers, body);
+        var res = CryptoService.ValidateSignature(remote!, rawSig, method, path, queryString, headers, body);
         Assert.IsTrue(res.SignatureIsValidated);
     }
     [TestMethod]
@@ -215,7 +216,7 @@ public class CryptoServiceTest
             { "content-type", "application/activity+json"}
         };
 
-        var res = CryptoService.ValidateSignature(remote, rawSig, method, path, queryString, headers, body);
+        var res = CryptoService.ValidateSignature(remote!, rawSig, method, path, queryString, headers, body);
         Assert.IsTrue(res.SignatureIsValidated);
     }
     [TestMethod]
@@ -253,7 +254,7 @@ public class CryptoServiceTest
             { "content-type", "application/activity+json"}
         };
 
-        var res = CryptoService.ValidateSignature(remote, rawSig, method, path, queryString, headers, body);
+        var res = CryptoService.ValidateSignature(remote!, rawSig, method, path, queryString, headers, body);
         Assert.IsFalse(res.SignatureIsValidated);
     }
     
@@ -278,7 +279,7 @@ public class CryptoServiceTest
             { "content-type", "application/activity+json"}
         };
 
-        var res = CryptoService.ValidateSignature(remote, rawSig, method, path, queryString, headers, body);
+        var res = CryptoService.ValidateSignature(remote!, rawSig, method, path, queryString, headers, body);
         Assert.IsFalse(res.SignatureIsValidated);
     }
 }

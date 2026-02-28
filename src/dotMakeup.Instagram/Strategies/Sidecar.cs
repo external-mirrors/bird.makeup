@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
@@ -120,7 +121,7 @@ public class Sidecar : IUserExtractor, IPostExtractor
         }
 
         var c = await httpResponse.Content.ReadAsStringAsync();
-        InstagramUser user = JsonSerializer.Deserialize<InstagramUser>(c, _serializerOptions);
+        InstagramUser? user = JsonSerializer.Deserialize<InstagramUser>(c, _serializerOptions);
 
         if (user == null)
         {
@@ -148,7 +149,7 @@ public class Sidecar : IUserExtractor, IPostExtractor
         List<string> sidecarsURL = new List<string>();
         foreach (var s in sidecars.EnumerateArray())
         {
-            sidecarsURL.Add(s.GetString());
+            sidecarsURL.Add(s.GetString()!);
         }
         var day1 = (int)DateTime.Now.DayOfWeek;
 

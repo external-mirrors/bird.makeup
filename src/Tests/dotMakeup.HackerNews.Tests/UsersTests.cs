@@ -35,7 +35,7 @@ public class UsersTests
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
-        var userService = new HnService(httpFactory.Object, null, _settings);
+        var userService = new HnService(httpFactory.Object, null!, _settings);
         var user = await userService.GetUserAsync("marcan_42");
         
         Assert.AreEqual(user.Description, "");
@@ -45,7 +45,7 @@ public class UsersTests
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
-        var userService = new HnService(httpFactory.Object, null, _settings);
+        var userService = new HnService(httpFactory.Object, null!, _settings);
         var user = await userService.GetUserAsync("gargron");
         
         Assert.AreEqual(user.Description, "");
@@ -55,7 +55,7 @@ public class UsersTests
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
-        var userService = new HnService(httpFactory.Object, null, _settings);
+        var userService = new HnService(httpFactory.Object, null!, _settings);
         var user = await userService.GetUserAsync("dhouston");
         
         Assert.AreEqual(user.Description, "Founder/CEO of Dropbox (http://www.dropbox.com ; yc summer '07)");
@@ -67,7 +67,7 @@ public class UsersTests
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
-        var userService = new HnService(httpFactory.Object, null, _settings);
+        var userService = new HnService(httpFactory.Object, null!, _settings);
         
         await userService.GetUserAsync("sdhciuh38dhuh");
     }

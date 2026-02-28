@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -142,13 +143,13 @@ namespace BirdsiteLive.Controllers
         }
 
         [Route("/.well-known/webfinger")]
-        public async Task<IActionResult> Webfinger(string resource = null)
+        public async Task<IActionResult> Webfinger(string resource = null!)
         {
             if (string.IsNullOrWhiteSpace(resource)) 
                 return BadRequest();
 
-            string name = null;
-            string domain = null;
+            string? name = null;
+            string? domain = null;
 
             if (resource.StartsWith("acct:"))
             {

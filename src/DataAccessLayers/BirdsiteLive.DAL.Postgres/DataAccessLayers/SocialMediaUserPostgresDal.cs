@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +39,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
 
         public async Task<SyncUser> GetUserAsync(int id)
         {
-            return await GetUserAsync(null, id);
+            return await GetUserAsync(null!, id);
         }
         public async Task<SyncUser> GetUserAsync(string acct)
         {
@@ -89,12 +90,12 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             };
             var reader = await command.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
-                return null;
+                return null!;
             
             var extradata = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement;
-            WikidataEntry wikidata = null;
+            WikidataEntry? wikidata = null;
             if ((reader["wikidata"] as string) is not null)
-                wikidata = JsonSerializer.Deserialize<WikidataEntry>(reader["wikidata"] as string);
+                wikidata = JsonSerializer.Deserialize<WikidataEntry>((reader["wikidata"] as string)!);
             return new SyncUser
             {
                 Id = reader["id"] as int? ?? default,
@@ -110,9 +111,9 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
         {
             var postDoc = await GetPostCacheAsync(id);
             if (postDoc is null)
-                return null;
+                return null!;
             var post = JsonSerializer.Deserialize<T>(postDoc);
-            return post;
+            return post!;
         }
         public async Task<string> GetPostCacheAsync(string post)
         {
@@ -128,19 +129,19 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             };
             var reader = await command.ExecuteReaderAsync();
             if (!reader.HasRows)
-                return null;
+                return null!;
             await reader.ReadAsync();
             
             var cache = reader["data"] as string;
-            return cache;
+            return cache!;
         }
         public async Task<T> GetUserCacheAsync<T>(string username) where T : SocialMediaUser
         {
             var userDoc = await GetUserCacheAsync(username);
             if (userDoc is null)
-                return null;
+                return null!;
             var user = JsonSerializer.Deserialize<T>(userDoc);
-            return user;
+            return user!;
         }
         
         private async Task<string> GetUserCacheAsync(string username)
@@ -157,11 +158,11 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             };
             var reader = await command.ExecuteReaderAsync();
             if (!reader.HasRows)
-                return null;
+                return null!;
             await reader.ReadAsync();
             
             var cache = reader["cache"] as string;
-            return cache;
+            return cache!;
         }
 
 
@@ -195,7 +196,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             var ids = new List<string>();
             while (await reader.ReadAsync())
             {
-                ids.Add(reader["id"] as string);
+                ids.Add((reader["id"] as string)!);
             }
             
             return ids.ToArray();
@@ -260,7 +261,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
                 Parameters = 
                 { 
                     new() { Value = JsonSerializer.Serialize(cache, _jsonOptions), NpgsqlDbType = NpgsqlDbType.Jsonb },
-                    new() { Value = cache.Acct},
+                    new() { Value = cache!.Acct},
                 }
             };
 
@@ -500,7 +501,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             };
             var reader = await command.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
-                return null;
+                return null!;
 
             var extradata = reader["extradata"] as string ?? "{}";
             return extradata;
@@ -522,7 +523,7 @@ public abstract class SocialMediaUserPostgresDal : PostgresBase, SocialMediaUser
             };
             var reader = await command.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
-                return null;
+                return null!;
 
             var extradata = reader["wikidata"] as string ?? "{}";
             return extradata;

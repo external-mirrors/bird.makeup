@@ -45,7 +45,7 @@ public class SettingsPostgresDal : PostgresBase, ISettingsDal
         if (reader["setting_value"] as string is null)
             return null;
         
-        var res = JsonDocument.Parse(reader["setting_value"] as string).RootElement;
+        var res = JsonDocument.Parse((reader["setting_value"] as string)!).RootElement;
         _cache.Set(key, res, _cacheEntryOptions);
         
         await reader.CloseAsync();

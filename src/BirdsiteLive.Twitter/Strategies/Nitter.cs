@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
@@ -153,10 +154,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 {
                     tweet.IsRetweet = true;
                     tweet.OriginalAuthor = tweet.Author;
-                    TwitterUser retweeter = null;
+                    TwitterUser? retweeter = null;
                     try
                     {
-                        retweeter = await _userExtractor.GetUserAsync(user.Acct);
+                        retweeter = await _userExtractor.GetUserAsync(user.Acct!);
                     }
                     catch (Exception e)
                     {
@@ -223,7 +224,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         if (errorPanel != null)
         {
             _logger.LogWarning("Nitter: status {StatusId} unavailable at {Url}: {Error}", statusId, address, errorPanel.TextContent?.Trim());
-            return null;
+            return null!;
         }
         
         var mainTweetElement = document.QuerySelector(".main-tweet .timeline-item")
@@ -332,7 +333,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 	            }
 	        }
 
-        return null;
+        return null!;
     }
 
     private ExtractedTweet ParseTweetFromElement(IElement item)
@@ -353,7 +354,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         var id = matchId.Groups[1].Value;
 
         var contentElement = item.QuerySelector(".tweet-content");
-        string content = null;
+        string? content = null;
         if (contentElement != null)
         {
             // Nitter puts links in <a> tags, sometimes truncated in TextContent.
@@ -396,7 +397,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             if (content != null && string.IsNullOrEmpty(item.QuerySelector(".replying-to")?.TextContent))
             {
                 // Find the first meaningful child element and see if it's a mention
-                IElement firstEl = null;
+                IElement? firstEl = null;
                 // Prefer actual child elements over text nodes
                 if (contentElement.Children.Length > 0)
                 {
@@ -516,7 +517,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 
                 // If it's a gif (it doesn't have controls in Nitter usually, but check for video tag)
                 // For now, if we have a source, it's a video.
-                string altText = att.QuerySelector("img")?.GetAttribute("alt");
+                string? altText = att.QuerySelector("img")?.GetAttribute("alt");
                 if (string.IsNullOrWhiteSpace(altText)) altText = null;
                 if (!string.IsNullOrWhiteSpace(vidSrc) && vidSrc.StartsWith("/pic/"))
                 {
@@ -581,7 +582,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                         src = aHref;
                 }
 
-                src = NormalizeMediaUrl(src);
+                src = NormalizeMediaUrl(src!);
 
                 media.Add(new ExtractedMedia { MediaType = "image/jpeg", Url = src, AltText = altText });
             }
@@ -611,7 +612,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
         // Replies
         var replyTo = item.QuerySelector(".replying-to");
-        string inReplyToAccount = null;
+        string? inReplyToAccount = null;
         long? inReplyToStatusId = null;
         if (replyTo != null)
         {
@@ -658,8 +659,8 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
         // Quote
         var quote = item.QuerySelector(".quote");
-        string quotedAccount = null;
-        string quotedStatusId = null;
+        string? quotedAccount = null;
+        string? quotedStatusId = null;
         if (quote != null)
         {
             var quoteLink = quote.QuerySelector(".quote-link")?.GetAttribute("href");
@@ -683,7 +684,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         }
 
         // Polls
-        Poll poll = null;
+        Poll? poll = null;
         var pollElement = item.QuerySelector(".poll");
         if (pollElement != null)
         {
@@ -709,7 +710,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 // Count (try to find any number inside the option node)
                 long count = 0;
                 var countElement = opt.QuerySelector(".option-count");
-                string countText = countElement?.TextContent;
+                string? countText = countElement?.TextContent;
                 if (string.IsNullOrWhiteSpace(countText))
                     countText = opt.TextContent;
 
@@ -830,7 +831,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             return dataUsername.Trim();
 
         var usernameText = item.QuerySelector(".username")?.TextContent?.Trim();
-        return string.IsNullOrWhiteSpace(usernameText) ? null : usernameText.TrimStart('@');
+        return string.IsNullOrWhiteSpace(usernameText) ? null : usernameText.TrimStart('@')!;
     }
 
     private bool TryConvertNitterStatusUrl(string url, out string convertedUrl)
@@ -849,7 +850,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
     private string SimpleExtract(IDocument document, string cellSelector, string attribute)
     {
         var cells = document.QuerySelectorAll(cellSelector);
-        return cells.Select(m => m.GetAttribute(attribute)).First();
+        return cells.Select(m => m.GetAttribute(attribute)).First()!;
 
     }
 
@@ -878,10 +879,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         else
             url = null;
 
-        string bio = document.QuerySelector("div.profile-bio p")?.TextContent.Trim();
+        string? bio = document.QuerySelector("div.profile-bio p")?.TextContent.Trim();
 
         // Extract location - get the second direct child span
-        string location = null;
+        string? location = null;
         var locationSpan = document.QuerySelector(".profile-location > span:nth-child(2)");
         if (locationSpan != null)
         {
@@ -889,12 +890,12 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         }
 
         // Extract banner image
-        string banner = null;
+        string? banner = null;
         var bannerElement = document.QuerySelector(".profile-banner img");
         if (bannerElement != null)
         {
             banner = bannerElement.GetAttribute("src");
-            if (banner.StartsWith("/pic/"))
+            if (banner!.StartsWith("/pic/"))
             {
                 banner = WebUtility.UrlDecode(banner.Substring(5));
             }

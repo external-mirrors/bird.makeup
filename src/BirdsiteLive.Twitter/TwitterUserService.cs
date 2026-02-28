@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -55,10 +56,10 @@ namespace BirdsiteLive.Twitter
             _httpClientFactory = httpClientFactory;
             _logger = logger;
             
-            _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
-            _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, null, httpClientFactory, instanceSettings, logger);
+            _tweetFromGraphql2024 = new Graphql2024(_twitterAuthenticationInitializer, null!, httpClientFactory, instanceSettings, logger);
+            _tweetFromGraphql2025 = new Graphql2025(_twitterAuthenticationInitializer, null!, httpClientFactory, instanceSettings, logger);
             _tweetFromNitter = new Nitter(_tweetFromGraphql2025, settingsDal, _twitterUserDal, logger);
-            _tweetFromSidecar = new Sidecar(_twitterUserDal, null, httpClientFactory, instanceSettings, logger);
+            _tweetFromSidecar = new Sidecar(_twitterUserDal, null!, httpClientFactory, instanceSettings, logger);
             _userExtractors =
             [
                 ("Graphql2024", _tweetFromGraphql2024),
@@ -81,7 +82,7 @@ namespace BirdsiteLive.Twitter
             catch (HttpRequestException e)
             {
                 if (e.StatusCode == HttpStatusCode.NotFound)
-                    return null;
+                    return null!;
             }
             
             if (s == StrategyHints.Sidecar)
@@ -90,7 +91,7 @@ namespace BirdsiteLive.Twitter
             if (s == StrategyHints.Nitter)
                 return await _tweetFromNitter.GetUserAsync(username);
             
-            return null;
+            return null!;
         }
         public async Task<TwitterUser> GetUserAsync(string username)
         {
@@ -148,7 +149,7 @@ namespace BirdsiteLive.Twitter
 
         async public Task UpdateUserCache(SyncUser user)
         {
-            TwitterUser updatedUser = null;
+            TwitterUser? updatedUser = null;
             try
             {
                 updatedUser = await _tweetFromSidecar.GetUserAsync(user.Acct);

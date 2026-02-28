@@ -13,7 +13,7 @@ namespace BirdsiteLive.Domain.Factories
 
     public class MagicKeyFactory : IMagicKeyFactory
     {
-        private static MagicKey _magicKey;
+        private static MagicKey _magicKey = null!;
         private ISettingsDal _settings;
 
         #region Ctor
@@ -40,7 +40,7 @@ namespace BirdsiteLive.Domain.Factories
 
             //Load and return key
             var serializedKey = keyJson.ToString();
-            _magicKey = new MagicKey(serializedKey);
+            _magicKey = new MagicKey(serializedKey!);
             return _magicKey;
         }
     }

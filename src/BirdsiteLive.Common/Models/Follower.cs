@@ -6,14 +6,14 @@ namespace BirdsiteLive.Common.Models
     {
         public int Id { get; set; }
         
-        public List<int> Followings { get; set; }
+        public List<int> Followings { get; set; } = null!;
         public int TotalFollowings { get; set; }
 
-        public string ActorId { get; set; }
-        public string Acct { get; set; }
-        public string Host { get; set; }
-        public string InboxRoute { get; set; }
-        public string SharedInboxRoute { get; set; }
+        public string ActorId { get; set; } = null!;
+        public string Acct { get; set; } = null!;
+        public string Host { get; set; } = null!;
+        public string InboxRoute { get; set; } = null!;
+        public string SharedInboxRoute { get; set; } = null!;
 
         public int PostingErrorCount { get; set; }
     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using BirdsiteLive.ActivityPub.Models;
 using System.Text.Json.Serialization;
 using System.Text.Json;
@@ -12,28 +13,28 @@ namespace BirdsiteLive.ActivityPub
             try
             {
                 var activity = JsonSerializer.Deserialize<Activity>(json);
-                switch (activity.type)
+                switch (activity!.type)
                 {
                     case "Follow":
-                        return JsonSerializer.Deserialize<ActivityFollow>(json);
+                        return JsonSerializer.Deserialize<ActivityFollow>(json)!;
                     case "Like":
-                        return JsonSerializer.Deserialize<ActivityLike>(json);
+                        return JsonSerializer.Deserialize<ActivityLike>(json)!;
                     case "Flag":
-                        return JsonSerializer.Deserialize<ActivityFlag>(json);
+                        return JsonSerializer.Deserialize<ActivityFlag>(json)!;
                     case "Announce":
-                        return JsonSerializer.Deserialize<Activity>(json);
+                        return JsonSerializer.Deserialize<Activity>(json)!;
                     case "Create":
-                        return JsonSerializer.Deserialize<ActivityCreateNote>(json);
+                        return JsonSerializer.Deserialize<ActivityCreateNote>(json)!;
                     case "Undo":
                         var a = JsonSerializer.Deserialize<ActivityUndo>(json);
-                        if(a.apObject.type == "Follow")
-                            return JsonSerializer.Deserialize<ActivityUndoFollow>(json);
+                        if(a!.apObject.type == "Follow")
+                            return JsonSerializer.Deserialize<ActivityUndoFollow>(json)!;
                         break;
                     case "Delete":
-                        return JsonSerializer.Deserialize<ActivityDelete>(json);
+                        return JsonSerializer.Deserialize<ActivityDelete>(json)!;
                     case "Accept":
                         var accept = JsonSerializer.Deserialize<ActivityAccept>(json);
-                        switch (accept.apObject.type)
+                        switch (accept!.apObject.type)
                         {
                             case "Follow":
                                 var acceptFollow = new ActivityAcceptFollow()
@@ -62,7 +63,7 @@ namespace BirdsiteLive.ActivityPub
                 Console.WriteLine(e);
             }
 
-            return null;
+            return null!;
         }
 
     }

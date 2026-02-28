@@ -26,10 +26,10 @@ namespace BirdsiteLive.Domain.Tests.Tools
         public void Parse_Null_Test()
         {
             #region Stubs
-            string entry = null;
+            string? entry = null;
             #endregion
 
-            var result = PatternsParser.Parse(entry);
+            var result = PatternsParser.Parse(entry!);
 
             #region Validations
             Assert.AreEqual(0, result.Length);

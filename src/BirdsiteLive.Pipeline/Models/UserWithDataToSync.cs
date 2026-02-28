@@ -5,8 +5,8 @@ namespace BirdsiteLive.Pipeline.Models
 {
     public class UserWithDataToSync
     {
-        public SyncUser User { get; set; }
-        public SocialMediaPost[] Tweets { get; set; }
-        public Follower[] Followers { get; set; }
+        public SyncUser User { get; set; } = null!;
+        public SocialMediaPost[] Tweets { get; set; } = null!;
+        public Follower[] Followers { get; set; } = null!;
     }
 }

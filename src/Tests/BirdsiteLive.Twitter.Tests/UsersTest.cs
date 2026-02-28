@@ -28,7 +28,7 @@ namespace BirdsiteLive.Twitter.Tests
                 yield return new object[] { StrategyHints.Nitter };
             }
         }
-        private TwitterUserService _tweetService;
+        private TwitterUserService _tweetService = null!;
         [TestInitialize]
         public async Task TestInit()
         {

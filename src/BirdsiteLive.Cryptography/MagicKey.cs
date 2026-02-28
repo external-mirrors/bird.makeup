@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -22,26 +23,26 @@ namespace BirdsiteLive.Cryptography
 
         private class RSAKeyParms
         {
-            public byte[] D { get; set; }
-            public byte[] DP {get; set; }
-            public byte[] DQ {get; set; }
-            public byte[] Exponent {get; set; }
-            public byte[] InverseQ {get; set; }
-            public byte[] Modulus {get; set; }
-            public byte[] P {get; set; }
-            public byte[] Q {get; set; }
+            public byte[] D { get; set; } = null!;
+            public byte[] DP {get; set; } = null!;
+            public byte[] DQ {get; set; } = null!;
+            public byte[] Exponent {get; set; } = null!;
+            public byte[] InverseQ {get; set; } = null!;
+            public byte[] Modulus {get; set; } = null!;
+            public byte[] P {get; set; } = null!;
+            public byte[] Q {get; set; } = null!;
 
             public static RSAKeyParms From(RSAParameters parms)
             {
                 var a = new RSAKeyParms();
-                a.D = parms.D;
-                a.DP = parms.DP;
-                a.DQ = parms.DQ;
-                a.Exponent = parms.Exponent;
-                a.InverseQ = parms.InverseQ;
-                a.Modulus = parms.Modulus;
-                a.P = parms.P;
-                a.Q = parms.Q;
+                a.D = parms.D!;
+                a.DP = parms.DP!;
+                a.DQ = parms.DQ!;
+                a.Exponent = parms.Exponent!;
+                a.InverseQ = parms.InverseQ!;
+                a.Modulus = parms.Modulus!;
+                a.P = parms.P!;
+                a.Q = parms.Q!;
                 return a;
             }
 
@@ -133,7 +134,7 @@ namespace BirdsiteLive.Cryptography
             {
                 var parms = _rsa.ExportParameters(false);
 
-                return string.Join(".", "RSA", _encodeBase64Url(parms.Modulus), _encodeBase64Url(parms.Exponent));
+                return string.Join(".", "RSA", _encodeBase64Url(parms.Modulus!), _encodeBase64Url(parms.Exponent)!);
             }
         }
     }

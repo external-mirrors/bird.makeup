@@ -17,7 +17,7 @@ public class ArrayOrSingleConverter<T> : JsonConverter<T>
                 if (reader.TokenType == JsonTokenType.EndArray)
                 {
                     // Empty array, return default
-                    return default;
+                    return default!;
                 }
                 
                 // Return the first element
@@ -29,15 +29,15 @@ public class ArrayOrSingleConverter<T> : JsonConverter<T>
                     reader.Skip();
                 }
                 
-                return item;
+                return item!;
             }
             
-            return default;
+            return default!;
         }
         else
         {
             // If it's a single value, deserialize it directly
-            return JsonSerializer.Deserialize<T>(ref reader, options);
+            return JsonSerializer.Deserialize<T>(ref reader, options)!;
         }
     }
 

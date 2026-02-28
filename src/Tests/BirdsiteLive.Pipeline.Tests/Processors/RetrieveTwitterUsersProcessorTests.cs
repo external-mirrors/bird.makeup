@@ -60,7 +60,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             twitterUserDalMock.VerifyAll();
             Assert.IsTrue(0 < buffer.Count);
             buffer.TryReceive(out var result);
-            Assert.IsTrue(0 < result.Length);
+            Assert.IsTrue(0 < result!.Length);
             #endregion
         }
 
@@ -110,7 +110,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             twitterUserDalMock.VerifyAll();
             Assert.IsTrue(0 < buffer.Count);
             buffer.TryReceive(out var result);
-            Assert.IsTrue(1 < result.Length);
+            Assert.IsTrue(1 < result!.Length);
             #endregion
         }
 
@@ -165,7 +165,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             twitterUserDalMock.VerifyAll();
             Assert.IsTrue(0 < buffer.Count);
             buffer.TryReceive(out var result);
-            Assert.IsTrue(1 < result.Length);
+            Assert.IsTrue(1 < result!.Length);
             #endregion
         }
         [TestMethod]
@@ -218,7 +218,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             twitterUserDalMock.VerifyAll();
             Assert.IsTrue(0 < buffer.Count);
             buffer.TryReceive(out var result);
-            Assert.IsTrue(1 < result.Length);
+            Assert.IsTrue(1 < result!.Length);
             #endregion
         }
         [TestMethod]
@@ -267,7 +267,7 @@ namespace BirdsiteLive.Pipeline.Tests.Processors
             twitterUserDalMock.VerifyAll();
             Assert.IsTrue(0 < buffer.Count);
             buffer.TryReceive(out var result);
-            Assert.IsTrue(1 < result.Length);
+            Assert.IsTrue(1 < result!.Length);
             #endregion
         }
 

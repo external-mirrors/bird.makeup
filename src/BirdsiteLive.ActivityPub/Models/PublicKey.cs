@@ -2,8 +2,8 @@
 {
     public class PublicKey
     {
-        public string id { get; set; }
-        public string owner { get; set; }
-        public string publicKeyPem { get; set; }
+        public string id { get; set; } = null!;
+        public string owner { get; set; } = null!;
+        public string publicKeyPem { get; set; } = null!;
     }
 }

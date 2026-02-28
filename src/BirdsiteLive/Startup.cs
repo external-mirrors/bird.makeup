@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
@@ -53,7 +54,7 @@ namespace BirdsiteLive
                     serviceName: "dotmakeup", 
                     autoGenerateServiceInstanceId: false,
                     serviceInstanceId: Environment.MachineName,
-                    serviceNamespace: Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork 
+                    serviceNamespace: Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork 
                     ))
                 .WithMetrics(config =>
                 {
@@ -100,7 +101,7 @@ namespace BirdsiteLive
             var moderationSettings = Configuration.GetSection("Moderation").Get<ModerationSettings>();
             services.For<ModerationSettings>().Use(x => moderationSettings);
 
-            if (string.Equals(dbSettings.Type, DbTypes.Postgres, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(dbSettings!.Type, DbTypes.Postgres, StringComparison.OrdinalIgnoreCase))
             {
                 var connString = $"Host={dbSettings.Host};Username={dbSettings.User};Password={dbSettings.Password};Port={dbSettings.Port};Database={dbSettings.Name};MinPoolSize=3;MaxPoolSize=5;";
                 var postgresSettings = new PostgresSettings
@@ -126,13 +127,13 @@ namespace BirdsiteLive
 
             services.For<ITwitterAuthenticationInitializer>().Use<TwitterAuthenticationInitializer>().Singleton();
 
-            if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork is null) 
+            if (Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork is null) 
                 throw new ConfigurationErrorsException("Missing SocialNetwork");
-            else if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Twitter") 
+            else if (Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Twitter") 
                 services.For<ISocialMediaService>().Use<TwitterService>().Singleton();
-            else if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "HackerNews") 
+            else if (Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "HackerNews") 
                 services.For<ISocialMediaService>().Use<HnService>().Singleton();
-            else if (Configuration.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Instagram") 
+            else if (Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Instagram") 
                 services.For<ISocialMediaService>().Use<InstagramService>().Singleton();
             else
                 throw new ConfigurationErrorsException("Unknown SocialNetwork");
@@ -140,7 +141,7 @@ namespace BirdsiteLive
             services.For<ICachedStatisticsService>().Use<CachedStatisticsService>().Singleton();
 
             services.AddHttpClient();
-            services.AddHttpClient("WithProxy").AddProxySupport(instanceSettings.ProxyURL, instanceSettings.ProxyUser, instanceSettings.ProxyPassword);
+            services.AddHttpClient("WithProxy").AddProxySupport(instanceSettings!.ProxyURL, instanceSettings.ProxyUser, instanceSettings.ProxyPassword);
             
             services.Scan(scanner =>
             {

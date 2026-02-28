@@ -2,5 +2,5 @@ namespace BirdsiteLive.Models;
 
 public class HomeViewModel
 {
-    public string ServiceName { get; set; }
+    public string ServiceName { get; set; } = null!;
 }

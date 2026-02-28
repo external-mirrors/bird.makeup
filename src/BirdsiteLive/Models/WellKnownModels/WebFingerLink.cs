@@ -2,8 +2,8 @@
 {
     public class WebFingerLink
     {
-        public string rel { get; set; }
-        public string type { get; set; }
-        public string href { get; set; }
+        public string rel { get; set; } = null!;
+        public string type { get; set; } = null!;
+        public string href { get; set; } = null!;
     }
 }

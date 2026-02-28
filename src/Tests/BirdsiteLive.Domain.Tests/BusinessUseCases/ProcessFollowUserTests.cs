@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Models;
@@ -56,13 +57,13 @@ namespace BirdsiteLive.Domain.Tests.BusinessUseCases
                     It.Is<string>(y => y == followerInbox),
                     It.Is<string>(y => y == inbox),
                     It.Is<string>(y => y == actorId),
-                    null ))
+                    null! ))
                 .Returns(Task.CompletedTask);
 
             var twitterUserDalMock = new Mock<SocialMediaUserDal>();
             twitterUserDalMock
                 .SetupSequence(x => x.GetUserAsync(twitterName))
-                .ReturnsAsync((SyncTwitterUser)null)
+                .ReturnsAsync((SyncTwitterUser)null!)
                 .ReturnsAsync(twitterUser);
 
             twitterUserDalMock

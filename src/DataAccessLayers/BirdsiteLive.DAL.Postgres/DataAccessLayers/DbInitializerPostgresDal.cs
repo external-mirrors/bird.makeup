@@ -12,7 +12,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
 {
     internal class DbVersion
     {
-        public string Type { get; set; }
+        public string Type { get; set; } = null!;
         public int Major { get; set; }
         public int Minor { get; set; }
     }
@@ -41,14 +41,14 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
                 var result = (await dbConnection.QueryAsync<DbVersion>(query, new { type = DbVersionType })).FirstOrDefault();
 
                 if (result == default)
-                    return null;
+                    return null!;
 
                 return new Version(result.Major, result.Minor);
             }
             catch (PostgresException e)
             {
                 if (e.Message.Contains("42P01"))
-                    return null;
+                    return null!;
 
                 throw;
             }

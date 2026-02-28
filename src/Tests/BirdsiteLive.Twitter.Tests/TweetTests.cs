@@ -18,8 +18,8 @@ namespace BirdsiteLive.Twitter.Tests
     [TestClass, TestCategory("Twitter")]
     public class TweetTests
     {
-        private TwitterTweetsService _tweetService = null;
-        private ITwitterAuthenticationInitializer _tweetAuth = null;
+        private TwitterTweetsService _tweetService = null!;
+        private ITwitterAuthenticationInitializer _tweetAuth = null!;
         
         public static IEnumerable<object[]> Implementations
         {

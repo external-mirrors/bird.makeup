@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Threading;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -94,7 +95,7 @@ namespace BirdsiteLive.Twitter.Tools
                 httpResponse.EnsureSuccessStatusCode();
                 var doc = JsonDocument.Parse(c);
                 var token = doc.RootElement.GetProperty("access_token").GetString();
-                return token;
+                return token!;
             }
 
         }
@@ -200,7 +201,7 @@ namespace BirdsiteLive.Twitter.Tools
             var tokenRequest = await client.SendAsync( request );
             var tokenResponse =
                 await JsonSerializer.DeserializeAsync<TokenResponse>(await tokenRequest.Content.ReadAsStreamAsync());
-            string bearerToken = tokenResponse.access_token;
+            string bearerToken = tokenResponse!.access_token;
 
             // Activating guest token
             var guestTokenRequest =
@@ -211,7 +212,7 @@ namespace BirdsiteLive.Twitter.Tools
             var guestTokenJson =
                 await JsonSerializer.DeserializeAsync<GuestTokenResponse>(await guestTokenResponse.Content
                     .ReadAsStreamAsync());
-            string guestToken = guestTokenJson.guest_token;
+            string guestToken = guestTokenJson!.guest_token;
 
             // Sending requests
             var session = new HttpClient();
@@ -236,7 +237,7 @@ namespace BirdsiteLive.Twitter.Tools
             var task2 = await session.SendAsync(request2);
             var att = task2.Headers.GetValues("att").First().ToString();
 
-            string flowToken = JsonDocument.Parse( await task2.Content.ReadAsStringAsync() ).RootElement.GetProperty("flow_token").GetString();
+            string? flowToken = JsonDocument.Parse( await task2.Content.ReadAsStringAsync() ).RootElement.GetProperty("flow_token").GetString();
 
             using var request3 = new HttpRequestMessage(new HttpMethod("POST"),
                 "https://api.twitter.com/1.1/onboarding/task.json");
@@ -310,19 +311,19 @@ namespace BirdsiteLive.Twitter.Tools
 
     public class TokenResponse
     {
-        public string token_type { get; set; }
-        public string access_token { get; set; }
+        public string token_type { get; set; } = null!;
+        public string access_token { get; set; } = null!;
     }
 
     public class GuestTokenResponse
     {
-        public string guest_token { get; set; }
+        public string guest_token { get; set; } = null!;
     }
 
     public class Subtask
     {
-        public string enter_text { get; set; }
-        public string subtask_id { get; set; }
+        public string enter_text { get; set; } = null!;
+        public string subtask_id { get; set; } = null!;
     }
 
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -36,7 +37,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
 
         public new async Task<SyncTwitterUser> GetUserAsync(int id)
         {
-            return await GetUserAsync(null, id);
+            return await GetUserAsync(null!, id);
         }
         public new async Task<SyncTwitterUser> GetUserAsync(string acct)
         {
@@ -62,12 +63,12 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
             };
             var reader = await command.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
-                return null;
+                return null!;
             
             var extradata = JsonDocument.Parse(reader["extradata"] as string ?? "{}").RootElement;
-            WikidataEntry wikidata = null;
+            WikidataEntry? wikidata = null;
             if ((reader["wikidata"] as string) is not null)
-                wikidata = JsonSerializer.Deserialize<WikidataEntry>(reader["wikidata"] as string);
+                wikidata = JsonSerializer.Deserialize<WikidataEntry>((reader["wikidata"] as string)!);
             return new SyncTwitterUser
             {
                 Id = reader["id"] as int? ?? default,
@@ -143,9 +144,9 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
             var results = new List<SyncTwitterUser>();
             while (await reader.ReadAsync())
             {
-                WikidataEntry wikidata = null;
+                WikidataEntry? wikidata = null;
                 if ((reader["wikidata"] as string) is not null)
-                    wikidata = JsonSerializer.Deserialize<WikidataEntry>(reader["wikidata"] as string);
+                    wikidata = JsonSerializer.Deserialize<WikidataEntry>((reader["wikidata"] as string)!);
                 results.Add(new SyncTwitterUser
                     {
                         Id = reader["id"] as int? ?? default,

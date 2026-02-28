@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.IO;
@@ -61,7 +62,7 @@ namespace BirdsiteLive.Controllers
             if (acceptHeaders.Any())
             {
                 var r = acceptHeaders.First();
-                if (r.Contains("application/activity+json")) return NotFound();
+                if (r!.Contains("application/activity+json")) return NotFound();
             }
             return View("UserNotFound");
         }
@@ -77,7 +78,7 @@ namespace BirdsiteLive.Controllers
 
             id = _socialMediaService.MakeUserNameCanonical(id.Trim(new[] { ' ', '@' }));
 
-            SocialMediaUser user = null;
+            SocialMediaUser? user = null;
             var isSaturated = false;
             var notFound = false;
 
@@ -117,11 +118,11 @@ namespace BirdsiteLive.Controllers
             if (acceptHeaders.Any())
             {
                 var r = acceptHeaders.First();
-                if (r.Contains("application/activity+json") || r.Contains("application/ld+json"))
+                if (r!.Contains("application/activity+json") || r.Contains("application/ld+json"))
                 {
                     if (notFound) return NotFound();
                     if (isSaturated) return new ObjectResult("Too Many Requests") { StatusCode = 429 };
-                    var apUser = await _userService.GetUser(user);
+                    var apUser = await _userService.GetUser(user!);
                     return Content(apUser, "application/activity+json; charset=utf-8");
                 }
             }
@@ -131,8 +132,8 @@ namespace BirdsiteLive.Controllers
 
             Follower[] followers = new Follower[] { };
 
-            string fediAccount = null;
-            var userDal = await _socialMediaService.UserDal.GetUserAsync(user.Acct);
+            string? fediAccount = null;
+            var userDal = await _socialMediaService.UserDal.GetUserAsync(user!.Acct);
             if (userDal != null)
             {
                 followers = await _socialMediaService.UserDal.GetFollowersAsync(userDal.Id);
@@ -180,7 +181,7 @@ namespace BirdsiteLive.Controllers
             {
                 var r = acceptHeaders.First();
 
-                if (r.Contains("application/activity+json") || r.Contains("application/ld+json"))
+                if (r!.Contains("application/activity+json") || r.Contains("application/ld+json"))
                 {
                     string jsonApUser;
                     if (status is Question)
@@ -219,13 +220,13 @@ namespace BirdsiteLive.Controllers
         private static string BuildOriginalPostUrl(string serviceName, string authorAcct, string statusId, long retweetId, bool isRetweet)
         {
             if (string.IsNullOrWhiteSpace(statusId))
-                return null;
+                return null!;
             switch (serviceName)
             {
                 case "Twitter":
                 {
                     if (string.IsNullOrWhiteSpace(authorAcct))
-                        return null;
+                        return null!;
                     var targetStatus = isRetweet && retweetId != default ? retweetId.ToString() : statusId;
                     return $"https://twitter.com/{authorAcct}/status/{targetStatus}";
                 }
@@ -234,7 +235,7 @@ namespace BirdsiteLive.Controllers
                 case "Hacker News":
                     return $"https://news.ycombinator.com/item?id={statusId}";
                 default:
-                    return null;
+                    return null!;
             }
         }
 
@@ -257,7 +258,7 @@ namespace BirdsiteLive.Controllers
                 case "Hacker News":
                     return $"https://news.ycombinator.com/user?id={acct}";
                 default:
-                    return null;
+                    return null!;
             }
         }
 
@@ -293,7 +294,7 @@ namespace BirdsiteLive.Controllers
                 if (tweet is null)
                     continue;
                 var status = await _statusService.GetActivity(id, tweet);
-                status.apObject.context = null;
+                status.apObject.context = null!;
 
                 featured.orderedItems.Add(status.apObject);
             }
@@ -339,18 +340,18 @@ namespace BirdsiteLive.Controllers
                     {
                         case "Follow":
                         {
-                            var succeeded = await _userService.FollowRequestedAsync(signature, r.Method, r.Path,
+                            var succeeded = await _userService.FollowRequestedAsync(signature!, r.Method, r.Path,
                                 r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
-                                activity as ActivityFollow, body);
+                                (activity as ActivityFollow)!, body);
                             if (succeeded) return Accepted();
                             else return Unauthorized();
                         }
                         case "Undo":
                             if (activity is ActivityUndoFollow)
                             {
-                                var succeeded = await _userService.UndoFollowRequestedAsync(signature, r.Method, r.Path,
+                                var succeeded = await _userService.UndoFollowRequestedAsync(signature!, r.Method, r.Path,
                                     r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
-                                    activity as ActivityUndoFollow, body);
+                                    (activity as ActivityUndoFollow)!, body);
                                 if (succeeded) return Accepted();
                                 else return Unauthorized();
                             }
@@ -358,9 +359,9 @@ namespace BirdsiteLive.Controllers
                             return Accepted();
                         case "Delete":
                         {
-                            var succeeded = await _userService.DeleteRequestedAsync(signature, r.Method, r.Path,
+                            var succeeded = await _userService.DeleteRequestedAsync(signature!, r.Method, r.Path,
                                 r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers),
-                                activity as ActivityDelete, body);
+                                (activity as ActivityDelete)!, body);
                             if (succeeded) return Accepted();
                             else return Unauthorized();
                         }
@@ -402,7 +403,7 @@ namespace BirdsiteLive.Controllers
                 return NotFound();
 
             var r = Request.Headers["Accept"].First();
-            if (!r.Contains("json")) return NotFound();
+            if (!r!.Contains("json")) return NotFound();
 
             var followers = new Collection
             {
@@ -421,7 +422,7 @@ namespace BirdsiteLive.Controllers
                 return NotFound();
 
             var r = Request.Headers["Accept"].First();
-            if (!r.Contains("json")) return NotFound();
+            if (!r!.Contains("json")) return NotFound();
 
             var followers = new Collection
             {
@@ -436,7 +437,7 @@ namespace BirdsiteLive.Controllers
         public IActionResult Followers(string id)
         {
             var r = Request.Headers["Accept"].First();
-            if (!r.Contains("json")) return NotFound();
+            if (!r!.Contains("json")) return NotFound();
 
             var followers = new Collection
             {
@@ -450,7 +451,7 @@ namespace BirdsiteLive.Controllers
         public IActionResult Outbox(string id)
         {
             var r = Request.Headers["Accept"].First();
-            if (!r.Contains("json")) return NotFound();
+            if (!r!.Contains("json")) return NotFound();
 
             var followers = new Collection
             {

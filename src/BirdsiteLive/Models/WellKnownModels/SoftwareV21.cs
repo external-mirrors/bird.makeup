@@ -2,8 +2,8 @@
 {
     public class SoftwareV21
     {
-        public string name { get; set; }
-        public string repository { get; set; }
-        public string version { get; set; }
+        public string name { get; set; } = null!;
+        public string repository { get; set; } = null!;
+        public string version { get; set; } = null!;
     }
 }

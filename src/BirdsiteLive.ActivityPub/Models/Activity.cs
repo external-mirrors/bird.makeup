@@ -9,20 +9,20 @@ namespace BirdsiteLive.ActivityPub
     public class Activity
     {
         [JsonIgnore]
-        public object context { get; set; }
+        public object context { get; set; } = null!;
         // Avoids deserialization of @context, as it may be a JSON object instead of a string (e.g., on Firefish)
         [JsonPropertyName("@context")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         //[JsonPropertyOrder(1)]
         public object SerializedContext => context;
-        public string id { get; set; }
+        public string id { get; set; } = null!;
         //[JsonPropertyOrder(2)]
-        public string type { get; set; }
+        public string type { get; set; } = null!;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string actor { get; set; }
+        public string actor { get; set; } = null!;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonConverter(typeof(SingleOrArrayConverter<string>))]
-        public List<string> to { get; set; }
+        public List<string> to { get; set; } = null!;
 
 
         //[JsonPropertyName("object")]

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -20,7 +21,7 @@ namespace BirdsiteLive.Domain
     public interface IActivityPubService
     {
         Task<Actor> GetUser(string actor, string objectId);
-        Task<HttpStatusCode> PostDataAsync<T>(T data, string targetHost, string actorUrl, string inbox = null) where T : Activity;
+        Task<HttpStatusCode> PostDataAsync<T>(T data, string targetHost, string actorUrl, string inbox = null!) where T : Activity;
         Task PostNewActivity(ActivityCreateNote note, string username, string noteId, string targetHost,
             string targetInbox);
 
@@ -76,7 +77,7 @@ namespace BirdsiteLive.Domain
             var content = await result.Content.ReadAsStringAsync();
 
             var resultingActor = JsonSerializer.Deserialize<Actor>(content);
-            if (string.IsNullOrWhiteSpace(resultingActor.url)) resultingActor.url = objectId;
+            if (string.IsNullOrWhiteSpace(resultingActor!.url)) resultingActor.url = objectId;
             return resultingActor;
         }
 
@@ -116,7 +117,7 @@ namespace BirdsiteLive.Domain
             return acceptFollow;
         }
         public async Task<HttpRequestMessage> BuildRequest<T>(T data, string targetHost, string actorUrl, HttpMethod method,
-            string inbox = null)
+            string inbox = null!)
         {
             var usedInbox = $"/inbox";
             if (!string.IsNullOrWhiteSpace(inbox))
@@ -153,13 +154,13 @@ namespace BirdsiteLive.Domain
             return httpRequestMessage;
         }
 
-        public async Task<HttpStatusCode> PostDataAsync<T>(T data, string targetHost, string actorUrl, string inbox = null) where T : Activity
+        public async Task<HttpStatusCode> PostDataAsync<T>(T data, string targetHost, string actorUrl, string inbox = null!) where T : Activity
         {
             var httpRequestMessage = await BuildRequest(data, targetHost, actorUrl, HttpMethod.Post, inbox);
 
             if (_logger.IsEnabled(LogLevel.Trace))
             {
-                var content = await httpRequestMessage.Content.ReadAsStringAsync();
+                var content = await httpRequestMessage!.Content.ReadAsStringAsync();
                 _logger.LogTrace("Sending AP message to actor {TargetHost}. Content: {Content}", 
                     targetHost, content);
             }

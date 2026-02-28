@@ -9,7 +9,7 @@ namespace BirdsiteLive.ActivityPub.Models
         [JsonPropertyName("@context")]
         public string context { get; set; } = "https://www.w3.org/ns/activitystreams";
 
-        public string id { get; set; }
+        public string id { get; set; } = null!;
         public string type { get; set; } = "OrderedCollection";
         public List<Note> orderedItems { get; set; } = new List<Note>();
     }

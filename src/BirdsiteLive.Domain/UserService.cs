@@ -76,7 +76,7 @@ namespace BirdsiteLive.Domain
                 description = extracted.content;
             }
             
-            string featured = null;
+            string? featured = null;
             if (twitterUser.PinnedPosts.Count() > 0)
             {
                 featured = $"https://{_instanceSettings.Domain}/users/{twitterUser.Acct}/collections/featured";
@@ -360,7 +360,7 @@ namespace BirdsiteLive.Domain
         private string OnlyKeepRoute(string inbox, string host)
         {
             if (string.IsNullOrWhiteSpace(inbox)) 
-                return null;
+                return null!;
 
             if (inbox.Contains(host))
                 inbox = inbox.Split(new[] { host }, StringSplitOptions.RemoveEmptyEntries).Last();
@@ -388,7 +388,7 @@ namespace BirdsiteLive.Domain
             ActivityDelete activity, string body)
         {
             // Validate
-            var sigValidation = await ValidateSignature(null, activity.actor, signature, method, path, queryString, requestHeaders, body);
+            var sigValidation = await ValidateSignature(null!, activity.actor, signature, method, path, queryString, requestHeaders, body);
             if (!sigValidation.SignatureIsValidated) return false;
 
             // Remove user and followings
@@ -416,6 +416,6 @@ namespace BirdsiteLive.Domain
     public class SignatureValidationResult 
     {
         public bool SignatureIsValidated { get; set; }
-        public Actor User { get; set; }
+        public Actor User { get; set; } = null!;
     }
 }

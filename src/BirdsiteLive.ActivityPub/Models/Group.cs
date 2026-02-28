@@ -7,22 +7,22 @@ namespace BirdsiteLive.ActivityPub
     {
         [JsonPropertyName("@context")]
         public object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"};
-        public string id { get; set; }
+        public string id { get; set; } = null!;
         public string type { get; set; } = "Group";
-        public string followers { get; set; }
-        public string outbox { get; set; }
-        public string preferredUsername { get; set; }
-        public string name { get; set; }
-        public string summary { get; set; }
-        public string url { get; set; }
-        public string inbox { get; set; }
+        public string followers { get; set; } = null!;
+        public string outbox { get; set; } = null!;
+        public string preferredUsername { get; set; } = null!;
+        public string name { get; set; } = null!;
+        public string summary { get; set; } = null!;
+        public string url { get; set; } = null!;
+        public string inbox { get; set; } = null!;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? featured { get; set; }
-        public PublicKey publicKey { get; set; }
-        public Image icon { get; set; }
-        public Image image { get; set; }
-        public EndPoints endpoints { get; set; }
+        public PublicKey publicKey { get; set; } = null!;
+        public Image icon { get; set; } = null!;
+        public Image image { get; set; } = null!;
+        public EndPoints endpoints { get; set; } = null!;
         public bool postingRestrictedToMods { get; set; } = true;
-        public UserAttachment[] attachment { get; set; }
+        public UserAttachment[] attachment { get; set; } = null!;
     }
 }

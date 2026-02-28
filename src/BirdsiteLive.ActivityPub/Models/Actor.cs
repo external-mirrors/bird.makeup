@@ -8,26 +8,26 @@ namespace BirdsiteLive.ActivityPub
     {
         [JsonPropertyName("@context")]
         public object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1", featuredContext};
-        public string id { get; set; }
-        public string type { get; set; }
-        public string followers { get; set; }
-        public string outbox { get; set; }
-        public string preferredUsername { get; set; }
-        public string name { get; set; }
-        public string summary { get; set; }
-        public string url { get; set; }
+        public string id { get; set; } = null!;
+        public string type { get; set; } = null!;
+        public string followers { get; set; } = null!;
+        public string outbox { get; set; } = null!;
+        public string preferredUsername { get; set; } = null!;
+        public string name { get; set; } = null!;
+        public string summary { get; set; } = null!;
+        public string url { get; set; } = null!;
         public bool manuallyApprovesFollowers { get; set; }
-        public string inbox { get; set; }
+        public string inbox { get; set; } = null!;
         public bool? discoverable { get; set; } = true;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? featured { get; set; }
-        public PublicKey publicKey { get; set; }
-        public Image icon { get; set; }
+        public PublicKey publicKey { get; set; } = null!;
+        public Image icon { get; set; } = null!;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonConverter(typeof(ArrayOrSingleConverter<Image>))]
-        public Image image { get; set; }
-        public EndPoints endpoints { get; set; }
-        public UserAttachment[] attachment { get; set; }
+        public Image image { get; set; } = null!;
+        public EndPoints endpoints { get; set; } = null!;
+        public UserAttachment[] attachment { get; set; } = null!;
 
         private static Dictionary<string, object> featuredContext = new Dictionary<string, object>()
         {

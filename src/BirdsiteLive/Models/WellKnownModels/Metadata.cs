@@ -2,6 +2,6 @@
 {
     public class Metadata
     {
-        public string email { get; set; }
+        public string email { get; set; } = null!;
     }
 }

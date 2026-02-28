@@ -2,9 +2,9 @@ namespace BirdsiteLive.DAL.Models;
 
 public class CrawlAccount
 {
-    public string Acct { get; set; }
-    public string Email { get; set; }
-    public string Phone { get; set; }
-    public string Password { get; set; }
-    public string Backend { get; set; }
+    public string Acct { get; set; } = null!;
+    public string Email { get; set; } = null!;
+    public string Phone { get; set; } = null!;
+    public string Password { get; set; } = null!;
+    public string Backend { get; set; } = null!;
 }

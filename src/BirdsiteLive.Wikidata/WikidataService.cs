@@ -199,7 +199,7 @@ public class WikidataService
         res = prop.GetProperty("value").GetString();
 
         if (extraClean)
-                res = res.ToLower().Trim().TrimEnd( '\r', '\n' );
+                res = res!.ToLower().Trim().TrimEnd( '\r', '\n' );
         
         return res;
     }

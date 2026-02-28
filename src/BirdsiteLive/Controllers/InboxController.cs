@@ -49,7 +49,7 @@ namespace BirdsiteLive.Controllers
                         case "Follow":
                             {
                                 var succeeded = await _userService.FollowRequestedAsync(signature, r.Method, r.Path,
-                                    r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers), activity as ActivityFollow, body);
+                                    r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers), (activity as ActivityFollow)!, body);
                                 if (succeeded) return Accepted();
                                 else return Unauthorized();
                             }
@@ -57,7 +57,7 @@ namespace BirdsiteLive.Controllers
                             if (activity is ActivityUndoFollow)
                             {
                                 var succeeded = await _userService.UndoFollowRequestedAsync(signature, r.Method, r.Path,
-                                    r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers), activity as ActivityUndoFollow, body);
+                                    r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers), (activity as ActivityUndoFollow)!, body);
                                 if (succeeded) return Accepted();
                                 else return Unauthorized();
                             }
@@ -66,7 +66,7 @@ namespace BirdsiteLive.Controllers
                         case "Delete":
                             {
                                 var succeeded = await _userService.DeleteRequestedAsync(signature, r.Method, r.Path,
-                                    r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers), activity as ActivityDelete, body);
+                                    r.QueryString.ToString(), HeaderHandler.RequestHeaders(r.Headers), (activity as ActivityDelete)!, body);
                                 if (succeeded) return Accepted();
                                 else return Unauthorized();
                             }

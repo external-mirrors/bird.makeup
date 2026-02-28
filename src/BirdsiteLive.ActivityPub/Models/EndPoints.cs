@@ -2,6 +2,6 @@
 {
     public class EndPoints
     {
-        public string sharedInbox { get; set; }
+        public string sharedInbox { get; set; } = null!;
     }
 }

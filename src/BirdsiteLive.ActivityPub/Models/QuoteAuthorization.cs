@@ -19,10 +19,10 @@ namespace BirdsiteLive.ActivityPub.Models
         };
         [JsonPropertyName("@context")]
         public object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", extraContext};
-        public string id { get; set; }
+        public string id { get; set; } = null!;
         public string type { get; set; } = "QuoteAuthorization";
-        public string attributedTo { get; set; }
-        public string interactingObject { get; set; }
-        public string interactionTarget { get; set; }
+        public string attributedTo { get; set; } = null!;
+        public string interactingObject { get; set; } = null!;
+        public string interactionTarget { get; set; } = null!;
     }
 }

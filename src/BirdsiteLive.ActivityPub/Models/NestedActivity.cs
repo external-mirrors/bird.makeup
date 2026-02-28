@@ -6,12 +6,12 @@ namespace BirdsiteLive.ActivityPub
     {
         [JsonPropertyName("@context")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public object context { get; set; }
-        public string id { get; set; }
-        public string type { get; set; }
-        public string actor { get; set; }
+        public object context { get; set; } = null!;
+        public string id { get; set; } = null!;
+        public string type { get; set; } = null!;
+        public string actor { get; set; } = null!;
 
         [JsonPropertyName("object")]
-        public string apObject { get; set; }
+        public string apObject { get; set; } = null!;
     }
 }

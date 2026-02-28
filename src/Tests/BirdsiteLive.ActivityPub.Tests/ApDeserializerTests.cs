@@ -14,7 +14,7 @@ namespace BirdsiteLive.ActivityPub.Tests
 
 		    var data = ApDeserializer.ProcessActivity(json) as ActivityFollow;
 
-		    Assert.AreEqual("http://ds9.lemmy.ml/activities/follow/6abcd50b-b8ca-4952-86b0-a6dd8cc12866", data.id);
+		    Assert.AreEqual("http://ds9.lemmy.ml/activities/follow/6abcd50b-b8ca-4952-86b0-a6dd8cc12866", data!.id);
 		    Assert.AreEqual("Follow", data.type);
 		    Assert.AreEqual("http://enterprise.lemmy.ml/c/main", data.apObject);
 	    }
@@ -25,7 +25,7 @@ namespace BirdsiteLive.ActivityPub.Tests
 
             var data = ApDeserializer.ProcessActivity(json) as ActivityFollow;
 
-            Assert.AreEqual("https://mastodon.technology/c94567cf-1fda-42ba-82fc-a0f82f63ccbe", data.id);
+            Assert.AreEqual("https://mastodon.technology/c94567cf-1fda-42ba-82fc-a0f82f63ccbe", data!.id);
             Assert.AreEqual("Follow", data.type);
             Assert.AreEqual("https://4a120ca2680e.ngrok.io/users/manu", data.apObject);
         }
@@ -37,7 +37,7 @@ namespace BirdsiteLive.ActivityPub.Tests
                 "{\"@context\":\"https://www.w3.org/ns/activitystreams\",\"id\":\"https://mastodon.technology/users/testtest#follows/225982/undo\",\"type\":\"Undo\",\"actor\":\"https://mastodon.technology/users/testtest\",\"object\":{\"id\":\"https://mastodon.technology/c94567cf-1fda-42ba-82fc-a0f82f63ccbe\",\"type\":\"Follow\",\"actor\":\"https://mastodon.technology/users/testtest\",\"object\":\"https://4a120ca2680e.ngrok.io/users/manu\"}}";
 
             var data = ApDeserializer.ProcessActivity(json) as ActivityUndoFollow;
-            Assert.AreEqual("https://mastodon.technology/users/testtest#follows/225982/undo", data.id);
+            Assert.AreEqual("https://mastodon.technology/users/testtest#follows/225982/undo", data!.id);
             Assert.AreEqual("Undo", data.type);
             Assert.AreEqual("Follow", data.apObject.type);
             Assert.AreEqual("https://mastodon.technology/users/testtest", data.apObject.actor);
@@ -52,7 +52,7 @@ namespace BirdsiteLive.ActivityPub.Tests
                 "{\"@context\":[\"https://www.w3.org/ns/activitystreams\",{\"ostatus\":\"http://ostatus.org#\",\"atomUri\":\"ostatus:atomUri\",\"inReplyToAtomUri\":\"ostatus:inReplyToAtomUri\",\"conversation\":\"ostatus:conversation\",\"sensitive\":\"as:sensitive\",\"toot\":\"http://joinmastodon.org/ns#\",\"votersCount\":\"toot:votersCount\"},\"https://w3id.org/security/v1\"],\"id\":\"https://r.town/users/vincent/statuses/114971611237873808/activity\",\"type\":\"Create\",\"actor\":\"https://r.town/users/vincent\",\"published\":\"2025-08-04T17:12:44Z\",\"to\":[\"https://www.w3.org/ns/activitystreams#Public\"],\"cc\":[\"https://r.town/users/vincent/followers\",\"https://hacker.makeup/users/frontpage\",\"https://hacker.makeup/users/frontpage/followers\"],\"object\":{\"id\":\"https://r.town/users/vincent/statuses/114971611237873808\",\"type\":\"Note\",\"summary\":null,\"inReplyTo\":null,\"published\":\"2025-08-04T17:12:44Z\",\"url\":\"https://r.town/@vincent/114971611237873808\",\"attributedTo\":\"https://r.town/users/vincent\",\"to\":[\"https://www.w3.org/ns/activitystreams#Public\"],\"cc\":[\"https://r.town/users/vincent/followers\",\"https://hacker.makeup/users/frontpage\",\"https://hacker.makeup/users/frontpage/followers\"],\"sensitive\":false,\"atomUri\":\"https://r.town/users/vincent/statuses/114971611237873808\",\"inReplyToAtomUri\":null,\"conversation\":\"tag:r.town,2025-08-04:objectId=2830345:objectType=Conversation\",\"content\":\"\\u003cp\\u003eLemmy users! Could you test if you are able to join \\u003cspan class=\\\"h-card\\\" translate=\\\"no\\\"\\u003e\\u003ca href=\\\"https://hacker.makeup/users/frontpage\\\" class=\\\"u-url mention\\\"\\u003e@\\u003cspan\\u003efrontpage\\u003c/span\\u003e\\u003c/a\\u003e\\u003c/span\\u003e ? \\u003c/p\\u003e\\u003cp\\u003eI have made some changes to be more compatible with Lemmy (in theory)\\u003c/p\\u003e\",\"contentMap\":{\"en\":\"\\u003cp\\u003eLemmy users! Could you test if you are able to join \\u003cspan class=\\\"h-card\\\" translate=\\\"no\\\"\\u003e\\u003ca href=\\\"https://hacker.makeup/users/frontpage\\\" class=\\\"u-url mention\\\"\\u003e@\\u003cspan\\u003efrontpage\\u003c/span\\u003e\\u003c/a\\u003e\\u003c/span\\u003e ? \\u003c/p\\u003e\\u003cp\\u003eI have made some changes to be more compatible with Lemmy (in theory)\\u003c/p\\u003e\"},\"attachment\":[],\"tag\":[{\"type\":\"Mention\",\"href\":\"https://hacker.makeup/users/frontpage\",\"name\":\"@frontpage@hacker.makeup\"}],\"replies\":{\"id\":\"https://r.town/users/vincent/statuses/114971611237873808/replies\",\"type\":\"Collection\",\"first\":{\"type\":\"CollectionPage\",\"next\":\"https://r.town/users/vincent/statuses/114971611237873808/replies?only_other_accounts=true\\u0026page=true\",\"partOf\":\"https://r.town/users/vincent/statuses/114971611237873808/replies\",\"items\":[]}},\"likes\":{\"id\":\"https://r.town/users/vincent/statuses/114971611237873808/likes\",\"type\":\"Collection\",\"totalItems\":0},\"shares\":{\"id\":\"https://r.town/users/vincent/statuses/114971611237873808/shares\",\"type\":\"Collection\",\"totalItems\":0}},\"signature\":{\"type\":\"RsaSignature2017\",\"creator\":\"https://r.town/users/vincent#main-key\",\"created\":\"2025-08-04T17:12:44Z\",\"signatureValue\":\"ecqwlSSG5Ah0wbw22EamAf6e72BchMFAcIfP9wR8JucfJSiiBNZfkNsP3yER3zGyX/NZyY++2H33L+HD1PZd3CnTp08Cup4SvOTOV5qpNrGEqXXqxgokvUqvsF8gtx/RPHRoPX+AM2em0NWfOcNhaPVyS7KDrVh0FJnjmUJtKFP324IWnN1J3WAqrVmE38jGLjK+tJfpC5KS1bF9BXzZkipZCK7LijRvMs7ECKrWQz4o8IDVgiwluDmDuXV2MGhOGER+HfQKEAtguReUCpv6lf2xoKWVzwLxtdi+S15wasrRRaOqFX8UXMIFI0aNz/LS+bVuFi6YOAfnUaRS1dU6IQ==\"}}";
 
             var data = ApDeserializer.ProcessActivity(json) as ActivityCreateNote;
-            Assert.AreEqual("https://r.town/users/vincent/statuses/114971611237873808/activity", data.id);
+            Assert.AreEqual("https://r.town/users/vincent/statuses/114971611237873808/activity", data!.id);
             Assert.AreEqual("Create", data.type);
             Assert.IsTrue(data.apObject.content.Contains("Lemmy"));
             Assert.AreEqual("https://r.town/users/vincent", data.actor);
@@ -75,7 +75,7 @@ namespace BirdsiteLive.ActivityPub.Tests
 
 
             var data = ApDeserializer.ProcessActivity(json) as ActivityAcceptFollow;
-            Assert.AreEqual("https://mamot.fr/users/testtest#accepts/follows/333879", data.id);
+            Assert.AreEqual("https://mamot.fr/users/testtest#accepts/follows/333879", data!.id);
             Assert.AreEqual("Accept", data.type);
             Assert.AreEqual("https://mamot.fr/users/testtest", data.actor);
             Assert.AreEqual("https://85da1577f778.ngrok.io/f89dfd87-f5ce-4603-83d9-405c0e229989", data.apObject.id);
@@ -90,7 +90,7 @@ namespace BirdsiteLive.ActivityPub.Tests
 
 
             var data = ApDeserializer.ProcessActivity(json) as ActivityLike;
-            Assert.AreEqual("https://mymath.rocks/activitypub/helge/like-c62dab9f-34fb-4940-bb72-98e8872f96be", data.id);
+            Assert.AreEqual("https://mymath.rocks/activitypub/helge/like-c62dab9f-34fb-4940-bb72-98e8872f96be", data!.id);
             Assert.AreEqual("Like", data.type);
             Assert.AreEqual("https://mymath.rocks/activitypub/helge", data.actor);
             Assert.AreEqual("https://i.calckey.cloud/notes/9ajhcxg0lu", data.apObject);
@@ -102,7 +102,7 @@ namespace BirdsiteLive.ActivityPub.Tests
 
 
             var data = ApDeserializer.ProcessActivity(json) as ActivityFlag; 
-            Assert.AreEqual("https://mastodon.example/ccb4f39a-506a-490e-9a8c-71831c7713a4", data.id);
+            Assert.AreEqual("https://mastodon.example/ccb4f39a-506a-490e-9a8c-71831c7713a4", data!.id);
             Assert.AreEqual("Flag", data.type);
             Assert.AreEqual("https://mastodon.example/actor", data.actor);
             Assert.AreEqual("https://example.com/users/1", data.apObject[0]);
@@ -116,7 +116,7 @@ namespace BirdsiteLive.ActivityPub.Tests
 
             var data = ApDeserializer.ProcessActivity(json) as ActivityDelete;
 
-            Assert.AreEqual("https://mastodon.technology/users/deleteduser#delete", data.id);
+            Assert.AreEqual("https://mastodon.technology/users/deleteduser#delete", data!.id);
             Assert.AreEqual("Delete", data.type);
             Assert.AreEqual("https://mastodon.technology/users/deleteduser", data.actor);
             Assert.AreEqual("https://mastodon.technology/users/deleteduser", data.apObject);

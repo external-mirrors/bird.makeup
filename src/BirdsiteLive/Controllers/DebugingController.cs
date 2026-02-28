@@ -85,8 +85,8 @@ namespace BirdsiteLive.Controllers
                 apObject = new Note()
                 {
                     id = noteId,
-                    summary = null,
-                    inReplyTo = null,
+                    summary = null!,
+                    inReplyTo = null!,
                     published = nowString,
                     url = noteUrl,
                     attributedTo = actor,

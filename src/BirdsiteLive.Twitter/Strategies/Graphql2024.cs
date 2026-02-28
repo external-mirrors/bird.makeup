@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -90,7 +91,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         {
             _logger.LogError("Error retrieving user {Username}, Refreshing client", username);
             await _twitterAuthenticationInitializer.RefreshClient(request);
-            return null;
+            return null!;
         }
         httpResponse.EnsureSuccessStatusCode();
 
@@ -129,7 +130,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         catch (Exception e)
         {
             _logger.LogError(e, "Error retrieving timeline for {Username}", username);
-            return null;
+            return null!;
         }
 
         var timeline = results.RootElement.GetProperty("data").GetProperty("user").GetProperty("result")
@@ -156,7 +157,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                     JsonElement restId;
                     if (!tweetRes.TryGetProperty("rest_id", out restId))
                         continue;
-                    if (Int64.Parse(restId.GetString()) < fromTweetId)
+                    if (Int64.Parse(restId.GetString()!) < fromTweetId)
                         continue;
                     
                     var extractedTweet = await Extract(tweetRes);
@@ -197,7 +198,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             !tweetResultNode.TryGetProperty("result", out var tweetInDoc))
         {
             _logger.LogWarning("Graphql2024: tweet payload shape changed or tweet unavailable for {StatusId}", statusId);
-            return null;
+            return null!;
         }
 
         var extract = await Extract(tweetInDoc);
@@ -209,10 +210,10 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
         JsonElement retweet;
         TwitterUser OriginalAuthor;
-        TwitterUser author = null;
+        TwitterUser? author = null;
         JsonElement inReplyToPostIdElement;
         JsonElement inReplyToUserElement;
-        string inReplyToUser = null;
+        string? inReplyToUser = null;
         long? inReplyToPostId = null;
         long retweetId = default;
 
@@ -264,11 +265,11 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                 retweetId = parsedRetweetId;
         }
         
-        if (MessageContent.StartsWith(".@"))
+        if (MessageContent!.StartsWith(".@"))
             MessageContent = MessageContent.Remove(0, 1);
             
 
-        string creationTime = legacy.GetProperty("created_at").GetString().Replace(" +0000", "");
+        string creationTime = legacy!.GetProperty("created_at").GetString().Replace(" +0000", "");
 
         JsonElement extendedEntities;
         bool hasMedia = legacy.TryGetProperty("extended_entities", out extendedEntities);
@@ -292,7 +293,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             {
                 var type = media.GetProperty("type").GetString();
                 string url = "";
-                string altText = null;
+                string? altText = null;
                 if (media.TryGetProperty("video_info", out _))
                 {
                     var bitrate = -1;
@@ -319,7 +320,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                 }
                 var m = new ExtractedMedia
                 {
-                    MediaType = GetMediaType(type, url),
+                    MediaType = GetMediaType(type!, url!),
                     Url = url,
                     AltText = altText
                 };
@@ -337,8 +338,8 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         bool isQuoteTweet = legacy.TryGetProperty("is_quote_status", out var isQuoteTweetNode) &&
                             isQuoteTweetNode.GetBoolean();
 
-        string quoteTweetId = null;
-        string quoteTweetAcct = null;
+        string? quoteTweetId = null;
+        string? quoteTweetAcct = null;
         bool quoteAccountInferredFromMessage = false;
         if (isQuoteTweet)
         {
@@ -375,14 +376,14 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
         MessageContent = Regex.Replace(MessageContent, @" ?https?://(twitter|x)\.com/[a-zA-Z0-9_]+/status/[0-9]+/(video|photo)/[0-9]+$", "", RegexOptions.IgnoreCase);
 
-        Poll poll = null;
+        Poll? poll = null;
         JsonElement cardDoc;
         if (tweetRes.TryGetProperty("card", out cardDoc))
         {
             DateTime endDate = DateTime.Now;
             Dictionary<char, string> labels = new Dictionary<char, string>();
             Dictionary<char, long> counts = new Dictionary<char, long>();
-            string type = cardDoc.GetProperty("legacy").GetProperty("name").GetString();
+            string? type = cardDoc.GetProperty("legacy").GetProperty("name").GetString();
             foreach (JsonElement val in cardDoc.GetProperty("legacy").GetProperty("binding_values")
                          .EnumerateArray())
             {
@@ -390,19 +391,19 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                 if (key == "end_datetime_utc")
                 {
                     var endDateString = val.GetProperty("value").GetProperty("string_value").GetString();
-                    endDate = DateTime.Parse(endDateString);
+                    endDate = DateTime.Parse(endDateString!);
                 }
-                else if (key.StartsWith("choice") && key.EndsWith("label"))
+                else if (key!.StartsWith("choice") && key.EndsWith("label"))
                 {
                     var entryLabel = val.GetProperty("value").GetProperty("string_value").GetString();
                     char entryNumber = key[6];
-                    labels.Add(entryNumber, entryLabel);
+                    labels.Add(entryNumber, entryLabel!);
                 }
                 else if (key.StartsWith("choice") && key.EndsWith("count"))
                 {
                     var entryLabel = val.GetProperty("value").GetProperty("string_value").GetString();
                     char entryNumber = key[6];
-                    counts.Add(entryNumber, long.Parse(entryLabel));
+                    counts.Add(entryNumber, long.Parse(entryLabel!));
                 }
             }
 
@@ -412,7 +413,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                 endTime = endDate,
                 options = labels.OrderBy(x => x.Key).Select(x => x.Value).Zip(c).ToList(),
             };
-            if (!type.StartsWith("poll"))
+            if (!type!.StartsWith("poll"))
                 poll = null;
         }
 
@@ -457,13 +458,13 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
     private static bool TryExtractNoteTweetText(JsonElement noteTweetNode, out string text)
     {
-        text = null;
+        text = null!;
         if (!noteTweetNode.TryGetProperty("note_tweet_results", out var noteTweetResultsNode) ||
             !noteTweetResultsNode.TryGetProperty("result", out var noteTweetResultNode) ||
             !noteTweetResultNode.TryGetProperty("text", out var noteTweetTextNode))
             return false;
 
-        text = noteTweetTextNode.GetString();
+        text = noteTweetTextNode.GetString()!;
         return !string.IsNullOrWhiteSpace(text);
     }
 
@@ -498,7 +499,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
     private bool TryExtractQuotedAccountFromResult(JsonElement quotedResultNode, out string quoteAccount)
     {
-        quoteAccount = null;
+        quoteAccount = null!;
         if (!quotedResultNode.TryGetProperty("core", out var coreNode))
             return false;
         
@@ -535,7 +536,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
     private static bool TryExtractQuotedAccountFromMessage(string messageContent, string quoteTweetId, out string quoteAccount)
     {
-        quoteAccount = null;
+        quoteAccount = null!;
         if (string.IsNullOrWhiteSpace(messageContent) || string.IsNullOrWhiteSpace(quoteTweetId))
             return false;
         
@@ -557,7 +558,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
     public TwitterUser ExtractUser(JsonElement result)
     {
-        string profileBannerURL = null;
+        string? profileBannerURL = null;
         JsonElement profileBannerURLObject;
         if (result.GetProperty("legacy").TryGetProperty("profile_banner_url", out profileBannerURLObject))
         {
@@ -570,11 +571,11 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         {
             foreach (JsonElement id in pinnedDoc.EnumerateArray())
             {
-                pinnedTweets.Add(id.GetString());
+                pinnedTweets.Add(id.GetString()!);
             }
         }
 
-        string location = null;
+        string? location = null;
         JsonElement locationDoc;
         if (result.GetProperty("legacy").TryGetProperty("location", out locationDoc))
         {
@@ -585,19 +586,19 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
 
         return new TwitterUser
         {
-            Id = long.Parse(result.GetProperty("rest_id").GetString()),
-            Acct = result.GetProperty("legacy").GetProperty("screen_name").GetString().ToLower(), 
+            Id = long.Parse(result.GetProperty("rest_id").GetString()!),
+            Acct = result!.GetProperty("legacy").GetProperty("screen_name").GetString().ToLower(), 
             Name =  result.GetProperty("legacy").GetProperty("name").GetString(), //res.RootElement.GetProperty("data").GetProperty("name").GetString(),
             Description =  "", //res.RootElement.GetProperty("data").GetProperty("description").GetString(),
             Url =  "", //res.RootElement.GetProperty("data").GetProperty("url").GetString(),
-            ProfileImageUrl =  result.GetProperty("legacy").GetProperty("profile_image_url_https").GetString().Replace("normal", "400x400"), 
+            ProfileImageUrl =  result!.GetProperty("legacy").GetProperty("profile_image_url_https").GetString().Replace("normal", "400x400"), 
             ProfileBannerURL = profileBannerURL,
             Protected = false, //res.RootElement.GetProperty("data").GetProperty("protected").GetBoolean(), 
             PinnedPosts = pinnedTweets,
             StatusCount = result.GetProperty("legacy").GetProperty("statuses_count").GetInt32(),
             FollowersCount = result.GetProperty("legacy").GetProperty("followers_count").GetInt32(),
             Location = location,
-            ProfileUrl = "twitter.com/" + result.GetProperty("legacy").GetProperty("screen_name").GetString().ToLower(), 
+            ProfileUrl = "twitter.com/" + result!.GetProperty("legacy").GetProperty("screen_name").GetString().ToLower(), 
         };
 
     }
@@ -615,7 +616,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                     case ".png":
                         return "image/png";
                 }
-                return null;
+                return null!;
 
             case "animated_gif":
                 var vExt = Path.GetExtension(mediaUrl);
@@ -630,6 +631,6 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             case "video":
                 return "video/mp4";
         }
-        return null;
+        return null!;
     }
 }

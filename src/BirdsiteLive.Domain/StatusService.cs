@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace BirdsiteLive.Domain
         {
             var actorUrl = UrlFactory.GetActorUrl(_instanceSettings.Domain, username);
             var noteUrl = UrlFactory.GetNoteUrl(_instanceSettings.Domain, username, post.Id.ToString());
-            String announceId = null;
+            String? announceId = null;
             if (post.IsRetweet)
             {
                 actorUrl = UrlFactory.GetActorUrl(_instanceSettings.Domain, post.OriginalAuthor.Acct);
@@ -47,7 +48,7 @@ namespace BirdsiteLive.Domain
 
             var cc = new string[0];
             
-            string summary = null;
+            string? summary = null;
 
             var extractedTags = await _statusExtractor.Extract(post.MessageContent, _instanceSettings.ResolveMentionsInPosts);
             var tags = extractedTags.tags.ToList();
@@ -55,7 +56,7 @@ namespace BirdsiteLive.Domain
             var content = extractedTags.content;
             cc = new[] {"https://www.w3.org/ns/activitystreams#Public"};
 
-            string inReplyTo = null;
+            string? inReplyTo = null;
             if (post.InReplyToStatusId != default)
                 inReplyTo = $"https://{_instanceSettings.Domain}/users/{post.InReplyToAccount.ToLowerInvariant()}/statuses/{post.InReplyToStatusId}";
 
@@ -85,15 +86,15 @@ namespace BirdsiteLive.Domain
             }
             
             note.id = noteUrl;
-            note.announceId = announceId;
+            note.announceId = announceId!;
             note.published = post.CreatedAt.ToString("s") + "Z";
             note.url = noteUrl;
             note.attributedTo = actorUrl;
-            note.inReplyTo = inReplyTo;
+            note.inReplyTo = inReplyTo!;
             note.to = [ to ];
             note.cc = cc;
             note.sensitive = false;
-            note.summary = summary;
+            note.summary = summary!;
             note.content = $"<p>{content}</p>";
             note.attachment = Convert(post.Media);
             note.tag = tags.ToArray();
@@ -101,7 +102,7 @@ namespace BirdsiteLive.Domain
             if (note is Question)
             {
                 long totalVotes = 0;
-                var nowString = post.Poll.endTime.ToString("s") + "Z";
+                var nowString = post!.Poll.endTime.ToString("s") + "Z";
                 var options = new List<QuestionAnswer>();
                 foreach ((string First, long Second) in post.Poll.options)
                 {
@@ -129,7 +130,7 @@ namespace BirdsiteLive.Domain
                 {
                     id = $"{noteUrl}/likes",
                     totalItems = post.LikeCount,
-                    context = null,
+                    context = null!,
                 };
             }
             if (post.ShareCount != default)
@@ -138,7 +139,7 @@ namespace BirdsiteLive.Domain
                 {
                     id = $"{noteUrl}/shares",
                     totalItems = post.ShareCount,
-                    context = null,
+                    context = null!,
                 };
             }
             

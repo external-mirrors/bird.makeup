@@ -11,7 +11,7 @@ namespace BirdsiteLive.ActivityPub.Models
         public new object[] context { get; set; } = new object[] { "https://www.w3.org/ns/activitystreams", "https://join-lemmy.org/context.jso", };
         public new string type { get; } = "Page";
         public string mediaType { get; set; } = "text/html";
-        public string name { get; set; } 
+        public string name { get; set; }  = null!;
     }
 
 }

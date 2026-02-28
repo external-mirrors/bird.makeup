@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System.Linq;
 using System.Security.Cryptography;
 using Asn1;
 using Asn1Sequence = Asn1.Asn1Sequence;
@@ -12,10 +13,10 @@ namespace BirdsiteLive.Cryptography
         {
             var node = Asn1Node.ReadNode(data);
 
-            var rsaSequence = Asn1Node.ReadNode((node.Nodes[1] as Asn1BitString).Data);
+            var rsaSequence = Asn1Node.ReadNode((node!.Nodes[1] as Asn1BitString).Data);
 
-            var modulus = (rsaSequence.Nodes[0] as Asn1Integer).Value;
-            var exponent = (rsaSequence.Nodes[1] as Asn1Integer).Value;
+            var modulus = (rsaSequence!.Nodes[0] as Asn1Integer).Value;
+            var exponent = (rsaSequence!.Nodes[1] as Asn1Integer).Value;
             var prms = new RSAParameters { Modulus = modulus, Exponent = exponent };
             var rsa = RSA.Create();
             rsa.ImportParameters(prms);
@@ -26,7 +27,7 @@ namespace BirdsiteLive.Cryptography
         {
             var prms = rsa.ExportParameters(false);
 
-            var modulus = new Asn1Integer((new byte[] { 0x00 }.Concat(prms.Modulus)).ToArray());
+            var modulus = new Asn1Integer((new byte[] { 0x00 }.Concat(prms.Modulus!)).ToArray());
             var exponent = new Asn1Integer(prms.Exponent);
 
             var oidheader = new Asn1Sequence();

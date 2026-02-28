@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
@@ -73,7 +74,7 @@ public class Direct : IUserExtractor
         var root = jsonDocument.RootElement;
 
         var userJson = root.GetProperty("data").GetProperty("user");
-        string profileUrl = null;
+        string? profileUrl = null;
         if (userJson.TryGetProperty("bio_links", out var bioLinks))
         {
             foreach (var l in bioLinks.EnumerateArray())
@@ -134,7 +135,7 @@ public class Direct : IUserExtractor
                     foreach (var sideElem in sidecar.GetProperty("edges").EnumerateArray())
                     {
                         var sideNode = sideElem.GetProperty("node");
-                        string url = sideNode.TryGetProperty("video_url", out var videoUrlElem)
+                        string? url = sideNode.TryGetProperty("video_url", out var videoUrlElem)
                             ? videoUrlElem.GetString()
                             : sideNode.GetProperty("display_url").GetString();
                         string type = sideNode.TryGetProperty("video_url", out var _)
@@ -206,7 +207,7 @@ public class Direct : IUserExtractor
         if (userResult is not null)
             await _dal.UpdateUserCacheAsync(userResult);
         
-        return userResult;
+        return userResult!;
     }
 
 }

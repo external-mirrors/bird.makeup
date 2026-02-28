@@ -2,6 +2,6 @@
 {
     public class WellKnownNodeInfo
     {
-        public Link[] links { get; set; }
+        public Link[] links { get; set; } = null!;
     }
 }

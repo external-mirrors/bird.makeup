@@ -5,6 +5,6 @@ namespace BirdsiteLive.ActivityPub
     public class ActivityFollow : Activity
     {
         [JsonPropertyName("object")]
-        public string apObject { get; set; }
+        public string apObject { get; set; } = null!;
     }
 }

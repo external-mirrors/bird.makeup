@@ -2,7 +2,7 @@
 {
     public class Services
     {
-        public object[] inbound { get; set; }
-        public object[] outbound { get; set; }
+        public object[] inbound { get; set; } = null!;
+        public object[] outbound { get; set; } = null!;
     }
 }

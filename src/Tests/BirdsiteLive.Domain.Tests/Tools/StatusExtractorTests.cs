@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -34,9 +35,9 @@ namespace BirdsiteLive.Domain.Tests.Tools
             dal.Setup(x => x.GetUserCacheAsync<SocialMediaUser>(It.Is<string>(acct => acct == "cached")))
                 .Returns(Task.FromResult(new SocialMediaUser()));
             dal.Setup(x => x.GetUserCacheAsync<SocialMediaUser>(It.Is<string>(acct => acct != "cached")))
-                .Returns(Task.FromResult<SocialMediaUser>(null));
-            var instagram = new InstagramService(null, dal.Object, null, _settings, null);
-            var twitter = new TwitterService(null, null, null, _settings, settingsDal.Object);
+                .Returns(Task.FromResult<SocialMediaUser>(null!));
+            var instagram = new InstagramService(null!, dal.Object, null, _settings, null);
+            var twitter = new TwitterService(null!, null, null, _settings, settingsDal.Object);
 
             var service = new Mock<ISocialMediaService>();
             service.Setup(x => x.ValidUsername).Returns(twitter.ValidUsername);

@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -57,7 +58,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
             var c = await httpResponse.Content.ReadAsStringAsync();
             var tweet = JsonSerializer.Deserialize<ExtractedTweet>(c, _serializerOptions);
             
-            tweet = await _tweetsService.ExpandShortLinks(tweet);
+            tweet = await _tweetsService.ExpandShortLinks(tweet!);
             tweet = _tweetsService.CleanupText(tweet);
                             
             return tweet;
@@ -65,7 +66,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return null;
+            return null!;
         }
     }
     
@@ -126,7 +127,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
             tweets = JsonSerializer.Deserialize<List<ExtractedTweet>>(c, _serializerOptions);
             var tweetsDocument = JsonDocument.Parse(c);
             
-            for (var i = 0; i < tweets.Count; i++)
+            for (var i = 0; i < tweets!.Count; i++)
             {
                 tweets[i] = await _tweetsService.ExpandShortLinks(tweets[i]);
                 tweets[i] = _tweetsService.CleanupText(tweets[i]);
@@ -182,13 +183,13 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
             if (httpResponse.StatusCode != HttpStatusCode.OK)
             {
                 await _twitterUserDal.ClearUserCacheAsync(acct);
-                return null;
+                return null!;
             }
                         
             var profileJson = await httpResponse.Content.ReadAsStringAsync();
             var profile = JsonSerializer.Deserialize<TwitterUser>(profileJson);
 
-            profile.ProfileImageUrl = profile.ProfileImageUrl.Replace("_normal", "_400x400");
+            profile!.ProfileImageUrl = profile.ProfileImageUrl.Replace("_normal", "_400x400");
             await _twitterUserDal.UpdateUserCacheAsync(profile);
             return profile;
         }
@@ -196,6 +197,6 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
         {
         }
 
-        return null;
+        return null!;
     }
 }

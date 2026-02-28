@@ -5,6 +5,6 @@ namespace BirdsiteLive.ActivityPub
     public class ActivityUndoFollow : Activity
     {
         [JsonPropertyName("object")]
-        public ActivityFollow apObject { get; set; }
+        public ActivityFollow apObject { get; set; } = null!;
     }
 }

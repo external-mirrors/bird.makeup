@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using System.Diagnostics.Metrics;
 using System.Net.Http;
@@ -68,7 +69,7 @@ public class SocialNetworkCache
     public Task<T> GetUser<T>(string username, Func<Task<T>>[] getSocialMediaUser) where T : SocialMediaUser
     {
         if (_userCache.TryGetValue(username, out Task<T> cachedUser))
-            return cachedUser; 
+            return cachedUser!; 
         
         var p = _processUser(getSocialMediaUser);
         _userCache.Set(username, p, _cacheEntryOptions);
@@ -101,7 +102,7 @@ public class SocialNetworkCache
             {
             }
         }
-        return null;
+        return null!;
     }
 
     public void BackfillPostCache<T>(T post) where T : SocialMediaPost
@@ -124,7 +125,7 @@ public class SocialNetworkCache
     public Task<T> GetPost<T>(string id, Func<Task<T>>[] getSocialMediaPost) where T : class, SocialMediaPost
     {
         if (_postCache.TryGetValue(id, out Task<T> cachedPost))
-            return cachedPost; 
+            return cachedPost!; 
         
         var p = _processPost(getSocialMediaPost);
         _postCache.Set(id, p, _cacheEntryOptions);
@@ -154,6 +155,6 @@ public class SocialNetworkCache
                 throw;
             }
         }
-        return null;
+        return null!;
     }
 }

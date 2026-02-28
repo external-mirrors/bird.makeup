@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
@@ -87,14 +88,14 @@ namespace BirdsiteLive.Twitter
                 e is FormatException)
             {
                 Console.WriteLine(e);
-                return null;
+                return null!;
             }
             
             if (s == StrategyHints.Sidecar)
                 return await _tweetFromSidecar.GetTweetAsync(statusId);
             if (s == StrategyHints.Nitter)
                 return await _tweetFromNitter.GetTweetAsync(statusId);
-            return null;
+            return null!;
         }
         public async Task<ExtractedTweet> GetTweetAsync(long statusId)
         {
@@ -110,7 +111,7 @@ namespace BirdsiteLive.Twitter
             catch (Exception e)
             {
                 _logger.LogError(e, "Error retrieving tweet {TweetId}", statusId);
-                ExtractedTweet backupTweet = null;
+                ExtractedTweet? backupTweet = null;
                 try
                 {
                     backupTweet = await _tweetFromSyndication.GetTweetAsync(statusId);
@@ -119,7 +120,7 @@ namespace BirdsiteLive.Twitter
                 _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_tweet"),
                     new KeyValuePair<string, object>("result", backupTweet is null ? "5xx" : "2xx_backup")
                 );
-                return backupTweet;
+                return backupTweet!;
             }
         }
 
@@ -137,7 +138,7 @@ namespace BirdsiteLive.Twitter
             if (s == StrategyHints.Nitter)
                 return (await _tweetFromNitter.GetTimelineAsync(user, user.TwitterUserId, -1, true)).ToArray();
             
-            return null;
+            return null!;
         }
 
         private async Task<SyncUser> UpdateIdIfMissing(SyncUser user)
@@ -236,7 +237,7 @@ namespace BirdsiteLive.Twitter
                 foreach (Match match in matches)
                 {
                     HttpResponseMessage response = await client.GetAsync(match.ToString(), HttpCompletionOption.ResponseHeadersRead);
-                    var longlink = response.RequestMessage.RequestUri.ToString();
+                    var longlink = response!.RequestMessage.RequestUri.ToString();
                     input.MessageContent = input.MessageContent.Replace(match.ToString(), longlink);
                 }
             } catch (Exception) {}

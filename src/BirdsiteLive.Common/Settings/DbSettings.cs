@@ -2,11 +2,11 @@
 {
     public class DbSettings
     {
-        public string Type { get; set; }
-        public string Host { get; set; }
-        public string Port { get; set; }
-        public string Name { get; set; }
-        public string User { get; set; }
-        public string Password { get; set; }
+        public string Type { get; set; } = null!;
+        public string Host { get; set; } = null!;
+        public string Port { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string User { get; set; } = null!;
+        public string Password { get; set; } = null!;
     }
 }

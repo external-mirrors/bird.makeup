@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
         }
         #endregion
 
-        public async Task CreateFollowerAsync(string acct, string host, string inboxRoute, string sharedInboxRoute, string actorId, int[] followings = null)
+        public async Task CreateFollowerAsync(string acct, string host, string inboxRoute, string sharedInboxRoute, string actorId, int[] followings = null!)
         {
             if(followings == null) followings = new int[0];
 
@@ -74,7 +75,7 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
             var reader = await command.ExecuteReaderAsync();
 
             if (!await reader.ReadAsync())
-                return null;
+                return null!;
 
             var twitterFollowings = (reader["followings"] as int[] ?? new int[0]).ToList();
             var igFollowings = (reader["followings_instagram"] as int[] ?? new int[0]).ToList();
@@ -171,12 +172,12 @@ namespace BirdsiteLive.DAL.Postgres.DataAccessLayers
 
     internal class SerializedFollower {
         public int Id { get; set; }
-        public int[] Followings { get; set; }
-        public string Acct { get; set; }
-        public string Host { get; set; }
-        public string InboxRoute { get; set; }
-        public string SharedInboxRoute { get; set; }
-        public string ActorId { get; set; }
+        public int[] Followings { get; set; } = null!;
+        public string Acct { get; set; } = null!;
+        public string Host { get; set; } = null!;
+        public string InboxRoute { get; set; } = null!;
+        public string SharedInboxRoute { get; set; } = null!;
+        public string ActorId { get; set; } = null!;
         public int PostingErrorCount { get; set; }
     }
 }

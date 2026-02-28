@@ -2,8 +2,8 @@
 {
     public class ExtractedMedia
     {
-        public string MediaType { get; set; }
-        public string Url { get; set; }
-        public string AltText { get; set; }
+        public string MediaType { get; set; } = null!;
+        public string Url { get; set; } = null!;
+        public string AltText { get; set; } = null!;
     }
 }

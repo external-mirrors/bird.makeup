@@ -11,7 +11,7 @@ namespace dotMakeup.Instagram.Tests;
 [TestClass]
 public class UserTest
 {
-    private ISocialMediaService _instaService;
+    private ISocialMediaService _instaService = null!;
     [TestInitialize]
     public async Task TestInit()
     {

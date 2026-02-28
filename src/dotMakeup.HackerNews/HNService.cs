@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.Metrics;
+﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -155,7 +156,7 @@ public class HnService : ISocialMediaService
             }
             long parentId = postDoc.GetProperty("parent").GetInt64();
             var parent = await GetPostAsync(parentId.ToString());
-            inReplyToId = Int64.Parse(parent?.Id);
+            inReplyToId = Int64.Parse(parent?.Id!);
             inReplyToaccount = parent?.Author.Acct;
         }
         else if (type == "poll")
@@ -167,7 +168,7 @@ public class HnService : ISocialMediaService
             {
                 var partNumber = part.GetInt32();
                 var opt = await _getPostAsync(partNumber.ToString());
-                poll.options = poll.options.Append((opt.MessageContent, opt.Score.Value)).ToList();
+                poll.options = poll.options.Append((opt!.MessageContent, opt.Score.Value)).ToList();
             }
             score = postDoc.GetProperty("score").GetInt32();
         }
@@ -183,7 +184,7 @@ public class HnService : ISocialMediaService
         }
         DateTime time = DateTimeOffset.FromUnixTimeSeconds(postDoc.GetProperty("time").GetInt64()).UtcDateTime;
         
-        var user = await GetUserAsync(postDoc.GetProperty("by").GetString());
+        var user = await GetUserAsync(postDoc.GetProperty("by").GetString()!);
         var post = new HNPost()
         {
             Id = postDoc.GetProperty("id").GetInt32().ToString(),
