@@ -67,7 +67,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1600905296892891149, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             
             Assert.AreEqual(tweet.Author.Acct, "joebiden");
             Assert.AreEqual(tweet.Author.Name, "Joe Biden");
@@ -91,7 +94,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(2025229241386983913, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             
             Assert.AreEqual(tweet.InReplyToAccount, "blakeandersonj");
             Assert.AreEqual(tweet.InReplyToStatusId, 2025227821828759893);
@@ -106,7 +112,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1908137050907558326, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Author.Acct, "hwwonx");
             Assert.AreEqual(tweet.Author.Name, "hww.eth | Hsiao-Wei Wang");
             Assert.IsTrue(tweet.LikeCount > 200);
@@ -125,7 +134,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1905980906189254989, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.MessageContent,
                 "@SBelangerCAQ voici ce qui se passe avec les aînés de ma région. \n\nC’est tout simplement scandaleux.");
 
@@ -141,7 +153,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1769400263625064883, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Author.Acct, "emostaque");
             Assert.AreEqual(tweet.Author.Name, "Emad");
             Assert.IsTrue(tweet.LikeCount > 1000);
@@ -166,7 +181,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1593344577385160704, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Author.Acct, "barackobama");
             Assert.AreEqual(tweet.Author.Name, "Barack Obama");
             Assert.IsTrue(tweet.LikeCount > 100000);
@@ -187,7 +205,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1935683033836773498, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.IsTrue(tweet.LikeCount > 400);
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
@@ -204,7 +225,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1602618920996945922, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.MessageContent,
                 "#Linux 6.2 Expands Support For More #Qualcomm #Snapdragon SoCs, #Apple M1 Pro/Ultra/Max\n\nhttps://www.phoronix.com/news/Linux-6.2-Arm-SoC-Updates");
         }
@@ -215,7 +239,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1604231025311129600, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Author.Acct, "spacex");
             Assert.AreEqual(tweet.Author.Name, "SpaceX");
             Assert.IsTrue(tweet.LikeCount > 40000);
@@ -234,7 +261,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet2 = await _tweetService.GetTweetAsync(1657913781006258178, s);
             if (tweet2 is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet2.Author.Acct, "bankless");
             Assert.IsTrue(tweet2.LikeCount > 100);
             Assert.AreEqual(tweet2.MessageContent,
@@ -252,7 +282,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1612901861874343936, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             
 
             Assert.AreEqual(tweet.Media.Length, 1);
@@ -270,7 +303,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1610807139089383427, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Author.Acct, "ryansadams");
             Assert.AreEqual(tweet.Author.Name, "RYAN SΞAN ADAMS - rsa.eth 🦄");
             Assert.IsTrue(tweet.LikeCount > 0);
@@ -287,7 +323,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1952032830508191916, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
 
             Assert.AreEqual(tweet.Author.Acct, "trustlessstate");
             Assert.IsNull(tweet.Poll);
@@ -303,7 +342,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1822637945943187475, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
 
             Assert.IsTrue(tweet.MessageContent.Contains("https://domain.name/@stillgray/1822453985204187319") || tweet.MessageContent.Contains("https://x.com/stillgray/status/1822453985204187319"));
             Assert.AreEqual(tweet.Author.Acct, "trustlessstate");
@@ -317,7 +359,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1445468404815597573, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
 
             Assert.AreEqual(tweet.InReplyToAccount, "punk6529");
             Assert.AreEqual(tweet.InReplyToStatusId, 1445468401745289235);
@@ -332,7 +377,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(2027439790107275429, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
 
             Assert.AreEqual(tweet.InReplyToAccount, "edzitron");
             Assert.AreEqual(tweet.InReplyToStatusId, 2027439787557146883);
@@ -348,7 +396,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(2024378849446793643, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
 
             Assert.AreEqual(tweet.InReplyToAccount, "peter_szilagyi");
             Assert.AreEqual(tweet.InReplyToStatusId, 2024378741799940426);
@@ -364,7 +415,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1612622335546363904, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
 
             Assert.AreEqual(tweet.InReplyToAccount, "DriveTeslaca");
             Assert.AreEqual(tweet.InReplyToStatusId, 1612610060194312193);
@@ -380,7 +434,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1633788842770825216, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             if (tweet.MessageContent.Length < 400 )
                 Assert.Inconclusive();
             Assert.AreEqual(tweet.MessageContent,
@@ -399,10 +456,16 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1593767953706921985, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.MessageContent, "Reinstate former President Trump");
             if (tweet.Poll is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Poll.endTime.Year, new DateTime(2022, 11, 19, 7, 47, 45).Year);
             Assert.AreEqual(tweet.Poll.options[0].First, "Yes");
             if (s != StrategyHints.Nitter)
@@ -421,10 +484,16 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1570766012316000263, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.MessageContent, "On average, how many hours are you *actually* working everyday?");
             if (tweet.Poll is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Poll.endTime.DayOfYear, new DateTime(2022, 9, 17, 9, 26, 45).DayOfYear);
             Assert.AreEqual(tweet.Poll.options[3].First, "1-4 hours");
             if (s != StrategyHints.Nitter)
@@ -443,11 +512,17 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1861785009805545631, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.MessageContent,
                 "The IRS just said it wants $20B more money. \n\nDo you think it’s budget should be:");
             if (tweet.Poll is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Poll.options[3].First, "Deleted");
             if (s != StrategyHints.Nitter)
             {
@@ -465,10 +540,16 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1872489920297910742, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.MessageContent, "Do you feel the immigration debates on X have been:");
             if (tweet.Poll is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.AreEqual(tweet.Poll.options[1].First, "Toxic");
             if (s != StrategyHints.Nitter)
             {
@@ -486,7 +567,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1858992492550734176, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.Author.Acct, "elidourado");
             Assert.AreEqual(tweet.Author.Name, "Eli Dourado");
@@ -501,7 +585,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1887282879925002660, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.Author.Acct, "base");
 
@@ -521,7 +608,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1887592728621420875, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             if (tweet.MessageContent.Length < 400 )
                 Assert.Inconclusive();
             Assert.IsNull(tweet.Poll);
@@ -541,7 +631,10 @@ namespace BirdsiteLive.Twitter.Tests
         {
             var tweet = await _tweetService.GetTweetAsync(1908169318828810274, s);
             if (tweet is null)
+            {
                 Assert.Inconclusive();
+                return;
+            }
             Assert.IsNull(tweet.Poll);
             Assert.AreEqual(tweet.Author.Acct, "val_plante");
 

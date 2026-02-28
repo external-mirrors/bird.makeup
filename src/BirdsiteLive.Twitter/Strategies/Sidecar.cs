@@ -44,7 +44,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
         _logger = logger;
         
     }
-    public async Task<ExtractedTweet> GetTweetAsync(long tweetid)
+    public async Task<ExtractedTweet?> GetTweetAsync(long tweetid)
     {
         try
         {
@@ -66,7 +66,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return null!;
+            return null;
         }
     }
     

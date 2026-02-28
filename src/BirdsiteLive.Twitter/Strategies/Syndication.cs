@@ -30,7 +30,7 @@ public class Syndication : ITweetExtractor
     }
     
     
-    public async Task<ExtractedTweet> GetTweetAsync(long statusId)
+    public async Task<ExtractedTweet?> GetTweetAsync(long statusId)
     {
         var client = _httpClientFactory.CreateClient();
         
@@ -51,17 +51,17 @@ public class Syndication : ITweetExtractor
                 _logger.LogError("Error retrieving tweet {statusId}; refreshing client", statusId);
             else
                 _logger.LogWarning("Syndication returned {StatusCode} for tweet {StatusId}", httpResponse.StatusCode, statusId);
-            return null!;
+            return null;
         }
 
         var responseContent = await httpResponse.Content.ReadAsStringAsync();
         if (string.IsNullOrWhiteSpace(responseContent))
-            return null!;
+            return null;
         using var tweet = JsonDocument.Parse(responseContent);
         var root = tweet.RootElement;
 
         if (!root.TryGetProperty("text", out var textElement))
-            return null!;
+            return null;
 
         string messageContent = textElement.GetString() ?? string.Empty;
         
@@ -83,11 +83,11 @@ public class Syndication : ITweetExtractor
 
         if (!root.TryGetProperty("user", out var userNode) ||
             !userNode.TryGetProperty("screen_name", out var usernameElement))
-            return null!;
+            return null;
         
         string? username = usernameElement.GetString()?.ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(username))
-            return null!;
+            return null;
         string? name = null;
         if (userNode.TryGetProperty("name", out var nameElement))
         {

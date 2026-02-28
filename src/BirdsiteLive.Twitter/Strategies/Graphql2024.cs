@@ -178,7 +178,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         return extractedTweets;
     }
 
-    public async Task<ExtractedTweet> GetTweetAsync(long statusId)
+    public async Task<ExtractedTweet?> GetTweetAsync(long statusId)
     {
         var client = await _twitterAuthenticationInitializer.MakeHttpClient();
 
@@ -198,7 +198,7 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             !tweetResultNode.TryGetProperty("result", out var tweetInDoc))
         {
             _logger.LogWarning("Graphql2024: tweet payload shape changed or tweet unavailable for {StatusId}", statusId);
-            return null!;
+            return null;
         }
 
         var extract = await Extract(tweetInDoc);

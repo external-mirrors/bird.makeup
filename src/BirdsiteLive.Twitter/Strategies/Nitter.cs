@@ -245,7 +245,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         return tweets;
     }
 
-    public async Task<ExtractedTweet> GetTweetAsync(long statusId)
+    public async Task<ExtractedTweet?> GetTweetAsync(long statusId)
     {
         (var domain, bool lowtrust) = await GetDomain(true);
 
@@ -256,7 +256,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         if (errorPanel != null)
         {
             _logger.LogWarning("Nitter: status {StatusId} unavailable at {Url}: {Error}", statusId, address, errorPanel.TextContent?.Trim());
-            return null!;
+            return null;
         }
         
         var mainTweetElement = document.QuerySelector(".main-tweet .timeline-item")
@@ -365,7 +365,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 	            }
 	        }
 
-        return null!;
+        return null;
     }
 
     private ExtractedTweet ParseTweetFromElement(IElement item)

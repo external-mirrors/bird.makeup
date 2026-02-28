@@ -21,7 +21,7 @@ namespace BirdsiteLive.Twitter
 {
     public interface ITwitterTweetsService
     {
-        Task<ExtractedTweet> GetTweetAsync(long statusId);
+        Task<ExtractedTweet?> GetTweetAsync(long statusId);
         Task<ExtractedTweet[]> GetTimelineAsync(SyncUser user, long fromTweetId = -1);
         Task<ExtractedTweet> ExpandShortLinks(ExtractedTweet tweet);
         ExtractedTweet CleanupText(ExtractedTweet tweet);
@@ -68,7 +68,7 @@ namespace BirdsiteLive.Twitter
         #endregion
 
 
-        public async Task<ExtractedTweet> GetTweetAsync(long statusId, StrategyHints s)
+        public async Task<ExtractedTweet?> GetTweetAsync(long statusId, StrategyHints s)
         {
             if (s == StrategyHints.Syndication)
                 return await _tweetFromSyndication.GetTweetAsync(statusId);
@@ -88,16 +88,16 @@ namespace BirdsiteLive.Twitter
                 e is FormatException)
             {
                 Console.WriteLine(e);
-                return null!;
+                return null;
             }
             
             if (s == StrategyHints.Sidecar)
                 return await _tweetFromSidecar.GetTweetAsync(statusId);
             if (s == StrategyHints.Nitter)
                 return await _tweetFromNitter.GetTweetAsync(statusId);
-            return null!;
+            return null;
         }
-        public async Task<ExtractedTweet> GetTweetAsync(long statusId)
+        public async Task<ExtractedTweet?> GetTweetAsync(long statusId)
         {
             try
             {
@@ -120,7 +120,7 @@ namespace BirdsiteLive.Twitter
                 _apiCalled.Add(1, new KeyValuePair<string, object>("api", "twitter_tweet"),
                     new KeyValuePair<string, object>("result", backupTweet is null ? "5xx" : "2xx_backup")
                 );
-                return backupTweet!;
+                return backupTweet;
             }
         }
 
