@@ -49,12 +49,16 @@ namespace BirdsiteLive
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var instanceSettings = GetRequiredSettings<InstanceSettings>("Instance");
+            if (string.IsNullOrWhiteSpace(instanceSettings.SocialNetwork))
+                throw new ConfigurationErrorsException("Missing SocialNetwork");
+
             services.AddOpenTelemetry()
                 .ConfigureResource(builder => builder.AddService(
                     serviceName: "dotmakeup", 
                     autoGenerateServiceInstanceId: false,
                     serviceInstanceId: Environment.MachineName,
-                    serviceNamespace: Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork 
+                    serviceNamespace: instanceSettings.SocialNetwork
                     ))
                 .WithMetrics(config =>
                 {
@@ -89,19 +93,21 @@ namespace BirdsiteLive
 
         public void ConfigureContainer(ServiceRegistry services)
         {
-            var instanceSettings = Configuration.GetSection("Instance").Get<InstanceSettings>();
+            var instanceSettings = GetRequiredSettings<InstanceSettings>("Instance");
+            if (string.IsNullOrWhiteSpace(instanceSettings.SocialNetwork))
+                throw new ConfigurationErrorsException("Missing SocialNetwork");
             services.For<InstanceSettings>().Use(_ => instanceSettings);
 
-            var dbSettings = Configuration.GetSection("Db").Get<DbSettings>();
+            var dbSettings = GetRequiredSettings<DbSettings>("Db");
             services.For<DbSettings>().Use(x => dbSettings);
 
-            var logsSettings = Configuration.GetSection("Logging").Get<LogsSettings>();
+            var logsSettings = GetRequiredSettings<LogsSettings>("Logging");
             services.For<LogsSettings>().Use(x => logsSettings);
 
-            var moderationSettings = Configuration.GetSection("Moderation").Get<ModerationSettings>();
+            var moderationSettings = GetRequiredSettings<ModerationSettings>("Moderation");
             services.For<ModerationSettings>().Use(x => moderationSettings);
 
-            if (string.Equals(dbSettings!.Type, DbTypes.Postgres, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(dbSettings.Type, DbTypes.Postgres, StringComparison.OrdinalIgnoreCase))
             {
                 var connString = $"Host={dbSettings.Host};Username={dbSettings.User};Password={dbSettings.Password};Port={dbSettings.Port};Database={dbSettings.Name};MinPoolSize=3;MaxPoolSize=5;";
                 var postgresSettings = new PostgresSettings
@@ -127,13 +133,11 @@ namespace BirdsiteLive
 
             services.For<ITwitterAuthenticationInitializer>().Use<TwitterAuthenticationInitializer>().Singleton();
 
-            if (Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork is null) 
-                throw new ConfigurationErrorsException("Missing SocialNetwork");
-            else if (Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Twitter") 
+            if (instanceSettings.SocialNetwork == "Twitter") 
                 services.For<ISocialMediaService>().Use<TwitterService>().Singleton();
-            else if (Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "HackerNews") 
+            else if (instanceSettings.SocialNetwork == "HackerNews") 
                 services.For<ISocialMediaService>().Use<HnService>().Singleton();
-            else if (Configuration!.GetSection("Instance").Get<InstanceSettings>().SocialNetwork == "Instagram") 
+            else if (instanceSettings.SocialNetwork == "Instagram") 
                 services.For<ISocialMediaService>().Use<InstagramService>().Singleton();
             else
                 throw new ConfigurationErrorsException("Unknown SocialNetwork");
@@ -141,7 +145,7 @@ namespace BirdsiteLive
             services.For<ICachedStatisticsService>().Use<CachedStatisticsService>().Singleton();
 
             services.AddHttpClient();
-            services.AddHttpClient("WithProxy").AddProxySupport(instanceSettings!.ProxyURL, instanceSettings.ProxyUser, instanceSettings.ProxyPassword);
+            services.AddHttpClient("WithProxy").AddProxySupport(instanceSettings.ProxyURL, instanceSettings.ProxyUser, instanceSettings.ProxyPassword);
             
             services.Scan(scanner =>
             {
@@ -154,6 +158,14 @@ namespace BirdsiteLive
                 scanner.TheCallingAssembly();
                 scanner.WithDefaultConventions();
             });
+        }
+
+        private T GetRequiredSettings<T>(string sectionName) where T : class
+        {
+            var settings = Configuration.GetSection(sectionName).Get<T>();
+            if (settings is null)
+                throw new ConfigurationErrorsException($"Missing '{sectionName}' configuration section");
+            return settings;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -53,23 +53,23 @@ public class SocialNetworkCache
             SizeLimit = instanceSettings.TweetCacheCapacity,
             TrackStatistics = true
         });
-        _userCount = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()!.CurrentEntryCount, "Number of entries in user cache" );
-        _userCacheHit = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()!.TotalHits, "Number of user cache hits" );
-        _userCacheMiss = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()!.TotalMisses, "Number of user cache misses" );
-        _postCount = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()!.CurrentEntryCount, "Number of entries in post cache" );
-        _postCacheHit = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()!.TotalHits, "Number of post cache hits" );
-        _postCacheMiss = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()!.TotalMisses, "Number of user cache misses" );
+        _userCount = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()?.CurrentEntryCount ?? 0, "Number of entries in user cache");
+        _userCacheHit = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()?.TotalHits ?? 0, "Number of user cache hits");
+        _userCacheMiss = _meter.CreateObservableGauge<long>("dotmakeup_cache_user_count", () => _userCache.GetCurrentStatistics()?.TotalMisses ?? 0, "Number of user cache misses");
+        _postCount = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()?.CurrentEntryCount ?? 0, "Number of entries in post cache");
+        _postCacheHit = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()?.TotalHits ?? 0, "Number of post cache hits");
+        _postCacheMiss = _meter.CreateObservableGauge<long>("dotmakeup_cache_post_count", () => _postCache.GetCurrentStatistics()?.TotalMisses ?? 0, "Number of user cache misses");
     }
 
     public void BackfillUserCache<T>(T user) where T : SocialMediaUser
     {
-        _userCache.Set(user.Acct, Task.FromResult(user), _cacheEntryOptions);
+        _userCache.Set(user.Acct, Task.FromResult<T?>(user), _cacheEntryOptions);
     }
 
-    public Task<T> GetUser<T>(string username, Func<Task<T>>[] getSocialMediaUser) where T : SocialMediaUser
+    public Task<T?> GetUser<T>(string username, Func<Task<T?>>[] getSocialMediaUser) where T : SocialMediaUser
     {
-        if (_userCache.TryGetValue(username, out Task<T> cachedUser))
-            return cachedUser!; 
+        if (_userCache.TryGetValue(username, out Task<T?>? cachedUser) && cachedUser is not null)
+            return cachedUser;
         
         var p = _processUser(getSocialMediaUser);
         _userCache.Set(username, p, _cacheEntryOptions);
@@ -77,7 +77,7 @@ public class SocialNetworkCache
         return p;
     }
 
-    private async Task<T> _processUser<T>(Func<Task<T>>[] getSocialMediaUser) where T : SocialMediaUser
+    private async Task<T?> _processUser<T>(Func<Task<T?>>[] getSocialMediaUser) where T : SocialMediaUser
     {
         foreach (var getSocialMediaUserFunc in getSocialMediaUser)
         {
@@ -102,10 +102,10 @@ public class SocialNetworkCache
             {
             }
         }
-        return null!;
+        return null;
     }
 
-    public void BackfillPostCache<T>(T post) where T : SocialMediaPost
+    public void BackfillPostCache<T>(T post) where T : class, SocialMediaPost
     {
         if (_userCache.TryGetValue(post.Author.Acct, out var cachedObj))
         {
@@ -119,13 +119,13 @@ public class SocialNetworkCache
                 }
             }
         }
-        _postCache.Set(post.Id, Task.FromResult(post), _cacheEntryOptions);
+        _postCache.Set(post.Id, Task.FromResult<T?>(post), _cacheEntryOptions);
     }
 
-    public Task<T> GetPost<T>(string id, Func<Task<T>>[] getSocialMediaPost) where T : class, SocialMediaPost
+    public Task<T?> GetPost<T>(string id, Func<Task<T?>>[] getSocialMediaPost) where T : class, SocialMediaPost
     {
-        if (_postCache.TryGetValue(id, out Task<T> cachedPost))
-            return cachedPost!; 
+        if (_postCache.TryGetValue(id, out Task<T?>? cachedPost) && cachedPost is not null)
+            return cachedPost;
         
         var p = _processPost(getSocialMediaPost);
         _postCache.Set(id, p, _cacheEntryOptions);
@@ -133,7 +133,7 @@ public class SocialNetworkCache
         return p;
     }
 
-    private async Task<T> _processPost<T>(Func<Task<T>>[] getSocialMediaPost) where T : class, SocialMediaPost
+    private async Task<T?> _processPost<T>(Func<Task<T?>>[] getSocialMediaPost) where T : class, SocialMediaPost
     {
         foreach (var getSocialMediaPostFunc in getSocialMediaPost)
         {
@@ -155,6 +155,6 @@ public class SocialNetworkCache
                 throw;
             }
         }
-        return null!;
+        return null;
     }
 }

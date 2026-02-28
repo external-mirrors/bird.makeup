@@ -36,7 +36,7 @@ namespace BirdsiteLive.Domain
         {
             var actorUrl = UrlFactory.GetActorUrl(_instanceSettings.Domain, username);
             var noteUrl = UrlFactory.GetNoteUrl(_instanceSettings.Domain, username, post.Id.ToString());
-            String? announceId = null;
+            string? announceId = null;
             if (post.IsRetweet)
             {
                 actorUrl = UrlFactory.GetActorUrl(_instanceSettings.Domain, post.OriginalAuthor.Acct);
@@ -86,25 +86,25 @@ namespace BirdsiteLive.Domain
             }
             
             note.id = noteUrl;
-            note.announceId = announceId!;
+            note.announceId = announceId;
             note.published = post.CreatedAt.ToString("s") + "Z";
             note.url = noteUrl;
             note.attributedTo = actorUrl;
-            note.inReplyTo = inReplyTo!;
+            note.inReplyTo = inReplyTo;
             note.to = [ to ];
             note.cc = cc;
             note.sensitive = false;
-            note.summary = summary!;
+            note.summary = summary;
             note.content = $"<p>{content}</p>";
             note.attachment = Convert(post.Media);
             note.tag = tags.ToArray();
 
-            if (note is Question)
+            if (note is Question question && post.Poll is { } poll)
             {
                 long totalVotes = 0;
-                var nowString = post!.Poll.endTime.ToString("s") + "Z";
+                var nowString = poll.endTime.ToString("s") + "Z";
                 var options = new List<QuestionAnswer>();
-                foreach ((string First, long Second) in post.Poll.options)
+                foreach ((string First, long Second) in poll.options)
                 {
                     var o = new QuestionAnswer();
                     o.name = First;
@@ -117,11 +117,11 @@ namespace BirdsiteLive.Domain
                     options.Add(o);
                 }
 
-                ((Question)note).votersCount = totalVotes;
-                ((Question)note).endTime = nowString;
-                if (post.Poll.endTime < DateTime.Now)
-                    ((Question)note).closed = nowString;
-                ((Question)note).answers = options.ToArray();
+                question.votersCount = totalVotes;
+                question.endTime = nowString;
+                if (poll.endTime < DateTime.Now)
+                    question.closed = nowString;
+                question.answers = options.ToArray();
             }
 
             if (post.LikeCount != default)
@@ -130,7 +130,7 @@ namespace BirdsiteLive.Domain
                 {
                     id = $"{noteUrl}/likes",
                     totalItems = post.LikeCount,
-                    context = null!,
+                    context = null,
                 };
             }
             if (post.ShareCount != default)
@@ -139,7 +139,7 @@ namespace BirdsiteLive.Domain
                 {
                     id = $"{noteUrl}/shares",
                     totalItems = post.ShareCount,
-                    context = null!,
+                    context = null,
                 };
             }
             
@@ -181,9 +181,10 @@ namespace BirdsiteLive.Domain
             return noteActivity;
         }
 
-        private Attachment[] Convert(ExtractedMedia[] media)
+        private Attachment[] Convert(ExtractedMedia[]? media)
         {
-            if(media == null) return new Attachment[0];
+            if (media is null)
+                return Array.Empty<Attachment>();
             return media.Select(x =>
             {
                 return new Attachment

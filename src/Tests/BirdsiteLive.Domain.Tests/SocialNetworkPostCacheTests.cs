@@ -45,7 +45,7 @@ namespace BirdsiteLive.Domain.Tests
                 () =>
                 {
                     counter++; 
-                    return Task.FromResult(user);
+                    return Task.FromResult<ExtractedTweet?>(user);
                 };
             #endregion
 
@@ -55,6 +55,7 @@ namespace BirdsiteLive.Domain.Tests
             var u = await service.GetPost(id, [f, f]);
 
             #region Validations
+            Assert.IsNotNull(u);
             Assert.AreEqual(u.Id, id);
             Assert.AreEqual(u.MessageContent, message);
             Assert.AreEqual(counter, 0);
@@ -82,7 +83,7 @@ namespace BirdsiteLive.Domain.Tests
                 () =>
                 {
                     counter++; 
-                    return Task.FromResult(post);
+                    return Task.FromResult<ExtractedTweet?>(post);
                 };
             #endregion
 
@@ -93,6 +94,7 @@ namespace BirdsiteLive.Domain.Tests
             var u = await service.GetPost(id, [f, f]);
 
             #region Validations
+            Assert.IsNotNull(u);
             Assert.AreEqual(u.Id, id);
             Assert.AreEqual(u.MessageContent, message);
             Assert.AreEqual(counter, 0);
@@ -116,7 +118,7 @@ namespace BirdsiteLive.Domain.Tests
                 () =>
                 {
                     counter++; 
-                    return Task.FromResult(user);
+                    return Task.FromResult<ExtractedTweet?>(user);
                 };
             #endregion
 
@@ -125,6 +127,7 @@ namespace BirdsiteLive.Domain.Tests
             var u = await service.GetPost(id, [f, f]);
 
             #region Validations
+            Assert.IsNotNull(u);
             Assert.AreEqual(u.Id, id);
             Assert.AreEqual(counter, 1);
 
@@ -147,19 +150,19 @@ namespace BirdsiteLive.Domain.Tests
                 () =>
                 {
                     counter++;
-                    return Task.FromException<ExtractedTweet>(new UserNotFoundException());
+                    return Task.FromException<ExtractedTweet?>(new UserNotFoundException());
                 };
             var fFailed2 =
                 () =>
                 {
                     counter++;
-                    return Task.FromException<ExtractedTweet>(new HttpRequestException());
+                    return Task.FromException<ExtractedTweet?>(new HttpRequestException());
                 };
             var f =
                 () =>
                 {
                     counter++; 
-                    return Task.FromResult(user);
+                    return Task.FromResult<ExtractedTweet?>(user);
                 };
             #endregion
 
@@ -189,13 +192,13 @@ namespace BirdsiteLive.Domain.Tests
                 () =>
                 {
                     counter++;
-                    return Task.FromException<ExtractedTweet>(new RateLimitExceededException());
+                    return Task.FromException<ExtractedTweet?>(new RateLimitExceededException());
                 };
             var f =
                 () =>
                 {
                     counter++; 
-                    return Task.FromResult(user);
+                    return Task.FromResult<ExtractedTweet?>(user);
                 };
             #endregion
 
@@ -204,6 +207,7 @@ namespace BirdsiteLive.Domain.Tests
             var u = await service.GetPost(id, [fFailed, f]);
 
             #region Validations
+            Assert.IsNotNull(u);
             Assert.AreEqual(u.Id, id);
             Assert.AreEqual(counter, 2);
 
@@ -226,7 +230,7 @@ namespace BirdsiteLive.Domain.Tests
                 () =>
                 {
                     counter++; 
-                    return Task.FromResult(user);
+                    return Task.FromResult<ExtractedTweet?>(user);
                 };
             #endregion
 
@@ -235,10 +239,14 @@ namespace BirdsiteLive.Domain.Tests
             var up = service.GetPost(id, [f, f]);
             var u2p = service.GetPost(id, [f, f]);
             await Task.WhenAll(up, u2p);
+            var upResult = await up;
+            var u2pResult = await u2p;
 
             #region Validations
-            Assert.AreEqual(up.Result.Id, id);
-            Assert.AreEqual(u2p.Result.Id, id);
+            Assert.IsNotNull(upResult);
+            Assert.IsNotNull(u2pResult);
+            Assert.AreEqual(upResult.Id, id);
+            Assert.AreEqual(u2pResult.Id, id);
             Assert.AreEqual(counter, 1);
 
             #endregion

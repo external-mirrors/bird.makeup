@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System;
 using BirdsiteLive.ActivityPub.Models;
-using System.Text.Json.Serialization;
 using System.Text.Json;
 
 namespace BirdsiteLive.ActivityPub
@@ -10,61 +9,60 @@ namespace BirdsiteLive.ActivityPub
     {
         public static Activity ProcessActivity(string json)
         {
-            try
-            {
-                var activity = JsonSerializer.Deserialize<Activity>(json);
-                switch (activity!.type)
-                {
-                    case "Follow":
-                        return JsonSerializer.Deserialize<ActivityFollow>(json)!;
-                    case "Like":
-                        return JsonSerializer.Deserialize<ActivityLike>(json)!;
-                    case "Flag":
-                        return JsonSerializer.Deserialize<ActivityFlag>(json)!;
-                    case "Announce":
-                        return JsonSerializer.Deserialize<Activity>(json)!;
-                    case "Create":
-                        return JsonSerializer.Deserialize<ActivityCreateNote>(json)!;
-                    case "Undo":
-                        var a = JsonSerializer.Deserialize<ActivityUndo>(json);
-                        if(a!.apObject.type == "Follow")
-                            return JsonSerializer.Deserialize<ActivityUndoFollow>(json)!;
-                        break;
-                    case "Delete":
-                        return JsonSerializer.Deserialize<ActivityDelete>(json)!;
-                    case "Accept":
-                        var accept = JsonSerializer.Deserialize<ActivityAccept>(json);
-                        switch (accept!.apObject.type)
-                        {
-                            case "Follow":
-                                var acceptFollow = new ActivityAcceptFollow()
-                                {
-                                    type = accept.type,
-                                    id = accept.id,
-                                    actor = accept.actor,
-                                    context = accept.context,
-                                    apObject = new ActivityFollow()
-                                    {
+            var activity = DeserializeRequired<Activity>(json);
+            if (string.IsNullOrWhiteSpace(activity.type))
+                throw new JsonException("Incoming activity is missing required 'type'.");
 
-                                        id = accept.apObject.id,
-                                        type = accept.apObject.type,
-                                        actor = accept.apObject.actor,
-                                        context = accept.apObject.context?.ToString(),
-                                        apObject = accept.apObject.apObject,
-                                    }
-                                };
-                                return acceptFollow;
-                        }
-                        break;
-                }
-            }
-            catch (Exception e)
+            return activity.type switch
             {
-                Console.WriteLine(e);
-            }
-
-            return null!;
+                "Follow" => DeserializeRequired<ActivityFollow>(json),
+                "Like" => DeserializeRequired<ActivityLike>(json),
+                "Flag" => DeserializeRequired<ActivityFlag>(json),
+                "Announce" => DeserializeRequired<Activity>(json),
+                "Create" => DeserializeRequired<ActivityCreateNote>(json),
+                "Delete" => DeserializeRequired<ActivityDelete>(json),
+                "Undo" => DeserializeUndoActivity(json),
+                "Accept" => DeserializeAcceptActivity(json),
+                _ => activity,
+            };
         }
 
+        private static Activity DeserializeUndoActivity(string json)
+        {
+            var undoActivity = DeserializeRequired<ActivityUndo>(json);
+            if (undoActivity.apObject?.type == "Follow")
+                return DeserializeRequired<ActivityUndoFollow>(json);
+
+            return undoActivity;
+        }
+
+        private static Activity DeserializeAcceptActivity(string json)
+        {
+            var accept = DeserializeRequired<ActivityAccept>(json);
+            if (accept.apObject?.type != "Follow")
+                return accept;
+
+            return new ActivityAcceptFollow
+            {
+                type = accept.type,
+                id = accept.id,
+                actor = accept.actor,
+                context = accept.context,
+                apObject = new ActivityFollow()
+                {
+                    id = accept.apObject.id,
+                    type = accept.apObject.type,
+                    actor = accept.apObject.actor,
+                    context = accept.apObject.context?.ToString(),
+                    apObject = accept.apObject.apObject,
+                }
+            };
+        }
+
+        private static T DeserializeRequired<T>(string json) where T : class
+        {
+            return JsonSerializer.Deserialize<T>(json)
+                   ?? throw new JsonException($"Unable to deserialize payload to {typeof(T).Name}.");
+        }
     }
 }
