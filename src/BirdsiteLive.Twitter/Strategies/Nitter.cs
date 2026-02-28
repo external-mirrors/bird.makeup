@@ -775,7 +775,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             Poll = poll,
             IsRetweet = false,
             InReplyToAccount = inReplyToAccount,
-            InReplyToStatusId = inReplyToStatusId ?? (inReplyToAccount != null ? 0 : null),
+            InReplyToStatusId = inReplyToStatusId,
             IsReply = isReply,
             IsThread = isThread,
             QuotedAccount = quotedAccount,
