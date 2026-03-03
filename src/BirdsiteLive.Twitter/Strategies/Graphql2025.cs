@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Twitter.Models;
@@ -23,6 +24,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
     private static readonly ActivitySource ActivitySource = new("DotMakeup");
     private static readonly Meter Meter = new("DotMakeup", "1.0.0");
     private static readonly Counter<int> TokenRefreshCounter = Meter.CreateCounter<int>("dotmakeup_token_refresh_total");
+    private static readonly Counter<int> CrawlOutcomeCounter = Meter.CreateCounter<int>("dotmakeup_crawl_outcome_total");
     private readonly ITwitterAuthenticationInitializer _twitterAuthenticationInitializer;
     private readonly ITwitterTweetsService _tweetsService;
     private readonly InstanceSettings _instanceSettings;
@@ -38,11 +40,24 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         _logger = logger;
         
     }
+
+    private void RecordOutcome(string operation, string outcome)
+    {
+        var socialNetwork = string.IsNullOrWhiteSpace(_instanceSettings.SocialNetwork) ? "Twitter" : _instanceSettings.SocialNetwork;
+        CrawlOutcomeCounter.Add(1,
+            new KeyValuePair<string, object>("strategy", "Graphql2025"),
+            new KeyValuePair<string, object>("operation", operation),
+            new KeyValuePair<string, object>("outcome", outcome),
+            new KeyValuePair<string, object>("social_network", socialNetwork)
+        );
+    }
+
     public async Task<TwitterUser> GetUserAsync(string username)
     {
         using var activity = ActivitySource.StartActivity("Graphql2025.GetUserAsync", ActivityKind.Internal);
         activity?.SetTag("crawl.strategy", "Graphql2025");
         activity?.SetTag("user.acct", username);
+        activity?.SetTag("crawl.outcome", "unknown");
 
         var endpoint = "https://api.x.com/graphql/1F38Jtjett-7b8eQKstioA/UserByScreenName?variables=%7B%22screen_name%22%3A%22askvenice%22%7D&features=%7B%22responsive_web_grok_bio_auto_translation_is_enabled%22%3Afalse%2C%22hidden_profile_subscriptions_enabled%22%3Atrue%2C%22payments_enabled%22%3Afalse%2C%22profile_label_improvements_pcf_label_in_post_enabled%22%3Atrue%2C%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22subscriptions_verification_info_is_identity_verified_enabled%22%3Atrue%2C%22subscriptions_verification_info_verified_since_enabled%22%3Atrue%2C%22highlights_tweets_tab_ui_enabled%22%3Atrue%2C%22responsive_web_twitter_article_notes_tab_enabled%22%3Atrue%2C%22subscriptions_feature_can_gift_premium%22%3Atrue%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Atrue%7D";
 
@@ -57,6 +72,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             if (httpResponse.StatusCode == HttpStatusCode.Unauthorized || httpResponse.StatusCode == HttpStatusCode.Forbidden)
             {
                 activity?.SetTag("error.type", "AuthThrottle");
+                activity?.SetTag("crawl.outcome", "auth_throttle");
                 activity?.SetStatus(ActivityStatusCode.Error, httpResponse.StatusCode.ToString());
                 var socialNetwork = string.IsNullOrWhiteSpace(_instanceSettings.SocialNetwork) ? "Twitter" : _instanceSettings.SocialNetwork;
                 TokenRefreshCounter.Add(1,
@@ -64,9 +80,10 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                     new KeyValuePair<string, object>("operation", "GetUserAsync"),
                     new KeyValuePair<string, object>("social_network", socialNetwork)
                 );
+                RecordOutcome("GetUserAsync", "auth_throttle");
                 _logger.LogError("Error retrieving user {Username}, Refreshing client", username);
                 await _twitterAuthenticationInitializer.RefreshClient(request);
-                return null!;
+                throw new RateLimitExceededException();
             }
             httpResponse.EnsureSuccessStatusCode();
 
@@ -74,12 +91,20 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             res = JsonDocument.Parse(c);
             var result = res.RootElement.GetProperty("data").GetProperty("user").GetProperty("result");
             var user = ExtractUser(result);
+            activity?.SetTag("crawl.outcome", "success");
+            RecordOutcome("GetUserAsync", "success");
             return user;
+        }
+        catch (RateLimitExceededException)
+        {
+            throw;
         }
         catch (Exception e)
         {
             activity?.SetTag("error.type", e.GetType().Name);
+            activity?.SetTag("crawl.outcome", "upstream_error");
             activity?.SetStatus(ActivityStatusCode.Error, e.Message);
+            RecordOutcome("GetUserAsync", "upstream_error");
             throw;
         }
 
@@ -91,6 +116,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         activity?.SetTag("crawl.strategy", "Graphql2025");
         activity?.SetTag("user.acct", user.Acct);
         activity?.SetTag("posts.count", 0);
+        activity?.SetTag("crawl.outcome", "unknown");
 
         var client = await _twitterAuthenticationInitializer.MakeHttpClient();
         string username = user.Acct;
@@ -108,6 +134,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             if (httpResponse.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
             {
                 activity?.SetTag("error.type", "AuthThrottle");
+                activity?.SetTag("crawl.outcome", "auth_throttle");
                 activity?.SetStatus(ActivityStatusCode.Error, httpResponse.StatusCode.ToString());
                 var socialNetwork = string.IsNullOrWhiteSpace(_instanceSettings.SocialNetwork) ? "Twitter" : _instanceSettings.SocialNetwork;
                 TokenRefreshCounter.Add(1,
@@ -115,19 +142,26 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
                     new KeyValuePair<string, object>("operation", "GetTimelineAsync"),
                     new KeyValuePair<string, object>("social_network", socialNetwork)
                 );
+                RecordOutcome("GetTimelineAsync", "auth_throttle");
                 _logger.LogError("Error retrieving timeline of {Username}; refreshing client", username);
                 await _twitterAuthenticationInitializer.RefreshClient(request);
-                return [];
+                throw new RateLimitExceededException();
             }
             httpResponse.EnsureSuccessStatusCode();
             results = JsonDocument.Parse(c);
         }
+        catch (RateLimitExceededException)
+        {
+            throw;
+        }
         catch (Exception e)
         {
             activity?.SetTag("error.type", e.GetType().Name);
+            activity?.SetTag("crawl.outcome", "upstream_error");
             activity?.SetStatus(ActivityStatusCode.Error, e.Message);
             _logger.LogError(e, "Error retrieving timeline of {Username}", username);
-            return null!;
+            RecordOutcome("GetTimelineAsync", "upstream_error");
+            throw;
         }
 
         var timeline = results.RootElement.GetProperty("data").GetProperty("user").GetProperty("result")
@@ -172,6 +206,9 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         }
         extractedTweets = extractedTweets.OrderByDescending(x => x.CreatedAt).Where(x => x.IdLong > fromTweetId).ToList();
         activity?.SetTag("posts.count", extractedTweets.Count);
+        var crawlOutcome = extractedTweets.Count == 0 ? "empty" : "success";
+        activity?.SetTag("crawl.outcome", crawlOutcome);
+        RecordOutcome("GetTimelineAsync", crawlOutcome);
 
         return extractedTweets;
     }

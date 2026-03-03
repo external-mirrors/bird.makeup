@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
 using BirdsiteLive.Common.Settings;
 using BirdsiteLive.Twitter.Models;
@@ -87,11 +88,11 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         using var request = _twitterAuthenticationInitializer.MakeHttpRequest(new HttpMethod("GET"), endpoint.Replace("elonmusk", username), true);
 
         var httpResponse = await client.SendAsync(request);
-        if (httpResponse.StatusCode == HttpStatusCode.Unauthorized || httpResponse.StatusCode == HttpStatusCode.Forbidden)
+        if (httpResponse.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
         {
             _logger.LogError("Error retrieving user {Username}, Refreshing client", username);
             await _twitterAuthenticationInitializer.RefreshClient(request);
-            return null!;
+            throw new RateLimitExceededException();
         }
         httpResponse.EnsureSuccessStatusCode();
 
@@ -122,15 +123,19 @@ public class Graphql2024 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             {
                 _logger.LogError("Error retrieving timeline of {Username}; refreshing client", username);
                 await _twitterAuthenticationInitializer.RefreshClient(request);
-                return [];
+                throw new RateLimitExceededException();
             }
             httpResponse.EnsureSuccessStatusCode();
             results = JsonDocument.Parse(c);
         }
+        catch (RateLimitExceededException)
+        {
+            throw;
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "Error retrieving timeline for {Username}", username);
-            return null!;
+            throw;
         }
 
         var timeline = results.RootElement.GetProperty("data").GetProperty("user").GetProperty("result")

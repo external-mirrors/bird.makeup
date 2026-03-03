@@ -210,6 +210,11 @@ namespace BirdsiteLive.Twitter
                 extractedTweets = await _tweetFromGraphql2024.GetTimelineAsync(user, user.TwitterUserId, fromTweetId, false);
                 source = "Vanilla";
             }
+
+            if (extractedTweets is null)
+            {
+                throw new InvalidOperationException($"{source} timeline extractor returned null for {user.Acct}");
+            }
             
             extractedTweets = extractedTweets.OrderByDescending(x => x.Id).Where(x => x.IdLong > fromTweetId).ToList();
 
