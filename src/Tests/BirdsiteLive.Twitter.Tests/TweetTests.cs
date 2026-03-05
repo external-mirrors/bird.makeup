@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -373,6 +374,28 @@ namespace BirdsiteLive.Twitter.Tests
         }
         [TestMethod]
         [DynamicData(nameof(Implementations))]
+        public async Task ThreadWithVideo(StrategyHints s)
+        {
+            var tweet = await _tweetService.GetTweetAsync(2029196696887148841, s);
+            if (tweet is null)
+            {
+                Assert.Inconclusive();
+                return;
+            }
+
+            Assert.AreEqual(tweet.InReplyToAccount, "satyanadella");
+            Assert.AreEqual(tweet.InReplyToStatusId, 2029196695008100434);
+            Assert.AreEqual(tweet.Media.Length, 1);
+            Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
+            Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/amplify_video"));
+            Assert.IsTrue(tweet.Media[0].Url.EndsWith(".mp4"));
+            Assert.IsTrue(tweet.IsReply);
+            Assert.IsTrue(tweet.IsThread);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
+        }
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
         public async Task ThreadWithImages(StrategyHints s)
         {
             var tweet = await _tweetService.GetTweetAsync(2027439790107275429, s);
@@ -420,12 +443,33 @@ namespace BirdsiteLive.Twitter.Tests
                 return;
             }
 
-            Assert.AreEqual(tweet.InReplyToAccount, "DriveTeslaca");
+            Assert.AreEqual(tweet.InReplyToAccount, "driveteslaca");
             Assert.AreEqual(tweet.InReplyToStatusId, 1612610060194312193);
             Assert.IsTrue(tweet.IsReply);
             Assert.IsFalse(tweet.IsThread);
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
+        }
+        
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
+        public async Task SimpleReply2(StrategyHints s)
+        {
+            var tweet = await _tweetService.GetTweetAsync(2028888742774047085, s);
+            if (tweet is null)
+            {
+                Assert.Inconclusive();
+                return;
+            }
+
+            Assert.AreEqual(tweet.InReplyToAccount, "martinag2702");
+            Assert.AreEqual(tweet.InReplyToStatusId, 2028887996427034629);
+            Assert.IsTrue(tweet.IsReply);
+            Assert.IsFalse(tweet.IsThread);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
+            
+            //Assert.AreEqual(tweet.MessageContent, "");
         }
 
         [TestMethod]

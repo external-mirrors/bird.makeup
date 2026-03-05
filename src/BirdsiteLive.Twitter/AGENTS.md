@@ -1,4 +1,10 @@
-# Special consideration for Nitter
+# Special consideration for Graphql202X's strategy
+
+This is the OG strategy, hitting twitter Graphql endpoints directly. The URL and answer structure change once in a while, but we keep them around as long as they work with the year in the name. 
+
+The timeline endpoint upstream was modified to return only the top tweets per number of likes. This is way less useful in terms of coverage, but makes for a nice fallback for lower priority accounts (when we filter by date, we can still potentially get new posts if they are very popular). This strategy still works great for post and user lookups.
+
+# Special consideration for Nitter' strategy
 
 There is a special case to handle when crawling through Nitter. We are running multiple raspberry pies with Nitter installed. Those are trusted and we can fully rely on their results. 
 
