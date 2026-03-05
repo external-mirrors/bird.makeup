@@ -266,7 +266,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
         {
             if (long.TryParse(inReplyToPostIdElement.GetString(), out var parsedReplyId))
                 inReplyToPostId = parsedReplyId;
-            inReplyToUser = inReplyToUserElement.GetString();
+            inReplyToUser = inReplyToUserElement.GetString()?.ToLowerInvariant();
         }
         bool isRetweet = legacy.TryGetProperty("retweeted_status_result", out retweet);
         string MessageContent;

@@ -104,7 +104,7 @@ public class Syndication : ITweetExtractor
         {
             if (root.TryGetProperty("in_reply_to_screen_name", out var inReplyToScreenName) &&
                 inReplyToScreenName.ValueKind == JsonValueKind.String)
-                inReplyTo = inReplyToScreenName.GetString();
+                inReplyTo = inReplyToScreenName.GetString()?.ToLowerInvariant();
             
             if (root.TryGetProperty("in_reply_to_status_id_str", out var inReplyToStatusId) &&
                 inReplyToStatusId.ValueKind == JsonValueKind.String &&

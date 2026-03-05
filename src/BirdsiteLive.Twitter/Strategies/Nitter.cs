@@ -296,7 +296,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
                     if (!string.IsNullOrWhiteSpace(headerReplyText))
                     {
-                        tweet.InReplyToAccount = headerReplyText;
+                        tweet.InReplyToAccount = headerReplyText.ToLowerInvariant();
                         tweet.IsReply = true;
                         tweet.IsThread = string.Equals(tweet.Author.Acct, tweet.InReplyToAccount, StringComparison.OrdinalIgnoreCase);
                         
@@ -568,6 +568,17 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 }
                 else if (src != null)
                 {
+                    if (TryBuildVideoUrlFromThumbnail(src, out var synthesizedVideoUrl))
+                    {
+                        media.Add(new ExtractedMedia
+                        {
+                            MediaType = "video/mp4",
+                            Url = synthesizedVideoUrl,
+                            AltText = altText
+                        });
+                        continue;
+                    }
+
                     media.Add(new ExtractedMedia
                     {
                         MediaType = "video/mp4",
@@ -650,13 +661,15 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         {
             var replyLink = replyTo.QuerySelector("a");
             inReplyToAccount = replyLink?.TextContent.TrimStart('@');
+            if (!string.IsNullOrWhiteSpace(inReplyToAccount))
+                inReplyToAccount = inReplyToAccount.ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(inReplyToAccount))
             {
                 // Try to extract from text if no <a> tag
                 var match = Regex.Match(replyTo.TextContent, @"@([a-zA-Z0-9_]+)");
                 if (match.Success)
                 {
-                    inReplyToAccount = match.Groups[1].Value;
+                    inReplyToAccount = match.Groups[1].Value.ToLowerInvariant();
                 }
             }
 
@@ -668,7 +681,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                     var acctMatch = Regex.Match(replyHref, @"/([A-Za-z0-9_]+)/status/");
                     if (acctMatch.Success)
                     {
-                        inReplyToAccount = acctMatch.Groups[1].Value;
+                        inReplyToAccount = acctMatch.Groups[1].Value.ToLowerInvariant();
                     }
                 }
             }
@@ -864,6 +877,29 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
 
         var usernameText = item.QuerySelector(".username")?.TextContent?.Trim();
         return string.IsNullOrWhiteSpace(usernameText) ? null : usernameText.TrimStart('@')!;
+    }
+
+    private static bool TryBuildVideoUrlFromThumbnail(string thumbnailSrc, out string videoUrl)
+    {
+        videoUrl = null;
+        if (string.IsNullOrWhiteSpace(thumbnailSrc))
+            return false;
+
+        var decodedThumbnail = thumbnailSrc;
+        if (decodedThumbnail.StartsWith("/pic/"))
+            decodedThumbnail = WebUtility.UrlDecode(decodedThumbnail.Substring(5));
+
+        decodedThumbnail = decodedThumbnail.Split('?', 2)[0];
+        var match = Regex.Match(decodedThumbnail,
+            @"(?<kind>amplify_video|ext_tw_video)_thumb/(?<videoId>\d+)/img/(?<asset>[A-Za-z0-9_-]+)\.(?:jpg|jpeg|png|webp)$");
+        if (!match.Success)
+            return false;
+
+        var kind = match.Groups["kind"].Value;
+        var videoId = match.Groups["videoId"].Value;
+        var asset = match.Groups["asset"].Value;
+        videoUrl = $"https://video.twimg.com/{kind}/{videoId}/vid/{asset}.mp4";
+        return true;
     }
 
     private bool TryConvertNitterStatusUrl(string url, out string convertedUrl)
