@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8600, CS8601, CS8602, CS8603, CS8604, CS8613, CS8618, CS8619, CS8620, CS8621, CS8625, CS8629, CS8631, CS8634
 using System.Diagnostics.Metrics;
+using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -9,6 +10,7 @@ using BirdsiteLive.Common.Settings;
 using BirdsiteLive.DAL.Contracts;
 using BirdsiteLive.Domain;
 using dotMakeup.HackerNews.Models;
+using dotMakeup.HackerNews.Strategies;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace dotMakeup.HackerNews;
@@ -20,6 +22,7 @@ public class HnService : ISocialMediaService
     static Counter<int> _frontpagePosts = _meter.CreateCounter<int>("dotmakeup_hn_frontpage_posts");
     private IHttpClientFactory _httpClientFactory;
     private readonly SocialNetworkCache _socialNetworkCache;
+    private readonly IHnUserStrategy[] _userStrategies;
 
     private readonly HNUser _frontpage = new HNUser()
     {
@@ -29,9 +32,16 @@ public class HnService : ISocialMediaService
         Description = "Hacker News' front page",
     };
     public HnService(IHttpClientFactory httpClientFactory, IHackerNewsUserDal hackerNewsUsersDal, InstanceSettings settings)
+        : this(httpClientFactory, hackerNewsUsersDal, settings, CreateDefaultUserStrategies(httpClientFactory))
+    {
+    }
+
+    public HnService(IHttpClientFactory httpClientFactory, IHackerNewsUserDal hackerNewsUsersDal, InstanceSettings settings,
+        IEnumerable<IHnUserStrategy> userStrategies)
     {
             _httpClientFactory = httpClientFactory;
             UserDal = hackerNewsUsersDal;
+            _userStrategies = userStrategies.OrderBy(x => x.Priority).ToArray();
             
             _socialNetworkCache = new SocialNetworkCache(settings);
     }
@@ -42,71 +52,60 @@ public class HnService : ISocialMediaService
     public Regex UserMention { get; } = new Regex(@".^");
     public string MakeUserNameCanonical(string name)
     {
-        return name.Trim();
+        return name.Trim().ToLowerInvariant();
     }
 
     public async Task<SocialMediaUser> GetUserAsync(string username)
     {
-        if (username == "frontpage")
+        var requestedUsername = username.Trim();
+        var canonicalUsername = MakeUserNameCanonical(requestedUsername);
+        if (canonicalUsername == "frontpage")
             return _frontpage;
         
         HNUser user;
 
-        user = await _socialNetworkCache.GetUser(username, [
-            () => _getUserAsync(username),
+        user = await _socialNetworkCache.GetUser(canonicalUsername, [
+            () => _resolveUserAsync(requestedUsername),
         ]);
+        if (user is not null)
+            _socialNetworkCache.BackfillUserCache(user);
         return user;
     }
-    private async Task<HNUser> _getUserAsync(string username)
+    private async Task<HNUser> _resolveUserAsync(string username)
     {
-        string reqURL = "https://hacker-news.firebaseio.com/v0/user/dhouston.json";
-        reqURL = reqURL.Replace("dhouston", username);
-        
-        var client = _httpClientFactory.CreateClient();
-        var request = new HttpRequestMessage(new HttpMethod("GET"), reqURL);
-        
-        JsonDocument userDoc;
-        var httpResponse = await client.SendAsync(request);
-        httpResponse.EnsureSuccessStatusCode();
-        var c = await httpResponse.Content.ReadAsStringAsync();
-        if (c == "null")
-            throw new UserNotFoundException();
-        
-        userDoc = JsonDocument.Parse(c);
+        var requestedUsername = username.Trim();
+        foreach (var strategy in _userStrategies)
+        {
+            var user = await strategy.GetUserAsync(requestedUsername);
+            if (user is not null)
+                return user;
+        }
 
-        string about = "";
-        if (userDoc.RootElement.TryGetProperty("about", out JsonElement aboutProperty))
-        {
-            about = HttpUtility.HtmlDecode(aboutProperty.GetString());
-        }
-        
-        List<long> submision = new List<long>();
-        if (userDoc.RootElement.TryGetProperty("submitted", out JsonElement submittedProperty))
-        {
-            foreach (var s in submittedProperty.EnumerateArray())
-            {
-                submision.Add(s.GetInt64());
-            }
-        }
-        var user = new HNUser()
-        {
-            SocialMediaUserType = SocialMediaUserTypes.User,
-            Acct = username,
-            Name = username,
-            Description = about,
-            Posts = submision.ToArray(),
-        };
-        return user;
+        throw new UserNotFoundException();
     }
 
     public async Task<SocialMediaPost?> GetPostAsync(string id)
     {
         HNPost post;
 
-        post = await _socialNetworkCache.GetPost(id, [() => _getPostAsync(id)]);
+        post = await _socialNetworkCache.GetPost(id, [() => _resolvePostAsync(id)]);
+        if (post is not null)
+            _socialNetworkCache.BackfillPostCache(post);
         
         return post;
         
+    }
+    private async Task<HNPost?> _resolvePostAsync(string id)
+    {
+        var post = await _getPostAsync(id);
+        if (post is not null)
+            return post;
+
+        var legacySourceId = _tryConvertLegacyFrontpageRetweetId(id);
+        if (legacySourceId is null)
+            return null;
+
+        return await _getPostAsync(legacySourceId);
     }
     private async Task<HNPost?> _getPostAsync(string id)
     {
@@ -120,6 +119,8 @@ public class HnService : ISocialMediaService
         var httpResponse = await client.SendAsync(request);
         httpResponse.EnsureSuccessStatusCode();
         var c = await httpResponse.Content.ReadAsStringAsync();
+        if (c == "null")
+            return null;
         postDoc = JsonDocument.Parse(c).RootElement;
 
         var replyIds = new List<string>();
@@ -168,8 +169,11 @@ public class HnService : ISocialMediaService
             }
             long parentId = postDoc.GetProperty("parent").GetInt64();
             var parent = await GetPostAsync(parentId.ToString());
-            inReplyToId = Int64.Parse(parent?.Id!);
-            inReplyToaccount = parent?.Author.Acct;
+            if (parent is not null && long.TryParse(parent.Id, out var parsedParentId))
+            {
+                inReplyToId = parsedParentId;
+                inReplyToaccount = parent.Author.Acct;
+            }
         }
         else if (type == "poll")
         {
@@ -213,6 +217,15 @@ public class HnService : ISocialMediaService
         };
         return post;
     }
+    private static string? _tryConvertLegacyFrontpageRetweetId(string id)
+    {
+        if (!id.EndsWith("000", StringComparison.Ordinal))
+            return null;
+        if (!long.TryParse(id, out var parsedId) || parsedId <= 0 || parsedId % 1000 != 0)
+            return null;
+
+        return (parsedId / 1000).ToString();
+    }
 
     public async Task<SocialMediaPost[]> GetNewPosts(SyncUser user)
     {
@@ -221,7 +234,7 @@ public class HnService : ISocialMediaService
             return await _getFrontpagePosts(user);
         
         List<SocialMediaPost> posts = new List<SocialMediaPost>();
-        var userData = await _getUserAsync(user.Acct);
+        var userData = (HNUser) await GetUserAsync(user.Acct);
         foreach (var p in userData.Posts)
         {
             HNPost post;
@@ -270,7 +283,7 @@ public class HnService : ISocialMediaService
             ogPost.IsRetweet = true;
             ogPost.OriginalAuthor = ogPost.Author;
             ogPost.Author = _frontpage;
-            ogPost.RetweetId = Int64.Parse(ogPost.Id) * 1000;
+            ogPost.RetweetId = Int64.Parse(ogPost.Id);
 
             if (ogPost.CreatedAt <= frontpageUser.LastPost)
                 continue;
@@ -286,4 +299,12 @@ public class HnService : ISocialMediaService
         return posts.ToArray();
     }
 
+    private static IHnUserStrategy[] CreateDefaultUserStrategies(IHttpClientFactory httpClientFactory)
+    {
+        return
+        [
+            new HnApiUserStrategy(httpClientFactory),
+            new HnWebUserStrategy(httpClientFactory),
+        ];
+    }
 }

@@ -60,6 +60,16 @@ public class UsersTests
         
         Assert.AreEqual(user.Description, "Founder/CEO of Dropbox (http://www.dropbox.com ; yc summer '07)");
     }
+    [TestMethod]
+    public async Task User_LorenDB()
+    {
+        var httpFactory = new Mock<IHttpClientFactory>();
+        httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+        var userService = new HnService(httpFactory.Object, null!, _settings);
+        var user = await userService.GetUserAsync("LorenDB");
+        
+        Assert.AreEqual(user.Description, "https://lorendb.dev");
+    }
     [Ignore]
     [TestMethod]
     [ExpectedException(typeof(UserNotFoundException))]
