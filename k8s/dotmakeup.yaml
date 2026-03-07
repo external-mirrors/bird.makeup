@@ -8,7 +8,7 @@ spec:
       app: dotmakeup
       network: twitter
   serviceName: "dotmakeup"
-  replicas: 4 
+  replicas: 3 
   minReadySeconds: 10 
   template:
     metadata:
@@ -86,7 +86,7 @@ spec:
             - name: Instance__n_end
               value: "20"
             - name: Instance__m
-              value: "79"
+              value: "59"
             - name: db__type
               value: "postgres"
             - name: db__host
