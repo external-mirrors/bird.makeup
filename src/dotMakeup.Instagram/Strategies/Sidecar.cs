@@ -25,6 +25,7 @@ public class Sidecar : IUserExtractor, IPostExtractor
     private readonly IIpfsService _ipfs;
     private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
     {
+        PropertyNameCaseInsensitive = true,
         Converters = { new InstagramSocialMediaUserConverter() }
     };
     

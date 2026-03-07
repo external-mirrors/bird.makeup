@@ -39,7 +39,9 @@ namespace BirdsiteLive.Domain.Tests
 ⁠
 Photo by Tim Tronckoe | @timtronckoe 
 ⁠
-#archenemy #michaelamott #alissawhitegluz #jeffloomis #danielerlandsson #sharleedangelo⁠"
+#archenemy #michaelamott #alissawhitegluz #jeffloomis #danielerlandsson #sharleedangelo⁠",
+                ReplyCount = 3,
+                Replies = ["200", "201"],
             };
             #endregion
 
@@ -53,6 +55,10 @@ Photo by Tim Tronckoe | @timtronckoe
 
             #region Validations
             Assert.AreEqual(activity.type, "Create");
+            Assert.IsNotNull(activity.apObject.replies);
+            Assert.AreEqual("OrderedCollection", activity.apObject.replies.type);
+            Assert.AreEqual("https://domain.name/users/myusername/statuses/124/replies", activity.apObject.replies.id);
+            Assert.AreEqual(3L, activity.apObject.replies.totalItems);
 
             #endregion
         }
@@ -88,6 +94,57 @@ Photo by Tim Tronckoe | @timtronckoe
             Assert.AreEqual(activity.apObject.id, "https://domain.name/users/hello/statuses/543");
 
             #endregion
+        }
+
+        [TestMethod]
+        public async Task RepliesTotalItemsFallsBackToRepliesArrayLength()
+        {
+            var username = "MyUserName";
+            var extractedTweet = new ExtractedTweet
+            {
+                Id = "124",
+                CreatedAt = DateTime.UtcNow,
+                MessageContent = "Hello",
+                ReplyCount = 0,
+                Replies = ["200", "201"],
+            };
+
+            var logger1 = new Mock<ILogger<StatusExtractor>>();
+            var socialMediaService = new Mock<ISocialMediaService>();
+            socialMediaService.Setup(x => x.ValidUsername).Returns(new Regex(@"^[a-zA-Z0-9_]+$"));
+            socialMediaService.Setup(x => x.UserMention).Returns(new Regex(@"(^|.?[ \n\.]+)@([a-zA-Z0-9_]+)(?=\s|$|[\[\]<>,;:'\.’!?/—\|-]|(. ))"));
+            var statusExtractor = new StatusExtractor(_settings, socialMediaService.Object, logger1.Object);
+            var service = new StatusService(_settings, statusExtractor);
+
+            var activity = await service.GetActivity(username, extractedTweet);
+
+            Assert.IsNotNull(activity.apObject.replies);
+            Assert.AreEqual(2L, activity.apObject.replies.totalItems);
+        }
+
+        [TestMethod]
+        public async Task RepliesCollectionOmittedWhenRepliesIsNull()
+        {
+            var username = "MyUserName";
+            var extractedTweet = new ExtractedTweet
+            {
+                Id = "124",
+                CreatedAt = DateTime.UtcNow,
+                MessageContent = "Hello",
+                ReplyCount = 5,
+                Replies = null,
+            };
+
+            var logger1 = new Mock<ILogger<StatusExtractor>>();
+            var socialMediaService = new Mock<ISocialMediaService>();
+            socialMediaService.Setup(x => x.ValidUsername).Returns(new Regex(@"^[a-zA-Z0-9_]+$"));
+            socialMediaService.Setup(x => x.UserMention).Returns(new Regex(@"(^|.?[ \n\.]+)@([a-zA-Z0-9_]+)(?=\s|$|[\[\]<>,;:'\.’!?/—\|-]|(. ))"));
+            var statusExtractor = new StatusExtractor(_settings, socialMediaService.Object, logger1.Object);
+            var service = new StatusService(_settings, statusExtractor);
+
+            var activity = await service.GetActivity(username, extractedTweet);
+
+            Assert.IsNull(activity.apObject.replies);
         }
     }
 }

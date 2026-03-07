@@ -162,6 +162,16 @@ public class Direct : IUserExtractor
                 }
                 catch (Exception) { }
 
+                long replies = 0;
+                try
+                {
+                    if (node.TryGetProperty("edge_media_to_comment", out var edgeMediaToComment))
+                        replies = edgeMediaToComment.GetProperty("count").GetInt64();
+                    else if (node.TryGetProperty("edge_media_preview_comment", out var edgeMediaPreviewComment))
+                        replies = edgeMediaPreviewComment.GetProperty("count").GetInt64();
+                }
+                catch (Exception) { }
+
                 var isPinned = false;
                 if (node.TryGetProperty("pinned_for_users", out var pinnedForUsers))
                 {
@@ -180,6 +190,7 @@ public class Direct : IUserExtractor
                     CreatedAt = DateTimeOffset.FromUnixTimeSeconds(node.GetProperty("taken_at_timestamp").GetInt64()).UtcDateTime,
                     IsPinned = isPinned,
                     LikeCount = likes,
+                    ReplyCount = replies,
                     
                     Media = mediaItems.ToArray(),
                 };

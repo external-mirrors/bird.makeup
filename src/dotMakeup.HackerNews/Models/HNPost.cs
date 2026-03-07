@@ -17,6 +17,8 @@ public class HNPost : SocialMediaPost
     public DateTime CreatedAt { get; set; }
     public ExtractedMedia[] Media { get; set; } = null!;
     public Poll? Poll { get; set; }
+    public long ReplyCount { get; set; } = 0;
+    public string[]? Replies { get; set; } = null;
     public long? Score { get; set; }
     public long LikeCount { get; set; } = 0;
     public long ShareCount { get; set; } = 0;

@@ -314,6 +314,7 @@ public class Syndication : ITweetExtractor
             Media = Media.Count() == 0 ? null : Media.ToArray(),
             QuotedAccount = quoteTweetAcct,
             QuotedStatusId = quoteTweetId,
+            ReplyCount = replyCount,
             LikeCount = favoriteCount,
             ShareCount = shareCount,
             Poll = poll,

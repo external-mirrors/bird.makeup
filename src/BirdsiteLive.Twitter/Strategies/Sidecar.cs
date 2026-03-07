@@ -33,6 +33,7 @@ public class Sidecar : ITweetExtractor, ITimelineExtractor, IUserExtractor
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
     {
+        PropertyNameCaseInsensitive = true,
         Converters = { new TwitterSocialMediaUserConverter() }
     };
     public Sidecar(ITwitterUserDal userDal, ITwitterTweetsService tweetsService, IHttpClientFactory httpClientFactory, InstanceSettings instanceSettings, ILogger<TwitterService> logger)

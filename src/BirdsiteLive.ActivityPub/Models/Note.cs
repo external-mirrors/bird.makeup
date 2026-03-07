@@ -41,7 +41,8 @@ namespace BirdsiteLive.ActivityPub.Models
         //public Dictionary<string,string> contentMap { get; set; }
         public Attachment[] attachment { get; set; }
         public Tag[] tag { get; set; }
-        //public Dictionary<string, string> replies;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public OrderedCollection replies { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Collection likes { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

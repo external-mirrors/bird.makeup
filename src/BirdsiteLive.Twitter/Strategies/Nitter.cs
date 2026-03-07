@@ -824,7 +824,8 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             IsReply = isReply,
             IsThread = isThread,
             QuotedAccount = quotedAccount,
-            QuotedStatusId = quotedStatusId
+            QuotedStatusId = quotedStatusId,
+            ReplyCount = replies,
         };
     }
 

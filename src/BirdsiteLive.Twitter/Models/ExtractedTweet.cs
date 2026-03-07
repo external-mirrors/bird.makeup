@@ -27,6 +27,8 @@ namespace BirdsiteLive.Twitter.Models
         public SocialMediaUser OriginalAuthor { get; set; } = null!;
         public SocialMediaUser Author { get; set; } = null!;
         public Poll? Poll { get; set; }
+        public long ReplyCount { get; set; } = 0;
+        public string[]? Replies { get; set; } = null;
         public long LikeCount { get; set; } = 0;
         public long ShareCount { get; set; } = 0;
     }

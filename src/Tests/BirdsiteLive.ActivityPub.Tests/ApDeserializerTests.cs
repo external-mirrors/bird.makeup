@@ -56,6 +56,8 @@ namespace BirdsiteLive.ActivityPub.Tests
             Assert.AreEqual("Create", data.type);
             Assert.IsTrue(data.apObject.content.Contains("Lemmy"));
             Assert.AreEqual("https://r.town/users/vincent", data.actor);
+            Assert.IsNotNull(data.apObject.replies);
+            Assert.AreEqual("https://r.town/users/vincent/statuses/114971611237873808/replies", data.apObject.replies.id);
         }
 
         [TestMethod]

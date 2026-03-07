@@ -14,6 +14,12 @@ namespace BirdsiteLive.ActivityPub.Converters
         {
             return $"https://{domain.ToLowerInvariant()}/users/{username.ToLowerInvariant()}/statuses/{noteId}";
         }
+
+        public static string GetRepliesUrl(string domain, string username, string noteId)
+        {
+            return $"{GetNoteUrl(domain, username, noteId)}/replies";
+        }
+
         public static string GetStampUrl(string domain, string username, string noteId, string remote)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(remote);

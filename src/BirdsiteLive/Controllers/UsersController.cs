@@ -432,6 +432,40 @@ namespace BirdsiteLive.Controllers
             var jsonApUser = JsonSerializer.Serialize(followers);
             return Content(jsonApUser, "application/activity+json; charset=utf-8");
         }
+        [Route("/users/{id}/statuses/{statusId}/replies")]
+        [HttpGet]
+        public async Task<IActionResult> Replies(string id, string statusId)
+        {
+            var tweet = await _socialMediaService.GetPostAsync(statusId);
+            if (tweet == null || tweet.Author == null || string.IsNullOrWhiteSpace(tweet.Author.Acct))
+                return NotFound();
+
+            var requestedAcct = _socialMediaService.MakeUserNameCanonical(id);
+            var postAuthorAcct = _socialMediaService.MakeUserNameCanonical(tweet.Author.Acct);
+            if (postAuthorAcct != requestedAcct)
+                return NotFound();
+
+            var r = Request.Headers["Accept"].FirstOrDefault();
+            if (r == null || !r.Contains("json")) return NotFound();
+
+            var actorUrl = UrlFactory.GetActorUrl(_instanceSettings.Domain, requestedAcct);
+            var replyItems = BuildRepliesItems(requestedAcct, tweet);
+            var totalReplies = tweet.ReplyCount;
+            if (replyItems.Count > totalReplies)
+                totalReplies = replyItems.Count;
+
+            var replies = new OrderedCollection
+            {
+                id = UrlFactory.GetRepliesUrl(_instanceSettings.Domain, requestedAcct, tweet.Id),
+                attributedTo = actorUrl,
+                to = [ $"{actorUrl}/followers" ],
+                totalItems = totalReplies,
+                items = replyItems,
+            };
+
+            var jsonApUser = JsonSerializer.Serialize(replies);
+            return Content(jsonApUser, "application/activity+json; charset=utf-8");
+        }
         [Route("/users/{id}/followers")]
         [HttpGet]
         public IActionResult Followers(string id)
@@ -459,6 +493,18 @@ namespace BirdsiteLive.Controllers
             };
             var jsonApUser = JsonSerializer.Serialize(followers);
             return Content(jsonApUser, "application/activity+json; charset=utf-8");
+        }
+
+        private List<string> BuildRepliesItems(string acct, SocialMediaPost post)
+        {
+            var replies = post.Replies ?? Array.Empty<string>();
+            return replies
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => Uri.TryCreate(x, UriKind.Absolute, out var absolute)
+                    ? absolute.ToString()
+                    : UrlFactory.GetNoteUrl(_instanceSettings.Domain, acct, x))
+                .Distinct()
+                .ToList();
         }
     }
 }

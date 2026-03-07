@@ -142,6 +142,19 @@ namespace BirdsiteLive.Domain
                     context = null,
                 };
             }
+            if (post.Replies is not null)
+            {
+                var repliesCount = post.ReplyCount;
+                if (post.Replies.Length > repliesCount)
+                    repliesCount = post.Replies.Length;
+                
+                note.replies = new OrderedCollection()
+                {
+                    id = $"{noteUrl}/replies",
+                    totalItems = repliesCount,
+                    context = null!,
+                };
+            }
             
             return note;
         }

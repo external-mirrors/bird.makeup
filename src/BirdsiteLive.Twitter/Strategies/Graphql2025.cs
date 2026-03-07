@@ -482,6 +482,7 @@ public class Graphql2025 : ITweetExtractor, ITimelineExtractor, IUserExtractor
             Poll = poll,
             QuotedAccount = quoteTweetAcct,
             QuotedStatusId = quoteTweetId,
+            ReplyCount = replyCount,
             LikeCount = likeCount,
             ShareCount = shareCount,
         };

@@ -122,6 +122,18 @@ public class HnService : ISocialMediaService
         var c = await httpResponse.Content.ReadAsStringAsync();
         postDoc = JsonDocument.Parse(c).RootElement;
 
+        var replyIds = new List<string>();
+        if (postDoc.TryGetProperty("kids", out var kidsProperty) && kidsProperty.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var kid in kidsProperty.EnumerateArray())
+            {
+                if (kid.ValueKind == JsonValueKind.Number && kid.TryGetInt64(out var kidId))
+                    replyIds.Add(kidId.ToString());
+                else if (kid.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(kid.GetString()))
+                    replyIds.Add(kid.GetString()!);
+            }
+        }
+
         string type =
             HttpUtility.HtmlDecode(postDoc.GetProperty("type").GetString());
 
@@ -193,6 +205,8 @@ public class HnService : ISocialMediaService
             CreatedAt = time,
             InReplyToStatusId = inReplyToId,
             InReplyToAccount = inReplyToaccount,
+            ReplyCount = replyIds.Count,
+            Replies = replyIds.ToArray(),
             Score = score,
             LikeCount = score ?? 0,
             Poll = poll,
