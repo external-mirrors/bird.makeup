@@ -41,7 +41,12 @@ public class HnService : ISocialMediaService
     {
             _httpClientFactory = httpClientFactory;
             UserDal = hackerNewsUsersDal;
-            _userStrategies = userStrategies.OrderBy(x => x.Priority).ToArray();
+            _userStrategies = userStrategies
+                .Where(x => x is not null)
+                .OrderBy(x => x.Priority)
+                .ToArray();
+            if (_userStrategies.Length == 0)
+                _userStrategies = CreateDefaultUserStrategies(httpClientFactory);
             
             _socialNetworkCache = new SocialNetworkCache(settings);
     }
@@ -303,8 +308,8 @@ public class HnService : ISocialMediaService
     {
         return
         [
-            new HnApiUserStrategy(httpClientFactory),
             new HnWebUserStrategy(httpClientFactory),
+            new HnApiUserStrategy(httpClientFactory),
         ];
     }
 }

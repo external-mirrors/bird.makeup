@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices.JavaScript;
 using System.Text.Json;
 using dotMakeup.HackerNews;
+using dotMakeup.HackerNews.Strategies;
 using System.Threading.Tasks;
 using BirdsiteLive.Common.Exceptions;
 using BirdsiteLive.Common.Interfaces;
@@ -68,6 +69,17 @@ public class UsersTests
         var userService = new HnService(httpFactory.Object, null!, _settings);
         var user = await userService.GetUserAsync("LorenDB");
         
+        Assert.AreEqual(user.Description, "https://lorendb.dev");
+    }
+    [TestMethod]
+    public async Task User_LorenDB_with_empty_injected_strategies()
+    {
+        var httpFactory = new Mock<IHttpClientFactory>();
+        httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+        var userService = new HnService(httpFactory.Object, null!, _settings, Array.Empty<IHnUserStrategy>());
+        var user = await userService.GetUserAsync("LorenDB");
+
+        Assert.AreEqual(user.Acct, "LorenDB");
         Assert.AreEqual(user.Description, "https://lorendb.dev");
     }
     [Ignore]
