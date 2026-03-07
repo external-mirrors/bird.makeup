@@ -56,6 +56,22 @@ public class PostsTests
         Assert.IsNull(post.InReplyToStatusId);
     }
     [TestMethod]
+    public async Task LegacyFrontpageRetweetIdResolvesToSourcePost()
+    {
+        var httpFactory = new Mock<IHttpClientFactory>();
+        httpFactory.Setup(_ => _.CreateClient(string.Empty)).Returns(new HttpClient());
+        var userService = new HnService(httpFactory.Object, null!, _settings);
+        var post = await userService.GetPostAsync("47287792000");
+
+        Assert.IsNotNull(post);
+        Assert.AreEqual(post!.Id, "47287792");
+        Assert.AreEqual(post.Author.Acct, "LorenDB");
+        Assert.AreEqual(post.MessageContent, "PC processors entered the Gigahertz era today in the year 2000 with AMD's Athlon\n\nhttps://www.tomshardware.com/pc-components/cpus/pc-processors-entered-the-gigahertz-era-today-in-the-year-2000-with-amds-athlon-amd-hit-marketing-gold-with-its-1-ghz-athlon-beat-intel-by-a-nose");
+        Assert.AreEqual(post.CreatedAt, new DateTime(2026, 03, 07, 14, 10, 17));
+        Assert.IsNull(post.InReplyToStatusId);
+        Assert.IsNull(post.Poll);
+    }
+    [TestMethod]
     public async Task Job1()
     {
         var httpFactory = new Mock<IHttpClientFactory>();
