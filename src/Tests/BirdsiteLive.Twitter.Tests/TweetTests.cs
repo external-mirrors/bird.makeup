@@ -396,6 +396,26 @@ namespace BirdsiteLive.Twitter.Tests
         }
         [TestMethod]
         [DynamicData(nameof(Implementations))]
+        public async Task SimpleVideo(StrategyHints s)
+        {
+            var tweet = await _tweetService.GetTweetAsync(2030662375209156800, s);
+            if (tweet is null)
+            {
+                Assert.Inconclusive();
+                return;
+            }
+
+            Assert.AreEqual(tweet.Media.Length, 1);
+            Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
+            Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/amplify_video"));
+            Assert.IsTrue(tweet.Media[0].Url.EndsWith(".mp4"));
+            Assert.IsFalse(tweet.IsReply);
+            Assert.IsFalse(tweet.IsReply);
+            Assert.IsNull(tweet.QuotedAccount);
+            Assert.IsNull(tweet.QuotedStatusId);
+        }
+        [TestMethod]
+        [DynamicData(nameof(Implementations))]
         public async Task ThreadWithImages(StrategyHints s)
         {
             var tweet = await _tweetService.GetTweetAsync(2027439790107275429, s);
