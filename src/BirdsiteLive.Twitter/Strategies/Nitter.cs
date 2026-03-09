@@ -708,23 +708,35 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         string? quotedStatusId = null;
         if (quote != null)
         {
-            var quoteLink = quote.QuerySelector(".quote-link")?.GetAttribute("href");
-            if (quoteLink != null)
+            var quoteLink = quote.QuerySelector(".quote-link")?.GetAttribute("href")
+                            ?? quote.QuerySelector(".tweet-date a")?.GetAttribute("href");
+            if (!string.IsNullOrWhiteSpace(quoteLink) &&
+                TryExtractStatusReference(quoteLink, out var quoteAccountFromLink, out var quoteStatusIdFromLink))
             {
-                var quoteMatch = rg.Match(quoteLink);
-                if (quoteMatch.Success)
-                {
-                    quotedStatusId = quoteMatch.Groups[1].Value;
-                    quotedAccount = quoteLink.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(s => !string.Equals(s, "i", StringComparison.OrdinalIgnoreCase));
-                }
+                quotedAccount = quoteAccountFromLink;
+                quotedStatusId = quoteStatusIdFromLink;
             }
-        }
-        if (!string.IsNullOrWhiteSpace(content) && !string.IsNullOrWhiteSpace(quotedStatusId))
-        {
-            var contentQuoteMatch = Regex.Match(content, @"https?://(?:x\.com|twitter\.com|(?:[^/\s]+\.)?nitter\.net)/([A-Za-z0-9_]+)/status/" + quotedStatusId);
-            if (contentQuoteMatch.Success)
+
+            if (string.IsNullOrWhiteSpace(quotedAccount))
+                quotedAccount = ExtractAccountWithCasing(quote);
+
+            if (!string.IsNullOrWhiteSpace(content))
             {
-                quotedAccount = contentQuoteMatch.Groups[1].Value;
+                if (!string.IsNullOrWhiteSpace(quotedStatusId))
+                {
+                    var contentQuoteMatch = Regex.Match(content,
+                        @"https?://(?:x\.com|twitter\.com|(?:[^/\s]+\.)?nitter\.net)/([A-Za-z0-9_]+)/status/" +
+                        Regex.Escape(quotedStatusId) + @"(?:\?[^\s]+)?",
+                        RegexOptions.IgnoreCase);
+                    if (contentQuoteMatch.Success)
+                        quotedAccount = contentQuoteMatch.Groups[1].Value;
+                }
+                else if (TryExtractStatusReferenceFromContent(content, out var quoteAccountFromContent,
+                             out var quoteStatusIdFromContent))
+                {
+                    quotedAccount ??= quoteAccountFromContent;
+                    quotedStatusId = quoteStatusIdFromContent;
+                }
             }
         }
 
@@ -900,6 +912,42 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         var videoId = match.Groups["videoId"].Value;
         var asset = match.Groups["asset"].Value;
         videoUrl = $"https://video.twimg.com/{kind}/{videoId}/vid/{asset}.mp4";
+        return true;
+    }
+
+    private static bool TryExtractStatusReference(string url, out string? account, out string? statusId)
+    {
+        account = null;
+        statusId = null;
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        var match = Regex.Match(url,
+            @"(?:https?://(?:x\.com|twitter\.com|(?:[^/\s]+\.)?nitter\.net))?/?([A-Za-z0-9_]+)/status/([0-9]+)(?:#m)?(?:\?[^\s]+)?",
+            RegexOptions.IgnoreCase);
+        if (!match.Success)
+            return false;
+
+        account = match.Groups[1].Value;
+        statusId = match.Groups[2].Value;
+        return true;
+    }
+
+    private static bool TryExtractStatusReferenceFromContent(string content, out string? account, out string? statusId)
+    {
+        account = null;
+        statusId = null;
+        if (string.IsNullOrWhiteSpace(content))
+            return false;
+
+        var statusLinkMatch = Regex.Match(content,
+            @"https?://(?:x\.com|twitter\.com|(?:[^/\s]+\.)?nitter\.net)/([A-Za-z0-9_]+)/status/([0-9]+)(?:\?[^\s]+)?",
+            RegexOptions.IgnoreCase);
+        if (!statusLinkMatch.Success)
+            return false;
+
+        account = statusLinkMatch.Groups[1].Value;
+        statusId = statusLinkMatch.Groups[2].Value;
         return true;
     }
 
