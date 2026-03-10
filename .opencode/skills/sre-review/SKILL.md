@@ -1,6 +1,6 @@
 ---
 name: sre-review
-description: Interactive SRE review of dotmakeup crawl coverage/freshness and federation read-query reliability using Tempo traces, Mimir metrics, and the production PostgreSQL database. Analyzes crawl errors, crawl duration shape, settings tuning opportunities, and tracing coverage gaps across RetrieveTweetsProcessor plus Graphql2025, Sidecar, and Direct strategy spans. Uses DB ground-truth data for crawl staleness, error accumulation, strategy policy checks, and shared-budget recommendations for remote user/post lookups.
+description: Interactive SRE review of dotmakeup crawl coverage/freshness and federation read-query reliability using Tempo traces, Mimir metrics, Grafana dashboard definitions, and the production PostgreSQL database. Analyzes crawl errors, crawl duration shape, settings tuning opportunities, tracing coverage gaps across RetrieveTweetsProcessor plus Graphql2025, Sidecar, and Direct strategy spans, and suggests dashboard/query/panel improvements. Uses DB ground-truth data for crawl staleness, error accumulation, strategy policy checks, and shared-budget recommendations for remote user/post lookups.
 ---
 
 ## Scope
@@ -39,8 +39,10 @@ For this operator, optimize in strict order:
 ## MCP / tooling
 
 Two MCP integrations are available: **Tempo** (traces) and **PostgreSQL**
-(production database). Logs (Loki) and metrics (Prometheus/Mimir) are accessible
-via Grafana Cloud HTTP APIs when credentials are provided.
+(production database). Grafana dashboards are reviewed from local dashboard JSON
+files and, when credentials are provided, from the live Grafana Dashboard HTTP
+API. Logs (Loki) and metrics (Prometheus/Mimir) are accessible via Grafana Cloud
+HTTP APIs when credentials are provided.
 
 ### Tempo MCP (traces — primary signal for crawl)
 
@@ -86,6 +88,29 @@ Usage guidelines:
 - Do not query for individual user credentials or sensitive data — focus on
   aggregate statistics and account-level crawl metadata.
 
+### Grafana dashboards (local JSON + HTTP API)
+
+Dashboard review is required for this skill. Inspect both dashboards:
+- `grafana/infra.json`
+- `grafana/audience.json`
+
+Preferred source order:
+1. Live dashboard API (when `GRAFANA_URL` + `GRAFANA_TOKEN` are set and
+   dashboard read access is available).
+2. Local JSON files as fallback (always available in repo).
+
+API access notes:
+- Use `https://$GRAFANA_URL/apis/dashboard.grafana.app/v1beta1/namespaces/:namespace/dashboards/:name`.
+- In this API path, use `metadata.name` as `:name` (not `metadata.uid`).
+- Derive `:namespace` and `:name` from each dashboard file's metadata.
+- If API read fails, continue with local file analysis and state the limitation.
+
+Optional deployment mode (only when explicitly requested by user):
+- Requires `dashboards:write` (and folder scope) on `GRAFANA_TOKEN`.
+- Apply only approved dashboard changes.
+- After update, re-GET dashboard and confirm generation/resourceVersion changed.
+- Keep local `grafana/*.json` aligned with deployed content.
+
 ### Loki / Mimir (optional — via HTTP APIs)
 
 Logs/metrics can be queried in-session via Grafana Cloud HTTP APIs when
@@ -95,6 +120,9 @@ Required env vars:
 - `GRAFANA_TOKEN` (Grafana Cloud Access Policy token)
 - `LOKI_URL`, `LOKI_USER`
 - `MIMIR_URL`, `MIMIR_USER`
+
+For live dashboard review/deploy, also provide:
+- `GRAFANA_URL` (for example `cloutier.grafana.net`)
 
 Auth pattern:
 - Loki: `curl -u "$LOKI_USER:$GRAFANA_TOKEN" "$LOKI_URL/loki/api/v1/..."`
@@ -191,6 +219,7 @@ include:
 - Settings/scheduler/strategy tuning
 - Tracing/logging/metrics instrumentation improvements
 - Grafana dashboard/query/panel improvements
+- Grafana dashboard deployment of approved changes
 - Code-level fixes for identified root causes
 
 When building proposals, prioritize impact in this order:
@@ -213,6 +242,8 @@ Before anything else, assess how each instance is doing over the last few days:
 - Use traces + DB for priority #1 (crawl coverage/freshness).
 - Use metrics (Mimir) as primary for priority #2 (federation read-query
   success/cost). Logs (Loki) are optional supporting evidence.
+- For dashboard analysis, prefer live API when available; otherwise use
+  `grafana/infra.json` and `grafana/audience.json` from the repo.
 - If Mimir is unavailable, complete priority #1 and explicitly state that
   priority #2 could not be fully measured.
 - For Tempo metric-style checks over 72h, chunk into smaller windows if
@@ -331,7 +362,35 @@ Then include a metrics-sourced federation read-query summary:
 - `429`/`5xx`/`404` split (`404` reported separately, not mixed into reliability failures)
 - Upstream call pressure per successful read and cache-efficiency direction
 
+Then include a dashboard-quality summary:
+- Most important panel/query mismatches affecting priority #1 and #2 decisions
+- Missing or weak dashboard coverage areas (if any)
+- 1-3 highest-impact dashboard fixes to consider
+
 Then continue with the cross-instance summary and ranked proposal shortlist.
+
+### 1G. Grafana dashboard baseline
+
+Build a dashboard baseline for both `infra` and `audience` dashboards before
+proposal ranking.
+
+Minimum checks:
+- Root insight: panel intent vs query semantics (title, query, unit,
+  thresholds) must match. Recommendation: correct mismatched titles/queries and
+  ensure ratio panels are true ratios.
+- Root insight: success-ratio panels should use numerator/denominator formulas,
+  not raw counts named as "success rate". Recommendation: convert to ratio and
+  use percent units.
+- Root insight: operator-priority coverage in dashboards should match this
+  skill's priorities. Recommendation: ensure both crawl freshness coverage and
+  federation read success/cost coverage are visible.
+- Root insight: query dimensions should stay low-cardinality.
+  Recommendation: avoid account-level metric labels in panel queries.
+- Root insight: dashboard usability should support fast per-instance diagnosis.
+  Recommendation: add/fix variables (instance/service/strategy/result), naming,
+  and row organization where missing.
+
+Use this baseline to feed Section F and the top-5 proposal shortlist.
 
 ## Step 2 — Full parallel exploration (run silently before responding)
 
@@ -343,12 +402,12 @@ main agent only keeps condensed findings and proposal candidates.
 
 ### 2.0 Execution model (subagents preferred)
 
-When available, use the OpenCode `Task` tool to run packs 2A-2E concurrently.
+When available, use the OpenCode `Task` tool to run packs 2A-2F concurrently.
 
 - Recommended mapping:
   - `general` subagent: 2A bootstrap, 2B error pack, 2C coverage + federation pack
   - `general` subagent: 2D settings/strategy evidence and Loki/Mimir preflight
-  - `explore` subagent: 2E tracing-gap code audit
+  - `explore` subagent: 2E tracing-gap code audit and 2F dashboard audit
 - Keep each subagent prompt tightly scoped to its pack, lookback window, and
   required outputs only.
 - Require each subagent to return a compact payload:
@@ -457,20 +516,52 @@ Re-check all known gaps against current code and current signals during the same
 parallel exploration pass. Convert each still-open gap into a proposal candidate
 with problem, exact fix, and expected impact.
 
-### Optional preflight — Loki/Mimir access (when env vars are present)
+### 2F. Grafana dashboard audit pack (Section F inputs)
 
-If `GRAFANA_TOKEN`, `LOKI_URL`, `LOKI_USER`, `MIMIR_URL`, and `MIMIR_USER` are set,
-run these smoke tests (via Bash) during Step 2 and include pass/fail in your
-opening context:
+Run dashboard inspection in parallel with other packs.
+
+Inputs:
+- Live API dashboards when `GRAFANA_URL` + `GRAFANA_TOKEN` permit read access.
+- Otherwise local files `grafana/infra.json` and `grafana/audience.json`.
+
+Checks:
+- Root insight: panel title/query/unit/threshold consistency ensures correct
+  operator decisions. Recommendation: fix semantic mismatches first.
+- Root insight: "success rate" panels must be true ratios with percent units.
+  Recommendation: replace raw counts with ratio expressions where needed.
+- Root insight: panel coverage must represent priority #1 and #2 decision loops.
+  Recommendation: add missing panels for freshness, error-class split, and
+  shared-budget efficiency.
+- Root insight: query and label choices affect cardinality/cost.
+  Recommendation: keep dimensions low-cardinality and avoid user-level splits.
+- Root insight: dashboard navigation/variables affect triage speed.
+  Recommendation: add or clean up variables and row naming for per-instance
+  drilldown.
+
+Output requirements for this pack:
+- Panel inventory by dashboard row and objective
+- Top mismatches/anti-patterns
+- Gap list for missing decision signals
+- Concrete patch candidates (panel edits/new panels/variable edits)
+
+### Optional preflight — Grafana/Loki/Mimir access (when env vars are present)
+
+If `GRAFANA_TOKEN`, `GRAFANA_URL`, `LOKI_URL`, `LOKI_USER`, `MIMIR_URL`, and
+`MIMIR_USER` are set, run these smoke tests (via Bash) during Step 2 and
+include pass/fail in your opening context:
+
+- Dashboard API auth smoke check endpoint responds successfully.
+- Dashboard read for both tracked dashboards succeeds (or explicit fallback to local JSON).
+- Optional: permission endpoint confirms dashboard write scope when deployment is requested.
 
 - Loki auth smoke check endpoint responds successfully.
 - Mimir auth smoke check endpoint responds successfully.
 - A basic Mimir instant check returns HTTP 200 (empty vector is acceptable).
 
-If available, use Loki/Mimir evidence to support Section A-C/E conclusions and
-proposal ranking.
+If available, use Grafana/Loki/Mimir evidence to support Section A-F
+conclusions and proposal ranking.
 
-### 2F. Proposal synthesis and yes/no flow
+### 2G. Proposal synthesis and yes/no flow
 
 After all parallel packs complete:
 
@@ -628,6 +719,60 @@ Shared upstream bucket rule:
 
 ---
 
+## Section F — Grafana dashboard audit and improvement proposals
+
+This section ensures dashboard quality matches operator priorities and avoids
+misleading decisions.
+
+Dashboard sources:
+- Preferred: live API dashboards (`GRAFANA_URL` + `GRAFANA_TOKEN` with dashboard read).
+- Fallback: `grafana/infra.json` and `grafana/audience.json` in repo.
+
+### Signals to validate
+
+- Root insight: panel semantics are correct only when title/query/unit/
+  thresholds agree.
+- Root insight: ratio panels are actionable only when based on explicit
+  numerator/denominator formulas.
+- Root insight: decision dashboards must cover both priorities:
+  crawl coverage/freshness and federation read success/cost.
+- Root insight: dashboard variables should support per-instance/service/
+  strategy drilldown.
+- Recommendation: prioritize fixes that reduce operator decision risk first,
+  then cosmetic consistency.
+
+### Anti-patterns to detect
+
+- Panel title says "success rate" but query is a raw `increase(...)` count.
+- Panel title/network label does not match query filter (for example title says
+  one network but query filters another).
+- Percent-like panels missing percent units or using incompatible thresholds.
+- Duplicate/near-duplicate panels that create confusion without adding new
+  decision signal.
+- High-cardinality query dimensions in dashboard panels that inflate metric cost.
+
+### Proposal format for dashboard improvements
+
+For each dashboard proposal include:
+- dashboard + panel reference
+- current issue and why it is decision-risky
+- exact query/unit/threshold/variable change
+- expected impact on priority #1 and/or #2
+- cardinality/cost risk note (if any)
+
+### Deployment workflow (only when user explicitly asks)
+
+When the user requests deployment of approved dashboard changes:
+1. Confirm dashboard API read access and write scope.
+2. Fetch latest live dashboard objects first.
+3. Apply only approved changes.
+4. `PUT` updates to
+   `/apis/dashboard.grafana.app/v1beta1/namespaces/:namespace/dashboards/:name`.
+5. Re-GET dashboards and verify update metadata changed.
+6. Keep repo dashboard JSON synchronized with deployed versions.
+
+---
+
 ## Section C — Settings, scheduler, and strategy tuning
 
 Tuning is not just `InstanceSettings`. In practice, crawl behaviour is shaped by
@@ -729,6 +874,8 @@ baseline first:
   window (default 72h), then project monthly roughly.
 - Traces usage: no single direct usage API in current tooling; estimate from
   span rate and expected span cardinality/size change.
+- Dashboard-only visual/layout edits do not add telemetry cost by themselves.
+  Query, label, and metric-definition changes can increase logs/metrics usage.
 
 Include that estimate before making the change and call out risk against:
 - traces 50GB/month
@@ -741,7 +888,7 @@ budget. It is safe to add crawl-pipeline tracing. For logs/metrics changes, pref
 low-cardinality dimensions (`strategy`, `instance`, `result`, `error_type`) and avoid
 high-cardinality labels (e.g., raw account names) on metrics.
 
--## Updating this skill
--
--This skill is a living document. After every investigation session, propose
--changes in **both directions** — adding new knowledge and removing stale content.
+## Updating this skill
+
+This skill is a living document. After every investigation session, propose
+changes in **both directions** — adding new knowledge and removing stale content.
