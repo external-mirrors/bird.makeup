@@ -1,6 +1,6 @@
 # Special consideration for Graphql202X's strategy
 
-This is the OG strategy, hitting twitter Graphql endpoints directly. The URL and answer structure change once in a while, but we keep them around as long as they work with the year in the name. 
+This is the OG strategy, hitting twitter Graphql endpoints directly. The URL get rotated once in a while, but we keep them around as long as they work with the year in the name. We keep them in different strategy files since the answer structure changes when new graphql endpoints comes out.
 
 The timeline endpoint upstream was modified to return only the top tweets per number of likes. This is way less useful in terms of coverage, but makes for a nice fallback for lower priority accounts (when we filter by date, we can still potentially get new posts if they are very popular). This strategy still works great for post and user lookups.
 
