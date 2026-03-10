@@ -1,12 +1,12 @@
 {
+  "kind": "Dashboard",
   "apiVersion": "dashboard.grafana.app/v2beta1",
-  "kind": "DashboardWithAccessInfo",
   "metadata": {
     "name": "cefca9ac-e9a3-4133-b6fa-1a9ffa175015",
     "namespace": "stacks-739769",
     "uid": "QW3FBM2MJEmXyTr7iwBVy8jYioFTUv79XexXopPMqmsX",
-    "resourceVersion": "1744393780000081",
-    "generation": 37,
+    "resourceVersion": "1773174298879746",
+    "generation": 40,
     "creationTimestamp": "2023-11-21T21:32:13Z",
     "labels": {
       "grafana.app/deprecatedInternalID": "17"
@@ -14,10 +14,9 @@
     "annotations": {
       "grafana.app/createdBy": "user:u000000002",
       "grafana.app/folder": "bdsmnhafetvr4c",
-      "grafana.app/updatedBy": "user:u000000002",
-      "grafana.app/updatedTimestamp": "2025-04-11T17:49:45Z",
-      "grafana.app/folderTitle": "dotmakeup",
-      "grafana.app/folderUrl": "/dashboards/f/bdsmnhafetvr4c/dotmakeup"
+      "grafana.app/message": "fix audience dashboard title",
+      "grafana.app/updatedBy": "service-account:dfe4u6u0tchdsc",
+      "grafana.app/updatedTimestamp": "2026-03-10T20:24:58Z"
     }
   },
   "spec": {
@@ -25,19 +24,22 @@
       {
         "kind": "AnnotationQuery",
         "spec": {
-          "builtIn": true,
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana",
+            "version": "v0",
+            "datasource": {
+              "name": "-- Grafana --"
+            },
+            "spec": {}
+          },
           "enable": true,
           "hide": true,
           "iconColor": "rgba(0, 211, 255, 1)",
           "name": "Annotations & Alerts",
-          "query": {
-            "datasource": {
-              "name": "-- Grafana --"
-            },
-            "group": "grafana",
-            "kind": "DataQuery",
-            "spec": {},
-            "version": "v0"
+          "builtIn": true,
+          "legacyOptions": {
+            "type": "dashboard"
           }
         }
       }
@@ -48,6 +50,10 @@
       "panel-10": {
         "kind": "Panel",
         "spec": {
+          "id": 10,
+          "title": "Followers' servers",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -55,13 +61,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -84,46 +90,22 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 10,
-          "links": [],
-          "title": "Followers' servers",
           "vizConfig": {
-            "group": "stat",
             "kind": "VizConfig",
+            "group": "stat",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -140,15 +122,39 @@
                 "showPercentChange": false,
                 "textMode": "auto",
                 "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  }
+                },
+                "overrides": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-11": {
         "kind": "Panel",
         "spec": {
+          "id": 11,
+          "title": "Connections (HackerNews <> fedi)",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -156,13 +162,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -185,46 +191,22 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 11,
-          "links": [],
-          "title": "Connections (HackerNews <> fedi)",
           "vizConfig": {
-            "group": "stat",
             "kind": "VizConfig",
+            "group": "stat",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -241,15 +223,39 @@
                 "showPercentChange": false,
                 "textMode": "auto",
                 "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  }
+                },
+                "overrides": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-12": {
         "kind": "Panel",
         "spec": {
+          "id": 12,
+          "title": "HackerNews users and groups",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -257,13 +263,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -286,46 +292,22 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 12,
-          "links": [],
-          "title": "HackerNews users and groups",
           "vizConfig": {
-            "group": "stat",
             "kind": "VizConfig",
+            "group": "stat",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -342,15 +324,39 @@
                 "showPercentChange": false,
                 "textMode": "auto",
                 "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  }
+                },
+                "overrides": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-13": {
         "kind": "Panel",
         "spec": {
+          "id": 13,
+          "title": "AP activities",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -358,13 +364,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
                       "datasource": {
                         "name": "grafanacloud-prom"
                       },
-                      "group": "prometheus",
-                      "kind": "DataQuery",
                       "spec": {
                         "disableTextWrap": false,
                         "editorMode": "code",
@@ -376,27 +382,50 @@
                         "legendFormat": "__auto",
                         "range": true,
                         "useBackend": false
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 13,
-          "links": [],
-          "title": "AP activities",
           "vizConfig": {
-            "group": "timeseries",
             "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
               "fieldConfig": {
                 "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
                   "color": {
                     "mode": "palette-classic"
                   },
@@ -424,7 +453,6 @@
                       "type": "linear"
                     },
                     "showPoints": "auto",
-                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -433,44 +461,21 @@
                     "thresholdsStyle": {
                       "mode": "off"
                     }
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
                   }
                 },
                 "overrides": []
-              },
-              "options": {
-                "legend": {
-                  "calcs": [],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "hideZeros": false,
-                  "mode": "single",
-                  "sort": "none"
-                }
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-2": {
         "kind": "Panel",
         "spec": {
+          "id": 2,
+          "title": "Most popular twitter accounts",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -478,13 +483,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -507,27 +512,50 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 2,
-          "links": [],
-          "title": "Most popular twitter accounts",
           "vizConfig": {
-            "group": "table",
             "kind": "VizConfig",
+            "group": "table",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": "",
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+              },
               "fieldConfig": {
                 "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
                   "color": {
                     "mode": "thresholds"
                   },
@@ -537,23 +565,7 @@
                       "type": "auto"
                     },
                     "filterable": false,
-                    "footer": {
-                      "reducers": []
-                    },
                     "inspect": false
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
                   }
                 },
                 "overrides": [
@@ -588,20 +600,18 @@
                     ]
                   }
                 ]
-              },
-              "options": {
-                "cellHeight": "sm",
-                "showHeader": true,
-                "sortBy": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-3": {
         "kind": "Panel",
         "spec": {
+          "id": 3,
+          "title": "twitter users",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -609,13 +619,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -638,46 +648,22 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 3,
-          "links": [],
-          "title": "twitter users",
           "vizConfig": {
-            "group": "stat",
             "kind": "VizConfig",
+            "group": "stat",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -694,15 +680,39 @@
                 "showPercentChange": false,
                 "textMode": "auto",
                 "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  }
+                },
+                "overrides": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-4": {
         "kind": "Panel",
         "spec": {
+          "id": 4,
+          "title": "Followers",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -710,13 +720,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -739,46 +749,22 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 4,
-          "links": [],
-          "title": "Followers",
           "vizConfig": {
-            "group": "stat",
             "kind": "VizConfig",
+            "group": "stat",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -795,15 +781,39 @@
                 "showPercentChange": false,
                 "textMode": "auto",
                 "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  }
+                },
+                "overrides": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-5": {
         "kind": "Panel",
         "spec": {
+          "id": 5,
+          "title": "Connections (Twitter <> Fedi)",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -811,13 +821,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -840,46 +850,22 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 5,
-          "links": [],
-          "title": "Connections (Twitter <> Fedi)",
           "vizConfig": {
-            "group": "stat",
             "kind": "VizConfig",
+            "group": "stat",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -896,15 +882,39 @@
                 "showPercentChange": false,
                 "textMode": "auto",
                 "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  }
+                },
+                "overrides": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-6": {
         "kind": "Panel",
         "spec": {
+          "id": 6,
+          "title": "Most popular servers",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -912,13 +922,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -941,57 +951,57 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 6,
-          "links": [],
-          "title": "Most popular servers",
           "vizConfig": {
-            "group": "marcusolsson-treemap-panel",
             "kind": "VizConfig",
+            "group": "marcusolsson-treemap-panel",
+            "version": "2.0.1",
             "spec": {
+              "options": {
+                "tiling": "treemapSquarify"
+              },
               "fieldConfig": {
                 "defaults": {
-                  "color": {
-                    "mode": "fixed"
-                  },
                   "thresholds": {
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green",
-                        "value": 0
+                        "value": null,
+                        "color": "green"
                       },
                       {
-                        "color": "red",
-                        "value": 80
+                        "value": 80,
+                        "color": "red"
                       }
                     ]
+                  },
+                  "color": {
+                    "mode": "fixed"
                   }
                 },
                 "overrides": []
-              },
-              "options": {
-                "tiling": "treemapSquarify"
               }
-            },
-            "version": "2.1.1"
+            }
           }
         }
       },
       "panel-7": {
         "kind": "Panel",
         "spec": {
+          "id": 7,
+          "title": "Connections (instagram <> fedi)",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -999,13 +1009,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -1028,46 +1038,22 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 7,
-          "links": [],
-          "title": "Connections (instagram <> fedi)",
           "vizConfig": {
-            "group": "stat",
             "kind": "VizConfig",
+            "group": "stat",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -1084,15 +1070,39 @@
                 "showPercentChange": false,
                 "textMode": "auto",
                 "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  }
+                },
+                "overrides": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-8": {
         "kind": "Panel",
         "spec": {
+          "id": 8,
+          "title": "Instagram users",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -1100,13 +1110,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -1129,46 +1139,22 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 8,
-          "links": [],
-          "title": "Instagram users",
           "vizConfig": {
-            "group": "stat",
             "kind": "VizConfig",
+            "group": "stat",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
               "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -1185,15 +1171,39 @@
                 "showPercentChange": false,
                 "textMode": "auto",
                 "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  }
+                },
+                "overrides": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       },
       "panel-9": {
         "kind": "Panel",
         "spec": {
+          "id": 9,
+          "title": "Most popular instagram accounts",
+          "description": "",
+          "links": [],
           "data": {
             "kind": "QueryGroup",
             "spec": {
@@ -1201,13 +1211,13 @@
                 {
                   "kind": "PanelQuery",
                   "spec": {
-                    "hidden": false,
                     "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
                       "datasource": {
                         "name": "bb28f950-5498-43b5-b611-9f309cd7c2d7"
                       },
-                      "group": "grafana-postgresql-datasource",
-                      "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
                         "format": "table",
@@ -1230,27 +1240,50 @@
                           ],
                           "limit": 50
                         }
-                      },
-                      "version": "v0"
+                      }
                     },
-                    "refId": "A"
+                    "refId": "A",
+                    "hidden": false
                   }
                 }
               ],
-              "queryOptions": {},
-              "transformations": []
+              "transformations": [],
+              "queryOptions": {}
             }
           },
-          "description": "",
-          "id": 9,
-          "links": [],
-          "title": "Most popular instagram accounts",
           "vizConfig": {
-            "group": "table",
             "kind": "VizConfig",
+            "group": "table",
+            "version": "12.0.0-85820.patch2-86140",
             "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": "",
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+              },
               "fieldConfig": {
                 "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
                   "color": {
                     "mode": "thresholds"
                   },
@@ -1259,23 +1292,7 @@
                     "cellOptions": {
                       "type": "auto"
                     },
-                    "footer": {
-                      "reducers": []
-                    },
                     "inspect": false
-                  },
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": 0
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
                   }
                 },
                 "overrides": [
@@ -1364,14 +1381,8 @@
                     ]
                   }
                 ]
-              },
-              "options": {
-                "cellHeight": "sm",
-                "showHeader": true,
-                "sortBy": []
               }
-            },
-            "version": "12.4.0-22122066197"
+            }
           }
         }
       }
@@ -1383,157 +1394,157 @@
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 0,
+              "y": 0,
+              "width": 5,
+              "height": 12,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-4"
-              },
-              "height": 12,
-              "width": 5,
-              "x": 0,
-              "y": 0
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 5,
+              "y": 0,
+              "width": 3,
+              "height": 12,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-10"
-              },
-              "height": 12,
-              "width": 3,
-              "x": 5,
-              "y": 0
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 8,
+              "y": 0,
+              "width": 5,
+              "height": 4,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-5"
-              },
-              "height": 4,
-              "width": 5,
-              "x": 8,
-              "y": 0
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 13,
+              "y": 0,
+              "width": 4,
+              "height": 4,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-3"
-              },
-              "height": 4,
-              "width": 4,
-              "x": 13,
-              "y": 0
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 8,
+              "y": 4,
+              "width": 5,
+              "height": 4,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-7"
-              },
-              "height": 4,
-              "width": 5,
-              "x": 8,
-              "y": 4
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 13,
+              "y": 4,
+              "width": 4,
+              "height": 4,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-8"
-              },
-              "height": 4,
-              "width": 4,
-              "x": 13,
-              "y": 4
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 8,
+              "y": 8,
+              "width": 5,
+              "height": 4,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-11"
-              },
-              "height": 4,
-              "width": 5,
-              "x": 8,
-              "y": 8
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 13,
+              "y": 8,
+              "width": 4,
+              "height": 4,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-12"
-              },
-              "height": 4,
-              "width": 4,
-              "x": 13,
-              "y": 8
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 0,
+              "y": 12,
+              "width": 17,
+              "height": 13,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-6"
-              },
-              "height": 13,
-              "width": 17,
-              "x": 0,
-              "y": 12
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 0,
+              "y": 25,
+              "width": 17,
+              "height": 7,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-13"
-              },
-              "height": 7,
-              "width": 17,
-              "x": 0,
-              "y": 25
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 0,
+              "y": 32,
+              "width": 11,
+              "height": 28,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-2"
-              },
-              "height": 28,
-              "width": 11,
-              "x": 0,
-              "y": 32
+              }
             }
           },
           {
             "kind": "GridLayoutItem",
             "spec": {
+              "x": 11,
+              "y": 32,
+              "width": 13,
+              "height": 28,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-9"
-              },
-              "height": 28,
-              "width": 13,
-              "x": 11,
-              "y": 32
+              }
             }
           }
         ]
@@ -1544,6 +1555,9 @@
     "preload": false,
     "tags": [],
     "timeSettings": {
+      "timezone": "",
+      "from": "now-6h",
+      "to": "now",
       "autoRefresh": "",
       "autoRefreshIntervals": [
         "5s",
@@ -1557,14 +1571,16 @@
         "2h",
         "1d"
       ],
-      "fiscalYearStartMonth": 0,
-      "from": "now-6h",
       "hideTimepicker": false,
-      "timezone": "browser",
-      "to": "now"
+      "fiscalYearStartMonth": 0
     },
-    "title": "Dotmakeup audiance",
+    "title": "Dotmakeup audience",
     "variables": []
   },
-  "status": {}
+  "status": {
+    "conversion": {
+      "failed": false,
+      "storedVersion": "v0alpha1"
+    }
+  }
 }

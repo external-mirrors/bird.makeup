@@ -104,10 +104,24 @@ API access notes:
 - In this API path, use `metadata.name` as `:name` (not `metadata.uid`).
 - Derive `:namespace` and `:name` from each dashboard file's metadata.
 - If API read fails, continue with local file analysis and state the limitation.
+- Important deploy note: live dashboard reads work from the `dashboard.grafana.app`
+  API, but writing those CRD-style objects back with `PUT` can produce dashboards
+  that exist yet render with zero legacy `panels`. For deployment, prefer the
+  legacy dashboard HTTP API (`POST /api/dashboards/db`) with a complete dashboard
+  model, and use dashboard version history for rollback if needed.
 
-Optional deployment mode (only when explicitly requested by user):
+Deployment expectation for approved dashboard changes:
 - Requires `dashboards:write` (and folder scope) on `GRAFANA_TOKEN`.
+- When dashboard changes are approved and write access is available, deploy them
+  in the same session without waiting for a separate deployment request.
 - Apply only approved dashboard changes.
+- Live dashboard changes may only use telemetry that is already available and
+  queryable in Grafana at deployment time. Do not add panels that depend on
+  metrics/logs/traces which were only introduced in code during the same run but
+  are not yet flowing into Grafana.
+- For telemetry that has been added in code but is not yet visible in Grafana,
+  record a note for a future run and update the dashboard only after that
+  telemetry is confirmed live.
 - After update, re-GET dashboard and confirm generation/resourceVersion changed.
 - Keep local `grafana/*.json` aligned with deployed content.
 
@@ -117,16 +131,16 @@ Logs/metrics can be queried in-session via Grafana Cloud HTTP APIs when
 the user provides read-only credentials as environment variables.
 
 Required env vars:
-- `GRAFANA_TOKEN` (Grafana Cloud Access Policy token)
+- `GRAFANA_TOKEN` (Grafana Cloud Access Policy token for dashboards and Loki)
 - `LOKI_URL`, `LOKI_USER`
-- `MIMIR_URL`, `MIMIR_USER`
+- `MIMIR_URL`, `MIMIR_USER`, `MIMIR_TOKEN`
 
 For live dashboard review/deploy, also provide:
 - `GRAFANA_URL` (for example `cloutier.grafana.net`)
 
 Auth pattern:
 - Loki: `curl -u "$LOKI_USER:$GRAFANA_TOKEN" "$LOKI_URL/loki/api/v1/..."`
-- Mimir: `curl -u "$MIMIR_USER:$GRAFANA_TOKEN" "$MIMIR_URL/api/v1/..."`
+- Mimir: `curl -u "$MIMIR_USER:$MIMIR_TOKEN" "$MIMIR_URL/api/v1/..."`
 
 Important URL note:
 - `MIMIR_URL` may already include `/api/prom` (e.g.
@@ -532,6 +546,9 @@ Checks:
 - Root insight: panel coverage must represent priority #1 and #2 decision loops.
   Recommendation: add missing panels for freshness, error-class split, and
   shared-budget efficiency.
+- Root insight: dashboard panels are only actionable when their backing
+  telemetry already exists in Grafana. Recommendation: separate immediate
+  dashboard fixes from follow-up panels that depend on not-yet-live telemetry.
 - Root insight: query and label choices affect cardinality/cost.
   Recommendation: keep dimensions low-cardinality and avoid user-level splits.
 - Root insight: dashboard navigation/variables affect triage speed.
@@ -543,16 +560,19 @@ Output requirements for this pack:
 - Top mismatches/anti-patterns
 - Gap list for missing decision signals
 - Concrete patch candidates (panel edits/new panels/variable edits)
+- Future-run notes for panels that should be added later once newly proposed
+  telemetry is confirmed present in Grafana
 
 ### Optional preflight — Grafana/Loki/Mimir access (when env vars are present)
 
-If `GRAFANA_TOKEN`, `GRAFANA_URL`, `LOKI_URL`, `LOKI_USER`, `MIMIR_URL`, and
-`MIMIR_USER` are set, run these smoke tests (via Bash) during Step 2 and
+If `GRAFANA_TOKEN`, `GRAFANA_URL`, `LOKI_URL`, `LOKI_USER`, `MIMIR_URL`,
+`MIMIR_USER`, and `MIMIR_TOKEN` are set, run these smoke tests (via Bash)
+during Step 2 and
 include pass/fail in your opening context:
 
 - Dashboard API auth smoke check endpoint responds successfully.
 - Dashboard read for both tracked dashboards succeeds (or explicit fallback to local JSON).
-- Optional: permission endpoint confirms dashboard write scope when deployment is requested.
+- Optional: permission endpoint confirms dashboard write scope when approved dashboard changes may be deployed.
 
 - Loki auth smoke check endpoint responds successfully.
 - Mimir auth smoke check endpoint responds successfully.
@@ -575,7 +595,10 @@ After all parallel packs complete:
 5. Keep only the top 5 proposals.
 6. Ask each of the 5 proposals as its own yes/no question using the
    OpenCode native `question` tool.
-7. Keep parent-context retention minimal by carrying forward only final top-5
+7. If a deployable dashboard proposal is approved, deploy it automatically in
+   the same session when credentials/scope allow; do not ask for a second
+   deployment confirmation.
+8. Keep parent-context retention minimal by carrying forward only final top-5
    proposals plus supporting evidence snippets.
 
 ---
@@ -759,17 +782,31 @@ For each dashboard proposal include:
 - exact query/unit/threshold/variable change
 - expected impact on priority #1 and/or #2
 - cardinality/cost risk note (if any)
+- whether the required telemetry already exists in Grafana now, or must be
+  tracked as a future-run dashboard follow-up after instrumentation ships
 
-### Deployment workflow (only when user explicitly asks)
+### Deployment workflow for approved dashboard changes
 
-When the user requests deployment of approved dashboard changes:
+When dashboard changes are approved, deploy them automatically when API write
+scope is available:
 1. Confirm dashboard API read access and write scope.
-2. Fetch latest live dashboard objects first.
-3. Apply only approved changes.
-4. `PUT` updates to
-   `/apis/dashboard.grafana.app/v1beta1/namespaces/:namespace/dashboards/:name`.
-5. Re-GET dashboards and verify update metadata changed.
-6. Keep repo dashboard JSON synchronized with deployed versions.
+2. Fetch latest live dashboard objects first, and fetch the legacy dashboard
+   model via `GET /api/dashboards/uid/:name` when preparing a live write.
+3. Confirm every new/changed panel query uses telemetry already available in
+   Grafana. If a proposed panel depends on telemetry that is not live yet, do
+   not deploy that panel now; add a future-run note instead.
+4. Apply only approved changes to the complete dashboard model.
+5. Deploy with `POST /api/dashboards/db` using `folderUid`, `overwrite: true`,
+   and a commit message.
+6. Re-GET the dashboard via `GET /api/dashboards/uid/:name` and verify panel
+   count / title / version changed as expected.
+7. Re-GET the `dashboard.grafana.app` object and keep repo `grafana/*.json`
+   synchronized with the deployed version.
+8. If a deployment accidentally produces an empty dashboard, immediately restore
+   the prior working version from `GET /api/dashboards/uid/:name/versions/:n`
+   using `POST /api/dashboards/db`.
+9. If deployment is blocked by auth/scope/API failure, keep the local JSON
+   updated and state clearly that live Grafana was not updated.
 
 ---
 
