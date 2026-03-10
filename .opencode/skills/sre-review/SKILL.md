@@ -122,6 +122,10 @@ Deployment expectation for approved dashboard changes:
 - For telemetry that has been added in code but is not yet visible in Grafana,
   record a note for a future run and update the dashboard only after that
   telemetry is confirmed live.
+- Every non-trivial panel should have a clear description that explains what it
+  measures, why it matters, and any important caveat (for example ratio
+  denominator, cache-vs-upstream interpretation, or whether it is demand- or
+  VIP-weighted).
 - After update, re-GET dashboard and confirm generation/resourceVersion changed.
 - Keep local `grafana/*.json` aligned with deployed content.
 
@@ -549,6 +553,9 @@ Checks:
 - Root insight: dashboard panels are only actionable when their backing
   telemetry already exists in Grafana. Recommendation: separate immediate
   dashboard fixes from follow-up panels that depend on not-yet-live telemetry.
+- Root insight: panels without descriptions slow operator review and make query
+  intent hard to trust. Recommendation: add concise descriptions to every panel,
+  especially stats, ratios, and panels with non-obvious SQL/PromQL semantics.
 - Root insight: query and label choices affect cardinality/cost.
   Recommendation: keep dimensions low-cardinality and avoid user-level splits.
 - Root insight: dashboard navigation/variables affect triage speed.
@@ -562,6 +569,7 @@ Output requirements for this pack:
 - Concrete patch candidates (panel edits/new panels/variable edits)
 - Future-run notes for panels that should be added later once newly proposed
   telemetry is confirmed present in Grafana
+- Missing-description inventory, prioritizing high-risk panels first
 
 ### Optional preflight — Grafana/Loki/Mimir access (when env vars are present)
 
@@ -761,6 +769,10 @@ Dashboard sources:
   crawl coverage/freshness and federation read success/cost.
 - Root insight: dashboard variables should support per-instance/service/
   strategy drilldown.
+- Root insight: panel descriptions are part of dashboard correctness because
+  operators need to understand panel meaning quickly. Recommendation: require
+  descriptions for all panels and expand weak descriptions when query intent is
+  not obvious from the title alone.
 - Recommendation: prioritize fixes that reduce operator decision risk first,
   then cosmetic consistency.
 
@@ -773,6 +785,8 @@ Dashboard sources:
 - Duplicate/near-duplicate panels that create confusion without adding new
   decision signal.
 - High-cardinality query dimensions in dashboard panels that inflate metric cost.
+- Panels missing descriptions, or descriptions that do not explain query
+  semantics/caveats.
 
 ### Proposal format for dashboard improvements
 
@@ -780,6 +794,7 @@ For each dashboard proposal include:
 - dashboard + panel reference
 - current issue and why it is decision-risky
 - exact query/unit/threshold/variable change
+- exact description text change when adding or improving panel explanations
 - expected impact on priority #1 and/or #2
 - cardinality/cost risk note (if any)
 - whether the required telemetry already exists in Grafana now, or must be
@@ -795,17 +810,20 @@ scope is available:
 3. Confirm every new/changed panel query uses telemetry already available in
    Grafana. If a proposed panel depends on telemetry that is not live yet, do
    not deploy that panel now; add a future-run note instead.
-4. Apply only approved changes to the complete dashboard model.
-5. Deploy with `POST /api/dashboards/db` using `folderUid`, `overwrite: true`,
+4. Add or update panel descriptions for every panel touched in the deployment,
+   and prefer filling obvious missing descriptions in the same row while the
+   dashboard is already being edited.
+5. Apply only approved changes to the complete dashboard model.
+6. Deploy with `POST /api/dashboards/db` using `folderUid`, `overwrite: true`,
    and a commit message.
-6. Re-GET the dashboard via `GET /api/dashboards/uid/:name` and verify panel
+7. Re-GET the dashboard via `GET /api/dashboards/uid/:name` and verify panel
    count / title / version changed as expected.
-7. Re-GET the `dashboard.grafana.app` object and keep repo `grafana/*.json`
+8. Re-GET the `dashboard.grafana.app` object and keep repo `grafana/*.json`
    synchronized with the deployed version.
-8. If a deployment accidentally produces an empty dashboard, immediately restore
+9. If a deployment accidentally produces an empty dashboard, immediately restore
    the prior working version from `GET /api/dashboards/uid/:name/versions/:n`
    using `POST /api/dashboards/db`.
-9. If deployment is blocked by auth/scope/API failure, keep the local JSON
+10. If deployment is blocked by auth/scope/API failure, keep the local JSON
    updated and state clearly that live Grafana was not updated.
 
 ---

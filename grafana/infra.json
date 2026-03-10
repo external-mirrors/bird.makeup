@@ -5,8 +5,8 @@
     "name": "fbf58761-7295-4527-8bd0-f6385b1a9c5f",
     "namespace": "stacks-739769",
     "uid": "XFiATWYMqqOeeDEBipM36IJrjCrxXagqpOK561TqfZ4X",
-    "resourceVersion": "1773174298378569",
-    "generation": 63,
+    "resourceVersion": "1773176360598691",
+    "generation": 66,
     "creationTimestamp": "2023-10-16T22:12:04Z",
     "labels": {
       "grafana.app/deprecatedInternalID": "15"
@@ -14,9 +14,9 @@
     "annotations": {
       "grafana.app/createdBy": "user:u000000002",
       "grafana.app/folder": "bdsmnhafetvr4c",
-      "grafana.app/message": "apply approved SRE dashboard fixes safely via legacy API",
+      "grafana.app/message": "show cached and total followed users inside cache gauge",
       "grafana.app/updatedBy": "service-account:dfe4u6u0tchdsc",
-      "grafana.app/updatedTimestamp": "2026-03-10T20:24:58Z"
+      "grafana.app/updatedTimestamp": "2026-03-10T20:59:20Z"
     }
   },
   "spec": {
@@ -1079,8 +1079,8 @@
         "kind": "Panel",
         "spec": {
           "id": 22,
-          "title": "Non null user cache",
-          "description": "",
+          "title": "Followed Twitter users cached",
+          "description": "Percent of distinct followed Twitter accounts whose database cache is non-null. The gauge arc shows cache coverage, while the in-panel label shows cached users versus total followed users.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -1099,9 +1099,9 @@
                       "spec": {
                         "dataset": "dotmakeup",
                         "editorMode": "code",
-                        "format": "table",
+                        "format": "time_series",
                         "rawQuery": true,
-                        "rawSql": "SELECT COUNT(*) AS total FROM twitter_users\nUNION\nSELECT COUNT(*) FILTER (WHERE cache IS NOT NULL) AS total FROM twitter_users;",
+                        "rawSql": "WITH followed AS (SELECT DISTINCT unnest(followings) AS user_id FROM followers WHERE followings IS NOT NULL) SELECT NOW() AS \"time\", COUNT(*) FILTER (WHERE tu.cache IS NOT NULL)::numeric / NULLIF(COUNT(*), 0) AS value, CONCAT(COUNT(*) FILTER (WHERE tu.cache IS NOT NULL), ' / ', COUNT(*), ' cached') AS metric FROM twitter_users tu JOIN followed f ON f.user_id = tu.id;",
                         "sql": {
                           "columns": [
                             {
@@ -1151,7 +1151,7 @@
                   "calcs": [
                     "firstNotNull"
                   ],
-                  "fields": "/^total$/",
+                  "fields": "",
                   "values": false
                 },
                 "segmentCount": 1,
@@ -1161,16 +1161,26 @@
                 "showThresholdMarkers": true,
                 "sizing": "auto",
                 "sparkline": false,
-                "textMode": "auto"
+                "textMode": "value_and_name"
               },
               "fieldConfig": {
                 "defaults": {
-                  "min": 1,
+                  "unit": "percentunit",
+                  "min": 0,
+                  "max": 1,
                   "thresholds": {
                     "mode": "absolute",
                     "steps": [
                       {
                         "value": 0,
+                        "color": "red"
+                      },
+                      {
+                        "value": 0.05,
+                        "color": "yellow"
+                      },
+                      {
+                        "value": 0.2,
                         "color": "green"
                       }
                     ]
@@ -2869,7 +2879,7 @@
         "spec": {
           "id": 9,
           "title": "asp errors",
-          "description": "",
+          "description": "HTTP 500 server responses on dotMakeup request handlers, split by route, error type, and method. Use this to spot failing read endpoints or controller regressions.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
