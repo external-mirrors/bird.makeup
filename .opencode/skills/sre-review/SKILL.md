@@ -34,7 +34,7 @@ For this operator, optimize in strict order:
 - Tie-break rule: if goals conflict, preserve crawl coverage/freshness first.
 - Priority #2 is metrics-first: optimize success rate and upstream-cost
   efficiency, not HTTP latency.
-- In summaries and proposal menus, present #1 outcomes first, then #2 outcomes.
+- In summaries and proposal ordering, present #1 outcomes first, then #2 outcomes.
 
 ## MCP / tooling
 
@@ -112,9 +112,12 @@ API access notes:
 
 Deployment expectation for approved dashboard changes:
 - Requires `dashboards:write` (and folder scope) on `GRAFANA_TOKEN`.
-- When dashboard changes are approved and write access is available, deploy them
-  in the same session without waiting for a separate deployment request.
-- Apply only approved dashboard changes.
+- When the currently approved proposal is a dashboard change and write access is
+  available, deploy it in the same session without waiting for a separate
+  deployment request.
+- Apply only the currently approved dashboard changes.
+- After deployment, wait for the operator's `Done` / `Needs changes` review gate
+  before moving to the next proposal.
 - Live dashboard changes may only use telemetry that is already available and
   queryable in Grafana at deployment time. Do not add panels that depend on
   metrics/logs/traces which were only introduced in code during the same run but
@@ -223,9 +226,14 @@ Key files for this skill:
 
 When this skill asks the user a question, always use the OpenCode native
 `question` tool instead of plain-text prompts.
-- Proposal approvals must be asked as explicit yes/no choices.
-- This applies to all prompts, including the ranked top-5 proposal questions
-  and any follow-up implementation confirmations.
+- Proposal approvals must be asked as explicit yes/no choices for the single
+  current proposal.
+- After an approved proposal is implemented, ask a separate review gate for
+  that same proposal before suggesting the next one.
+- Use `Done` / `Needs changes` for the post-implementation review gate.
+- For dashboard proposals, auto-deploy immediately after approval when write
+  access allows so the operator can review the live dashboard before answering
+  the review gate.
 
 ## Proposal types
 
@@ -236,6 +244,7 @@ include:
 - Federation read-query success and cache-efficiency improvements
 - Settings/scheduler/strategy tuning
 - Tracing/logging/metrics instrumentation improvements
+- Integration/regression test additions for production-discovered parser failures
 - Grafana dashboard/query/panel improvements
 - Grafana dashboard deployment of approved changes
 - Code-level fixes for identified root causes
@@ -245,6 +254,21 @@ When building proposals, prioritize impact in this order:
 2. Federation read-query success + upstream-cost efficiency impact
 3. Reliability/risk reduction
 For dashboard/metrics suggestions, prefer low-cardinality dimensions.
+
+When a finding involves parser correctness, payload-shape handling, or silent
+parse degradation, include a `Suggested tests` output. Anchor those suggestions
+to the existing integration/regression suites:
+- Twitter: `src/Tests/BirdsiteLive.Twitter.Tests/TweetTests.cs` and
+  `src/Tests/BirdsiteLive.Twitter.Tests/TimelineTests.cs`
+- HackerNews: `src/Tests/dotMakeup.HackerNews.Tests/UsersTests.cs`,
+  `src/Tests/dotMakeup.HackerNews.Tests/PostsTests.cs`, and
+  `src/Tests/dotMakeup.HackerNews.Tests/TimelineTests.cs`
+- Instagram: `src/Tests/dotMakeup.Instagram.Tests/UserTest.cs`
+
+Prefer integration/regression tests over generic unit tests, use real stable
+accounts/posts/timelines when possible, assert exact parsed fields instead of
+only `does not throw`, and keep any implementation-specific exception minimal
+and scoped rather than weakening the whole test.
 
 ---
 
@@ -385,7 +409,8 @@ Then include a dashboard-quality summary:
 - Missing or weak dashboard coverage areas (if any)
 - 1-3 highest-impact dashboard fixes to consider
 
-Then continue with the cross-instance summary and ranked proposal shortlist.
+Then continue with the cross-instance summary and the current top-ranked
+proposal.
 
 ### 1G. Grafana dashboard baseline
 
@@ -408,12 +433,14 @@ Minimum checks:
   Recommendation: add/fix variables (instance/service/strategy/result), naming,
   and row organization where missing.
 
-Use this baseline to feed Section F and the top-5 proposal shortlist.
+Use this baseline to feed Section F and the iterative next-proposal ranking.
 
 ## Step 2 — Full parallel exploration (run silently before responding)
 
-Before asking the user any question, run all analysis packs in parallel and use
-their outputs to build proposals.
+Before asking the user any proposal question, run all analysis packs in
+parallel and use their outputs to build the initial ranked proposal set. After
+each approved change, do only a targeted refresh of the affected evidence
+before re-ranking the remaining proposals.
 
 For context-window efficiency, prefer using subagents for parallel packs so the
 main agent only keeps condensed findings and proposal candidates.
@@ -434,8 +461,8 @@ When available, use the OpenCode `Task` tool to run packs 2A-2F concurrently.
   - "interesting findings" to bubble up to the main conversation
     (unexpected regressions, cross-signal contradictions, or high-impact wins)
   - proposal candidates with: title, expected coverage/freshness impact,
-    expected federation success/cost impact, supporting evidence, and
-    implementation effort
+    expected federation success/cost impact, supporting evidence,
+    implementation effort, and suggested tests
 - Merge only those compact payloads into the parent context; do not paste large
   raw query/result dumps unless needed for a specific follow-up.
 - If subagents are unavailable, run equivalent direct tool calls in parallel.
@@ -600,14 +627,30 @@ After all parallel packs complete:
 4. Rank proposals by (a) crawl coverage/freshness impact, (b) federation
    read-query success + upstream-cost efficiency impact, then (c)
    reliability/risk reduction.
-5. Keep only the top 5 proposals.
-6. Ask each of the 5 proposals as its own yes/no question using the
-   OpenCode native `question` tool.
-7. If a deployable dashboard proposal is approved, deploy it automatically in
-   the same session when credentials/scope allow; do not ask for a second
-   deployment confirmation.
-8. Keep parent-context retention minimal by carrying forward only final top-5
-   proposals plus supporting evidence snippets.
+5. Offer exactly one proposal at a time: the current top-ranked proposal,
+   including supporting evidence and `Suggested tests` when parser/integration
+   coverage is relevant, then use the OpenCode native `question` tool with
+   explicit yes/no choices.
+6. If the answer is `No`, defer that proposal for the current session,
+   re-rank the remaining proposals, and offer the next best proposal.
+7. If the answer is `Yes`, implement that proposal immediately so the diff
+   stays atomic.
+8. If the approved proposal is a dashboard change, deploy it automatically in
+   the same session when credentials/scope allow; do not ask for a separate
+   deployment request.
+9. After implementation (and deployment for dashboards when applicable),
+   summarize what changed, include a `Suggested tests` block with 1-3 concrete
+   follow-up integration/regression tests (or `none` if nothing meaningful
+   follows), and ask a review gate for that same proposal using the OpenCode
+   native `question` tool with `Done` / `Needs changes`.
+10. If the review answer is `Needs changes`, keep working on that same
+    proposal, redeploy again for dashboard changes when needed, and repeat the
+    review gate until the operator answers `Done`.
+11. Only after `Done`, run a targeted refresh of the affected signals,
+    re-rank the remaining proposals, and offer the next single best proposal.
+12. Keep parent-context retention minimal by carrying forward only the
+    remaining ranked proposals, supporting evidence snippets, and current
+    proposal review state.
 
 ---
 
@@ -662,6 +705,19 @@ Do not ask the user to judge this manually. Compare each instance's zero-post ra
 against the trailing 72h baseline (chunked windows if needed). If an instance rises materially above its own
 baseline while error-rate stays low, flag likely silent failures and suggest adding
 error tagging in `Graphql2025.cs:74-78`.
+
+When production evidence reveals a pathological parsing case, malformed/null
+payload shape, unexpected HTML/JSON structure, or silent zero-post outcome,
+include concrete regression-test suggestions in the same style as the existing
+social-network suites. Good suggestions assert exact parsed semantics from a
+real stable exemplar rather than a generic smoke check:
+- Twitter: author identity, message content, reply/thread/quote linkage, poll
+  extraction, media counts/types/URLs, alt text, short-link expansion, and
+  timeline ordering across relevant strategies.
+- HackerNews: post kind, author, createdAt, reply linkage, poll structure,
+  frontpage normalization, and new-post filtering.
+- Instagram: profile fields, pinned posts, recent-post ordering, caption
+  extraction, and media counts/types.
 
 ---
 
@@ -802,8 +858,9 @@ For each dashboard proposal include:
 
 ### Deployment workflow for approved dashboard changes
 
-When dashboard changes are approved, deploy them automatically when API write
-scope is available:
+When the currently approved proposal is a dashboard change, deploy it
+automatically when API write scope is available so the operator can review the
+live dashboard before moving to the next proposal:
 1. Confirm dashboard API read access and write scope.
 2. Fetch latest live dashboard objects first, and fetch the legacy dashboard
    model via `GET /api/dashboards/uid/:name` when preparing a live write.
@@ -813,7 +870,8 @@ scope is available:
 4. Add or update panel descriptions for every panel touched in the deployment,
    and prefer filling obvious missing descriptions in the same row while the
    dashboard is already being edited.
-5. Apply only approved changes to the complete dashboard model.
+5. Apply only the currently approved dashboard changes to the complete
+   dashboard model.
 6. Deploy with `POST /api/dashboards/db` using `folderUid`, `overwrite: true`,
    and a commit message.
 7. Re-GET the dashboard via `GET /api/dashboards/uid/:name` and verify panel
@@ -824,7 +882,10 @@ scope is available:
    the prior working version from `GET /api/dashboards/uid/:name/versions/:n`
    using `POST /api/dashboards/db`.
 10. If deployment is blocked by auth/scope/API failure, keep the local JSON
-   updated and state clearly that live Grafana was not updated.
+    updated and state clearly that live Grafana was not updated.
+11. After deployment or local-only fallback, show what changed and wait for the
+    operator's `Done` / `Needs changes` review gate before moving to the next
+    proposal.
 
 ---
 
@@ -907,8 +968,9 @@ Do not treat this section as a static backlog. At the start of each investigatio
 
 When an open gap is found, describe the problem and exact fix, then convert it
 into a proposal candidate. Rank it with all other proposals from Step 2; if it
-lands in the top 5, ask it as its own yes/no question via the OpenCode native
-`question` tool.
+becomes the current top-ranked proposal, ask it as its own yes/no question via
+the OpenCode native `question` tool and keep it in the same
+approve-implement-review loop as other proposals.
 
 ---
 
