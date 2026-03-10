@@ -135,6 +135,8 @@ namespace BirdsiteLive.Twitter.Tests
                 tweets.Length,
                 $"Grant timeline count mismatch. expected={GrantTimelineGroundTruth.Length} actual={tweets.Length}");
 
+            MediaUrlAssertions.AssertValidMediaUrls(tweets, "Grant timeline");
+
             for (var i = 0; i < GrantTimelineGroundTruth.Length; i++)
             {
                 var expected = GrantTimelineGroundTruth[i];
@@ -209,6 +211,8 @@ namespace BirdsiteLive.Twitter.Tests
             
             if (tweets.Length == 0)
                 Assert.Inconclusive();
+
+            MediaUrlAssertions.AssertValidMediaUrls(tweets, "Kobe vanilla timeline");
            
             Assert.IsTrue(Array.Exists(
                 tweets,
@@ -233,6 +237,8 @@ namespace BirdsiteLive.Twitter.Tests
             
             if (tweets.Length == 0)
                 Assert.Inconclusive();
+
+            MediaUrlAssertions.AssertValidMediaUrls(tweets, $"Kobe timeline ({s})");
            
             Assert.AreEqual(tweets[0].MessageContent, "Continuing to move the game forward @KingJames. Much respect my brother 💪🏾 #33644");
             Assert.IsTrue(tweets.Length > 10);
