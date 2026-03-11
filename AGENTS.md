@@ -2,4 +2,6 @@ The mission of dotmakeup is to bridge closed social networks into ActivityPub so
 
 To maximize public value, prioritize crawling top accounts and public-interest accounts identified from Wikidata/Wikipedia, with extra priority for accounts followed by `r.town` (the Mastodon instance for this project's Patreon supporters). Because rate limits and anti-abuse throttling make crawl capacity a fixed budget, optimize for coverage first, then freshness for high-priority accounts, and reduce depth for lower-priority accounts when needed (treat latency as secondary unless it harms coverage).
 
-As we rely on donation on Patreon to run this service, it's important to be efficient with ressources.
+As we rely on donation on Patreon to run this service, it's important to be efficient with resources.
+
+From actually using this service, posts feel native when they arrive promptly, within a day for bird, and within 2-3 days for kilogram. Shorter than that, the difference is not felt much, and it becomes much better to use our limited resources to give broader premium crawling coverage.
