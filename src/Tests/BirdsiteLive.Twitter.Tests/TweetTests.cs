@@ -106,7 +106,7 @@ namespace BirdsiteLive.Twitter.Tests
 
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"ReplyWithGif ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"ReplyWithGif ({s})");
         }
         [TestMethod]
         [DynamicData(nameof(Implementations))]
@@ -127,7 +127,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.IsNull(tweet.Media[0].AltText);
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"LeadingDotTextAndSinglePictureTweet_2 ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"LeadingDotTextAndSinglePictureTweet_2 ({s})");
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }
@@ -147,7 +147,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.IsNull(tweet.Media[0].AltText);
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"LeadingDotTextAndSinglePictureTweet ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"LeadingDotTextAndSinglePictureTweet ({s})");
             Assert.IsNull(tweet.QuotedAccount);
             Assert.IsNull(tweet.QuotedStatusId);
         }
@@ -171,7 +171,7 @@ namespace BirdsiteLive.Twitter.Tests
             Console.WriteLine($"[DEBUG_LOG] Media 0 URL: {tweet.Media[0].Url}");
             Console.WriteLine($"[DEBUG_LOG] Media 1 URL: {tweet.Media[1].Url}");
 
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleTextAndDoublePictureTweet ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleTextAndDoublePictureTweet ({s})");
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://pbs.twimg.com/"));
 
             Assert.AreEqual(tweet.MessageContent, "This goes hard");
@@ -196,7 +196,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
             
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleTextAndSinglePictureTweet ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleTextAndSinglePictureTweet ({s})");
             Assert.AreEqual(tweet.MessageContent,
                 "Speaker Nancy Pelosi will go down as one of most accomplished legislators in American history—breaking barriers, opening doors for others, and working every day to serve the American people. I couldn’t be more grateful for her friendship and leadership.");
 
@@ -219,7 +219,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.Media[0].MediaType, "image/jpeg");
             Assert.AreEqual(tweet.Media.Length, 1);
 
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleTextAndSinglePictureTweet2 ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleTextAndSinglePictureTweet2 ({s})");
             Assert.AreEqual(tweet.MessageContent,
                 "Tracking weird subcultures and fringe conspiracy reactions to current events");
             Assert.IsNull(tweet.QuotedAccount);
@@ -258,7 +258,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
             Assert.IsNull(tweet.Media[0].AltText);
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleTextAndSingleVideoTweet ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleTextAndSingleVideoTweet ({s})");
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/"));
 
         }
@@ -280,7 +280,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet2.Media.Length, 1);
             Assert.AreEqual(tweet2.Media[0].MediaType, "video/mp4");
             Assert.IsNull(tweet2.Media[0].AltText);
-            MediaUrlAssertions.AssertValidMediaUrls(tweet2, $"SimpleTextAndSingleVideoTweet2 ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet2, $"SimpleTextAndSingleVideoTweet2 ({s})");
             Assert.IsTrue(tweet2.Media[0].Url.StartsWith("https://video.twimg.com/"));
         }
 
@@ -299,7 +299,7 @@ namespace BirdsiteLive.Twitter.Tests
 
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"GifAndQT ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"GifAndQT ({s})");
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/"));
             
             Assert.AreEqual(tweet.QuotedAccount, "oplabspbc");
@@ -396,9 +396,8 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.InReplyToStatusId, 2029196695008100434);
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"ThreadVideoReply ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"ThreadVideoReply ({s})");
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/amplify_video"));
-            Assert.IsTrue(tweet.Media[0].Url.EndsWith(".mp4"));
             Assert.IsTrue(tweet.IsReply);
             Assert.IsTrue(tweet.IsThread);
             Assert.IsNull(tweet.QuotedAccount);
@@ -417,9 +416,8 @@ namespace BirdsiteLive.Twitter.Tests
 
             Assert.AreEqual(tweet.Media.Length, 1);
             Assert.AreEqual(tweet.Media[0].MediaType, "video/mp4");
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleVideo ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"SimpleVideo ({s})");
             Assert.IsTrue(tweet.Media[0].Url.StartsWith("https://video.twimg.com/amplify_video"));
-            Assert.IsTrue(tweet.Media[0].Url.EndsWith(".mp4"));
             Assert.IsFalse(tweet.IsReply);
             Assert.IsFalse(tweet.IsReply);
             Assert.IsNull(tweet.QuotedAccount);
@@ -439,7 +437,7 @@ namespace BirdsiteLive.Twitter.Tests
             Assert.AreEqual(tweet.InReplyToAccount, "edzitron");
             Assert.AreEqual(tweet.InReplyToStatusId, 2027439787557146883);
             Assert.AreEqual(tweet.Media.Length, 2);
-            MediaUrlAssertions.AssertValidMediaUrls(tweet, $"ThreadWithImages ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweet, $"ThreadWithImages ({s})");
             Assert.IsTrue(tweet.IsReply);
             Assert.IsTrue(tweet.IsThread);
             Assert.IsNull(tweet.QuotedAccount);

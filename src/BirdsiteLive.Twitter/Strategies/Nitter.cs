@@ -86,6 +86,7 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
         requester.Headers["Accept-Encoding"] = "gzip, deflate";
         requester.Headers["Accept-Language"] = "en-US,en;q=0.5";
+        requester.Headers["Cookie"] = "hlsPlayback=on";
         var config = Configuration.Default.With(requester).WithDefaultLoader();
         var context = BrowsingContext.New(config);
 
@@ -546,6 +547,10 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
                 {
                     vidSrc = videoEl?.GetAttribute("src");
                 }
+                if (string.IsNullOrWhiteSpace(vidSrc))
+                {
+                    vidSrc = TryExtractVideoUrlFromNitterDataUrl(videoEl?.GetAttribute("data-url"));
+                }
                 
                 // If it's a gif (it doesn't have controls in Nitter usually, but check for video tag)
                 // For now, if we have a source, it's a video.
@@ -913,6 +918,25 @@ public class Nitter : ITimelineExtractor, IUserExtractor, ITweetExtractor
         var asset = match.Groups["asset"].Value;
         videoUrl = $"https://video.twimg.com/{kind}/{videoId}/vid/{asset}.mp4";
         return true;
+    }
+
+    private static string? TryExtractVideoUrlFromNitterDataUrl(string? dataUrl)
+    {
+        if (string.IsNullOrWhiteSpace(dataUrl))
+            return null;
+
+        if (dataUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            return dataUrl;
+
+        var encodedUrl = Regex.Match(dataUrl, @"^/video/[^/]+/(?<url>https?%3A%2F%2F.+)$");
+        if (encodedUrl.Success)
+            return WebUtility.UrlDecode(encodedUrl.Groups["url"].Value);
+
+        if (dataUrl.StartsWith("https%3A%2F%2F", StringComparison.OrdinalIgnoreCase) ||
+            dataUrl.StartsWith("http%3A%2F%2F", StringComparison.OrdinalIgnoreCase))
+            return WebUtility.UrlDecode(dataUrl);
+
+        return null;
     }
 
     private static bool TryExtractStatusReference(string url, out string? account, out string? statusId)

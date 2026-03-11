@@ -128,14 +128,14 @@ namespace BirdsiteLive.Twitter.Tests
             return string.IsNullOrWhiteSpace(value) ? null : value!;
         }
 
-        private static void AssertGrantTimelineGroundTruth(ExtractedTweet[] tweets)
+        private static async Task AssertGrantTimelineGroundTruth(ExtractedTweet[] tweets)
         {
             Assert.AreEqual(
                 GrantTimelineGroundTruth.Length,
                 tweets.Length,
                 $"Grant timeline count mismatch. expected={GrantTimelineGroundTruth.Length} actual={tweets.Length}");
 
-            MediaUrlAssertions.AssertValidMediaUrls(tweets, "Grant timeline");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweets, "Grant timeline");
 
             for (var i = 0; i < GrantTimelineGroundTruth.Length; i++)
             {
@@ -212,7 +212,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweets.Length == 0)
                 Assert.Inconclusive();
 
-            MediaUrlAssertions.AssertValidMediaUrls(tweets, "Kobe vanilla timeline");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweets, "Kobe vanilla timeline");
            
             Assert.IsTrue(Array.Exists(
                 tweets,
@@ -238,7 +238,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweets.Length == 0)
                 Assert.Inconclusive();
 
-            MediaUrlAssertions.AssertValidMediaUrls(tweets, $"Kobe timeline ({s})");
+            await MediaUrlAssertions.AssertValidMediaUrls(tweets, $"Kobe timeline ({s})");
            
             Assert.AreEqual(tweets[0].MessageContent, "Continuing to move the game forward @KingJames. Much respect my brother 💪🏾 #33644");
             Assert.IsTrue(tweets.Length > 10);
@@ -278,7 +278,7 @@ namespace BirdsiteLive.Twitter.Tests
             if (tweets.Length == 0)
                 Assert.Inconclusive();
 
-            AssertGrantTimelineGroundTruth(tweets);
+            await AssertGrantTimelineGroundTruth(tweets);
         }
 
     }
